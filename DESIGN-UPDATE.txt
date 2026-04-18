@@ -1,0 +1,134 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║           SJM FLOW 4.0 - DESIGN SYSTEM UPDATE                        ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📅 Date: 18 April 2026
+🎨 Update: Applied Official Design System
+
+═══════════════════════════════════════════════════════════════════════
+
+✨ WHAT'S NEW IN THIS UPDATE:
+
+1. **OFFICIAL DESIGN SYSTEM** ✅
+   - Amber (#FF8F00) as primary brand color
+   - Warm neutral borders (#E8E4DC, #C8C0B4)
+   - Warm off-white background (#F7F8FA)
+   - Inter font family with tabular nums
+   
+2. **REDESIGNED CSS** ✅
+   - Complete rewrite dengan design system tokens
+   - CSS variables untuk semua colors, spacing, typography
+   - Consistent shadows & radius
+   - Smooth 150ms transitions
+   
+3. **COMPONENT UPDATES** ✅
+   - Buttons: Amber primary dengan dark hover state
+   - Inputs: Amber focus ring dengan warm shadow
+   - Tabs: Amber underline untuk active state
+   - Cards: Subtle shadows sesuai design system
+   
+4. **TYPOGRAPHY SCALE** ✅
+   - Dense scale: 10px → 20px
+   - Tabular numbers untuk alignment
+   - UPPERCASE caps style untuk labels
+   
+5. **ANIMATIONS** ✅
+   - fadeUp animation (0.3s ease)
+   - Amber spinner
+   - Smooth color transitions
+
+═══════════════════════════════════════════════════════════════════════
+
+🎨 DESIGN TOKENS:
+
+Colors:
+- Primary: #FF8F00 (amber)
+- Hover: #E67E00 (darker amber)
+- Focus: #FFF8E7 (amber light)
+- Text: #1A1A1A → #4A4A4A → #8A8A8A
+- Borders: #E8E4DC / #C8C0B4 (warm)
+- Background: #F7F8FA (warm off-white)
+
+Semantic:
+- Success/Debit: #16A34A (green)
+- Error/Kredit: #DC2626 (red)
+- Info: #3B82F6 (blue)
+
+Spacing:
+- 8px, 12px, 16px, 20px, 24px (primary scale)
+
+Radius:
+- Chip: 5px
+- Button: 7px
+- Card: 10px
+- Modal: 12px
+
+Shadows:
+- Card: subtle (0 1px 3px)
+- Modal: prominent (0 8px 40px)
+- Focus: amber halo (0 0 0 3px)
+
+Typography:
+- Font: Inter (400/500/600/700)
+- Base size: 13px
+- Line height: normal (dense)
+- Variant: tabular-nums
+
+═══════════════════════════════════════════════════════════════════════
+
+📝 CHANGES FROM v4.0 BASE:
+
+UPDATED FILES:
+- src/index.css (complete rewrite)
+- constants.ts already matches ✓
+
+UNCHANGED:
+- All component logic
+- All functionality
+- CSV parser fix
+- Enhanced modals
+- Search filters
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 DEPLOYMENT:
+
+Sama seperti sebelumnya:
+
+1. Download ZIP
+2. Extract
+3. Push to GitHub: https://github.com/SJMTransport/SJM-FLOW4.0
+4. Vercel auto-redeploy
+
+ATAU kalau sudah deploy:
+
+1. Download ZIP
+2. Extract
+3. Copy src/index.css ke project existing
+4. Git commit & push
+5. Vercel auto-redeploy
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ BENEFITS:
+
+- ✅ Consistent visual language
+- ✅ Professional amber branding
+- ✅ Warm, welcoming aesthetic
+- ✅ Better hover/focus states
+- ✅ Smooth animations
+- ✅ Tabular number alignment
+- ✅ Design system ready for scaling
+
+═══════════════════════════════════════════════════════════════════════
+
+🎯 BACKWARDS COMPATIBLE:
+
+All existing components work dengan design system baru karena:
+- Variable names sama (C.accent, C.text, dll)
+- Class names sama (.btn-primary, .input-field, dll)
+- Only CSS values yang berubah
+
+NO BREAKING CHANGES!
+
+═══════════════════════════════════════════════════════════════════════
