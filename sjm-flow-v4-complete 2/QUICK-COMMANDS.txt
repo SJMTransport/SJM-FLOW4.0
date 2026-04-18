@@ -1,0 +1,109 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║           SJM FLOW 4.0 - QUICK COMMAND REFERENCE                     ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📝 COPY-PASTE COMMANDS (In Order):
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣ EXTRACT & SETUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cd "/Users/audyanurulfathia/Document Audya's/APLIKASI BUILD/SJM FLOW APPS"
+unzip ~/Downloads/SJM-FLOW4.0-COMPLETE.zip
+cd sjm-flow-v4-complete
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2️⃣ INSTALL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+npm install
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3️⃣ CONFIGURE ENV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cp .env.example .env
+nano .env
+
+# Paste ini, ganti [anon_key] dengan actual key:
+VITE_SUPABASE_URL=https://sdxyaegmbuccybvfesyx.supabase.co
+VITE_SUPABASE_ANON_KEY=[your_anon_key_here]
+
+# Save: Ctrl+X, Y, Enter
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4️⃣ TEST LOCAL (Optional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+npm run dev
+
+# Open: http://localhost:5173
+# Stop: Ctrl+C
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5️⃣ PUSH TO GITHUB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+git init
+git add -A
+git commit -m "Initial commit: SJM Flow v4.0"
+git branch -M main
+git remote add origin https://github.com/SJMTransport/SJM-FLOW4.0.git
+git push -u origin main
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6️⃣ VERCEL DEPLOY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Go to: https://vercel.com/new
+
+1. Import: SJM-FLOW4.0
+2. Framework: Vite
+3. Build: npm run build
+4. Output: dist
+5. Add env vars:
+   - VITE_SUPABASE_URL
+   - VITE_SUPABASE_ANON_KEY
+6. Deploy!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ VERIFICATION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After deploy, test:
+□ Login works
+□ Navigate to Sales Order
+□ "Import CSV" button visible (green)
+□ Click SO row → modal slides in
+□ Modal shows 40+ fields organized
+□ Upload CSV → preview shows correct values (jutaan, not miliaran)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 FILES INCLUDED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Source code (src/)
+✅ Config files (package.json, tsconfig.json, vite.config.ts)
+✅ .gitignore
+✅ .env.example
+✅ README.md
+✅ SETUP-GUIDE.txt (full instructions)
+✅ Documentation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🆘 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+npm not found?
+→ Install Node.js: https://nodejs.org
+
+Permission denied?
+→ Use GitHub Personal Access Token as password
+
+Build failed?
+→ Check Vercel env vars
+
+Modal not showing?
+→ Open Console (F12), screenshot error
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
