@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #F7F8FA;
+  --color-bg-card: #FFFFFF;
+  --color-bg-side: #FFFFFF;
+  --color-bg-side-hover: #F3F4F6;
+  --color-accent: #FF8F00;
+  --color-accent-light: #FFF8E7;
+  --color-accent-dark: #E67E00;
+  --color-blue-brand: #3B82F6;
+  --color-blue-brand-light: #EBF4FF;
+  --color-green-brand: #16A34A;
+  --color-green-brand-light: #E6F6F0;
+  --color-red-brand: #DC2626;
+  --color-red-brand-light: #FDECEA;
+  --color-yellow-brand: #E67E00;
+  --color-yellow-brand-light: #FFF3CD;
+  --color-text-main: #1A1A1A;
+  --color-text-med: #4A4A4A;
+  --color-text-light: #8A8A8A;
+  --color-border-main: #E8E4DC;
+  --color-border-dark: #C8C0B4;
+  --color-side-border: #F0F0F0;
+  --color-side-text: #374151;
+  --color-side-text-muted: #9CA3AF;
+  
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    @apply bg-bg text-text-main font-sans antialiased;
+  }
+  
+  input, select, textarea {
+    @apply font-sans outline-none;
+  }
+}
+
+@layer components {
+  .nav-item:hover {
+    @apply !bg-bg-side-hover !text-text-main;
+  }
+  
+  .nav-item.active {
+    @apply !bg-accent-light !text-accent;
+  }
+  
+  .row-hover:hover {
+    @apply !bg-gray-50;
+  }
+  
+  .btn-primary {
+    @apply bg-accent text-white rounded-[7px] py-[8px] px-[16px] text-[12.5px] font-medium cursor-pointer transition-colors duration-150 border-none;
+  }
+  
+  .btn-primary:hover {
+    @apply bg-accent-dark;
+  }
+  
+  .btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-text-med border border-border-dark rounded-[7px] py-[7px] px-[14px] text-[12.5px] cursor-pointer transition-all duration-150;
+  }
+  
+  .btn-ghost:hover {
+    @apply border-accent text-accent;
+  }
+  
+  .input-field {
+    @apply w-full bg-white border border-border-dark rounded-[7px] py-[9px] px-[12px] text-text-main text-[13px] transition-colors duration-150;
+  }
+  
+  .input-field:focus {
+    @apply border-accent shadow-[0_0_0_3px_#FFF8E7];
+  }
+  
+  .badge {
+    @apply inline-flex items-center py-[2px] px-[8px] rounded-[5px] text-[11px] font-medium;
+  }
+  
+  .tag-bl { @apply bg-red-brand-light text-red-brand; }
+  .tag-parsial { @apply bg-yellow-brand-light text-yellow-brand; }
+  .tag-lunas { @apply bg-green-brand-light text-green-brand; }
+  .tag-overpaid { @apply bg-blue-brand-light text-blue-brand; }
+  
+  .tab-btn {
+    @apply py-[8px] px-[16px] border-none bg-transparent cursor-pointer text-[13px] font-normal text-text-light border-b-2 border-transparent transition-all duration-150;
+  }
+  
+  .tab-btn.active {
+    @apply text-accent border-b-accent font-medium;
+  }
+  
+  .spinner {
+    @apply w-[20px] h-[20px] border-2 border-border-dark border-t-accent rounded-full animate-spin;
+  }
+  
+  table th {
+    @apply px-[12px] py-[10px] whitespace-nowrap text-[11px] font-semibold text-text-light uppercase tracking-widest bg-bg border-b-2 border-border-main;
+  }
+  
+  table td {
+    @apply px-[12px] py-[9px] text-[12.5px] max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+  
+  td.wrap { @apply whitespace-normal overflow-visible text-clip max-w-none; }
+  td.amount { @apply text-right tabular-nums whitespace-nowrap; }
+  td.center { @apply text-center; }
+  
+  .sticky-ph {
+    @apply sticky top-[50px] z-[7] bg-bg pb-[12px] mb-[4px];
+  }
+  
+  .stat-strip {
+    @apply flex gap-[10px] flex-wrap mb-[16px];
+  }
+  
+  .stat-pill {
+    @apply inline-flex items-center gap-[8px] py-[7px] px-[14px] bg-white rounded-[8px] border border-border-main whitespace-nowrap shadow-sm;
+  }
+  
+  .stat-pill .sp-label {
+    @apply text-[10px] font-semibold text-text-light uppercase tracking-widest;
+  }
+  
+  .stat-pill .sp-value {
+    @apply text-[13px] font-bold tabular-nums;
+  }
+  
+  .page-title { @apply text-[18px] font-semibold text-text-main tracking-tight mb-[2px]; }
+  .page-sub { @apply text-[12px] text-text-light; }
+  
+  .chip-so { @apply bg-blue-brand-light text-blue-brand py-[2px] px-[8px] rounded-[5px] text-[11px] font-semibold whitespace-nowrap cursor-pointer hover:opacity-80; }
+  .chip-jurnal { @apply bg-accent-light text-accent py-[2px] px-[8px] rounded-[5px] text-[11px] font-semibold whitespace-nowrap; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-up {
+  animation: fadeUp 0.3s ease forwards;
+}
