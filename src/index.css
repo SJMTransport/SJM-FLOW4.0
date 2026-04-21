@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #F2F4F7;
+  --color-bg-card: #FFFFFF;
+  --color-bg-side: #1B2632;
+  --color-bg-side-hover: #111827;
+  --color-accent: #FF8F00;
+  --color-accent-light: #FFF8E7;
+  --color-accent-dark: #E67E00;
+  --color-navy: #1B2632;
+  --color-brand: #3B82F6;
+  --color-blue-brand: #3B82F6;
+  --color-blue-brand-light: #EBF4FF;
+  --color-green-brand: #16A34A;
+  --color-green-brand-light: #F0FDF4;
+  --color-red-brand: #DC2626;
+  --color-red-brand-light: #FDECEA;
+  --color-yellow-brand: #E67E00;
+  --color-yellow-brand-light: #FFF3CD;
+  --color-text-main: #1A1A1A;
+  --color-text-med: #475569;
+  --color-text-light: #64748B;
+  --color-border-main: #E2E8F0;
+  --color-border-dark: #CBD5E1;
+  --color-side-border: rgba(255, 255, 255, 0.1);
+  --color-side-text: #E2E8F0;
+  --color-side-text-muted: #94A3B8;
+  --color-blue-fantastic: #1B2632;
+  --color-abyssal-blue: #111827;
+  --color-oatmeal: #E2E8F0;
+  --color-burning-flame: #FF8F00;
+  --color-palladian: #F2F4F7;
+  
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.03);
+  
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    @apply bg-bg text-text-main font-sans antialiased selection:bg-accent/20 selection:text-accent leading-tight;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply tracking-tight font-bold text-text-main;
+  }
+  
+  input, select, textarea {
+    @apply font-sans outline-none;
+  }
+
+  /* Custom Scrollbar for a more professional feel */
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-oatmeal rounded-full hover:bg-border-dark transition-colors;
+  }
+}
+
+@layer components {
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-1.5 rounded-md transition-all duration-200 text-side-text/70 font-bold text-[12px] hover:bg-white/10 hover:text-white;
+  }
+  
+  .nav-item.active {
+    @apply bg-white/15 text-white shadow-sm font-black;
+  }
+  
+  .btn-primary {
+    @apply bg-accent text-white rounded-md py-1.5 px-3 text-[11px] font-black cursor-pointer transition-all duration-200 border-none hover:brightness-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: var(--color-burning-flame);
+  }
+  
+  .btn-ghost {
+    @apply bg-white text-text-med border border-border-main rounded-md py-1.5 px-3 text-[11px] font-bold cursor-pointer transition-all duration-200 active:scale-95 hover:border-accent hover:text-accent hover:bg-accent-light;
+  }
+  
+  .input-field {
+    @apply w-full bg-white border border-border-main rounded-xl h-[38px] px-3.5 text-text-main text-[12px] font-medium transition-all duration-200 focus:ring-4 focus:ring-accent/5 focus:border-accent shadow-sm flex items-center placeholder:text-text-light/80;
+  }
+  
+  .card-modern {
+    @apply w-full bg-white rounded-2xl border border-border-main/50 shadow-sm transition-all duration-300;
+  }
+  
+  .card-modern:hover {
+    @apply shadow-md border-border-main;
+  }
+
+  /* Optimized Bento Grid */
+  .bento-grid {
+    @apply grid gap-4 lg:grid-cols-12 grid-flow-row-dense;
+  }
+
+  .bento-item {
+    @apply lg:col-span-4;
+  }
+
+  .bento-item-large {
+    @apply lg:col-span-8;
+  }
+  
+  .bento-item-full {
+    @apply lg:col-span-12;
+  }
+
+  /* Force No Horizontal Scroll on Body */
+  html, body {
+    @apply overflow-x-hidden w-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
+
+  .table-container {
+    @apply w-full overflow-x-auto rounded-xl border border-border-main/40 bg-white/50;
+  }
+
+  .table-container::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+  
+  .table-container::-webkit-scrollbar-thumb {
+    @apply bg-border-dark/30 rounded-full hover:bg-border-dark transition-colors;
+  }
+
+  .stat-label {
+    @apply text-[9px] font-bold text-text-light mb-0.5 opacity-90;
+  }
+
+  .stat-value {
+    @apply text-lg font-black text-text-main tracking-tighter tabular-nums;
+  }
+  
+  table th {
+    @apply sticky top-0 z-[20] px-3 py-2 text-[9px] font-black text-text-light bg-slate-50/95 backdrop-blur-md border-b border-border-main/60 text-left uppercase tracking-widest shadow-[0_1px_0_0_rgba(0,0,0,0.05)];
+  }
+  
+  table td {
+    @apply px-3 py-1.5 text-[11px] font-medium border-b border-border-main/10 text-text-main bg-white/30 transition-colors;
+  }
+
+  tr:hover td {
+    @apply bg-oatmeal/20;
+  }
+
+  .badge {
+    @apply inline-flex items-center py-0.5 px-2 rounded-sm text-[9px] font-bold;
+  }
+  
+  .tag-bl { @apply bg-red-brand-light text-red-brand border border-red-brand/10; }
+  .tag-parsial { @apply bg-yellow-brand-light text-yellow-brand border border-yellow-brand/10; }
+  .tag-lunas { @apply bg-green-brand-light text-green-brand border border-green-brand/10; }
+  .tag-overpaid { @apply bg-blue-brand-light text-blue-brand border border-blue-brand/10; }
+  
+  .tab-btn {
+    @apply py-2 px-4 border-none bg-transparent cursor-pointer text-[11px] font-bold text-text-light border-b-2 border-transparent transition-all duration-200 active:scale-95 transform-gpu;
+  }
+  
+  .tab-btn.active {
+    @apply text-accent border-b-accent font-black;
+  }
+  
+  .spinner {
+    @apply w-4 h-4 border-2 border-border-dark border-t-accent rounded-full animate-spin;
+  }
+  
+  td.wrap { @apply whitespace-normal overflow-visible text-clip max-w-none; }
+  td.amount { @apply text-right tabular-nums whitespace-nowrap font-bold; }
+  td.center { @apply text-center; }
+  
+  .sticky-ph {
+    @apply sticky top-0 z-[30] bg-bg/95 backdrop-blur-md pb-[8px] mb-[4px] border-b border-transparent transition-all duration-300;
+  }
+  
+  .sticky-ph.scrolled {
+    @apply border-border-main shadow-sm;
+  }
+  
+  .stat-pill {
+    @apply inline-flex items-center gap-[6px] py-[4px] px-[10px] bg-white rounded-md border border-border-main whitespace-nowrap shadow-sm hover:shadow-md transition-shadow;
+  }
+  
+  .stat-pill .sp-label {
+    @apply text-[8px] font-bold text-text-light italic;
+  }
+  
+  .stat-pill .sp-value {
+    @apply text-[11px] font-black tabular-nums text-text-main;
+  }
+  
+  .page-title { @apply text-[18px] font-black text-text-main tracking-tight mb-[1px]; }
+  .page-sub { @apply text-[11px] font-bold text-text-light; }
+  
+  .chip-so { @apply bg-blue-brand-light text-blue-brand py-[1.5px] px-[6px] rounded-[4px] text-[10px] font-bold whitespace-nowrap cursor-pointer hover:bg-blue-brand hover:text-white transition-all border border-blue-brand/10; }
+  .chip-jurnal { @apply bg-accent-light text-accent py-[1.5px] px-[6px] rounded-[4px] text-[10px] font-bold whitespace-nowrap border border-accent/10; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.fade-left { animation: fadeLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.fade-right { animation: fadeRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.fade-down { animation: fadeDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

@@ -1,0 +1,73 @@
+export const fmt = (n: number | string) => {
+  const val = typeof n === "string" ? parseFloat(n) : n;
+  const num = (val || 0).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "Rp. " + num;
+};
+
+export const fmtShort = (n: number | string) => {
+  const val = typeof n === "string" ? parseFloat(n) : n;
+  if (!val) return "Rp. 0,00";
+  if (Math.abs(val) < 1e6) return fmt(val);
+  
+  // For dashboard stats, some short formatting is better if very large, 
+  // but the user said "TANPA penyederhanaan". 
+  // So I will stick to full format everywhere.
+  return fmt(val);
+};
+
+export const today = () => new Date().toISOString().split("T")[0];
+
+export const genJUNo = (tanggal: string, jurnalList: any[]) => {
+  const tgl = (tanggal || new Date().toISOString().slice(0,10)).replace(/-/g, "");
+  const sameDay = (jurnalList||[]).filter(j => j.tanggal === tanggal);
+  const seq = String(sameDay.length + 1).padStart(3, "0");
+  return `JU/${tgl}/${seq}`;
+};
+
+export const filterByPeriod = (items: any[], period: any, dateField = "tanggal") => {
+  const data = Array.isArray(items) ? items : [];
+  if (period.mode === "all") return data;
+  return data.filter(item => {
+    const raw = item[dateField] || (dateField === "tgl_muat" ? item["tgl_order"] : null);
+    if (!raw) return true;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return true;
+    if (period.mode === "day") return raw.slice(0, 10) === (period.day || "");
+    if (period.mode === "month") return d.getFullYear() === period.year && d.getMonth() === period.month;
+    if (period.mode === "year") return d.getFullYear() === period.year;
+    if (period.mode === "range") {
+      const dateStr = raw.slice(0, 10);
+      if (period.rangeFrom && dateStr < period.rangeFrom) return false;
+      if (period.rangeTo && dateStr > period.rangeTo) return false;
+      return true;
+    }
+    return true;
+  });
+};
+
+export const filterUpToPeriod = (items: any[], period: any, dateField = "tanggal") => {
+  const data = Array.isArray(items) ? items : [];
+  if (period.mode === "all") return data;
+  return data.filter(item => {
+    const raw = item[dateField] || (dateField === "tgl_muat" ? item["tgl_order"] : null);
+    if (!raw) return true;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return true;
+    const dateStr = raw.slice(0, 10);
+    
+    if (period.mode === "day") return dateStr <= (period.day || "");
+    if (period.mode === "month") {
+      const lastDay = new Date(period.year, period.month + 1, 0);
+      const lastDayStr = lastDay.toISOString().slice(0, 10);
+      return dateStr <= lastDayStr;
+    }
+    if (period.mode === "year") {
+      return d.getFullYear() <= period.year;
+    }
+    if (period.mode === "range") {
+      if (period.rangeTo && dateStr > period.rangeTo) return false;
+      return true;
+    }
+    return true;
+  });
+};
