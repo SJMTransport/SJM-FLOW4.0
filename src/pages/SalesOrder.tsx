@@ -242,7 +242,7 @@ const genSONo = (last: string | undefined) => {
   return `SJM.ID-0.${String(num).padStart(3, "0")}.${yr}`;
 };
 
-export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, currentUser, onSOClick, armada, sopir, logAction, pendingEditSO, setPendingEditSO }: any) => {
+export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, currentUser, onSOClick, onArmadaClick, armada, sopir, logAction, pendingEditSO, setPendingEditSO }: any) => {
   const { confirm: confirmModal, Modal: ConfirmModalUI } = useConfirm();
   const { showToast, ToastUI } = useToast();
   const canEdit = ["Admin", "Operasional"].includes(currentUser?.role);
@@ -585,9 +585,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                             {s.tgl_muat}
                           </div>
                         </td>
-                        <td className="py-3 px-4 w-full">
-                          <div className="text-[12px] font-bold text-text-main line-clamp-1 group-hover:text-blue-brand transition-colors">{s.lokasi_muat}</div>
-                          <div className="text-[10px] font-medium text-text-light opacity-70 italic">to {s.lokasi_bongkar}</div>
+                        <td className="py-3 px-4 max-w-[200px]">
+                          <div className="text-[12px] font-bold text-text-main truncate group-hover:text-blue-brand transition-colors" title={s.lokasi_muat}>{s.lokasi_muat}</div>
+                          <div className="text-[10px] font-medium text-text-light opacity-70 italic truncate" title={s.lokasi_bongkar}>to {s.lokasi_bongkar}</div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{s.customer}</div>
@@ -596,7 +596,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                           <div className="text-[12px] font-bold text-text-main">{s.no_polisi}</div>
+                           <button
+                             className="text-[12px] font-black text-accent hover:underline tabular-nums tracking-tight"
+                             onClick={(e) => { e.stopPropagation(); onArmadaClick && onArmadaClick(s.no_polisi); }}
+                           >{s.no_polisi}</button>
                            <div className="text-[10px] text-text-light font-medium">{s.nama_sopir}</div>
                         </td>
                         <td className="py-3 px-4">{statusBadge(s.status_muatan)}</td>

@@ -367,8 +367,8 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   <th className="py-2 px-4 !static">No Jurnal</th>
                   <th className="py-2 px-4 !static">No SO</th>
                   <th className="py-2 px-4 !static">Keterangan / Akun</th>
-                  <th className="py-2 px-4 !static text-right">Debit</th>
-                  <th className="py-2 px-4 !static text-right">Kredit</th>
+                  <th className="py-2 px-4 !static text-right min-w-[160px]">Debit</th>
+                  <th className="py-2 px-4 !static text-right min-w-[160px]">Kredit</th>
                   <th className="py-2 px-4 !static text-center">Aksi</th>
                 </tr>
               </thead>
@@ -392,7 +392,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   )) : <span className="text-[9px] font-bold text-text-light opacity-20 italic">None</span>}
               </td>
             </>}
-            <td className={`py-1.5 px-4 w-full ${ei === details.length - 1 ? "pb-2" : ""}`} style={{ paddingLeft: Number(e.kredit) > 0 ? 32 : 16 }}>
+            <td className={`py-1.5 px-4 max-w-[260px] ${ei === details.length - 1 ? "pb-2" : ""}`} style={{ paddingLeft: Number(e.kredit) > 0 ? 32 : 16 }}>
               {ei === 0 && <div className="text-[9px] font-bold text-text-light mb-1 opacity-50 leading-tight italic truncate uppercase tracking-tight">{j.keterangan}</div>}
               <div className="flex items-center gap-2">
                  <span className={`text-[11px] ${Number(e.debit) > 0 ? "font-bold text-text-main" : "text-text-med font-medium opacity-80 italic"}`}>
@@ -400,8 +400,8 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                  </span>
               </div>
             </td>
-            <td className={`py-1.5 px-4 tabular-nums text-right text-[11px] font-bold ${Number(e.debit) > 0 ? "text-green-brand" : "text-transparent"}`}>{Number(e.debit) > 0 ? fmt(e.debit) : "—"}</td>
-            <td className={`py-1.5 px-4 tabular-nums text-right text-[11px] font-bold ${Number(e.kredit) > 0 ? "text-red-brand" : "text-transparent"}`}>{Number(e.kredit) > 0 ? fmt(e.kredit) : "—"}</td>
+            <td className={`py-1.5 px-4 tabular-nums text-right text-[11px] font-bold whitespace-nowrap ${Number(e.debit) > 0 ? "text-green-brand" : "text-transparent"}`}>{Number(e.debit) > 0 ? fmt(e.debit) : "—"}</td>
+            <td className={`py-1.5 px-4 tabular-nums text-right text-[11px] font-bold whitespace-nowrap ${Number(e.kredit) > 0 ? "text-red-brand" : "text-transparent"}`}>{Number(e.kredit) > 0 ? fmt(e.kredit) : "—"}</td>
             {ei === 0 && (
                <td rowSpan={details.length} className="py-1.5 px-4 align-top text-center border-l border-border-main/5">
                   <div className="flex gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -421,8 +421,8 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                 <tfoot>
                   <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
                     <td colSpan={4} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Periode</td>
-                    <td className="py-3 px-4 text-right tabular-nums text-green-brand text-[12px]">{fmt(grandD)}</td>
-                    <td className="py-3 px-4 text-right tabular-nums text-red-brand text-[12px]">{fmt(grandK)}</td>
+                    <td className="py-3 px-4 text-right tabular-nums text-green-brand text-[12px] whitespace-nowrap">{fmt(grandD)}</td>
+                    <td className="py-3 px-4 text-right tabular-nums text-red-brand text-[12px] whitespace-nowrap">{fmt(grandK)}</td>
                     <td></td>
                   </tr>
                 </tfoot>

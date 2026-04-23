@@ -4,7 +4,7 @@ import { Card, SectionHeader, Icon, useToast, EmptyState } from "@/src/component
 import { api } from "@/src/api";
 import { fmt } from "../utils";
 
-export const UpdateMuatan = ({ so, setSo, onSOClick, logAction }: any) => {
+export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }: any) => {
   const { showToast, ToastUI } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -162,9 +162,12 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, logAction }: any) => {
                         </button>
                         <div>
                            <div className="text-[13px] font-black text-text-main line-clamp-1 tracking-tight">{s.customer}</div>
-                           <div className="text-[9px] font-bold text-text-light flex items-center gap-1.5 opacity-60">
-                              <Icon name="Truck" size={10} className="text-amber-500" /> {s.no_polisi || "N/A"}
-                           </div>
+                           <button
+                             className="text-[9px] font-bold text-amber-600 hover:underline flex items-center gap-1.5"
+                             onClick={(e) => { e.stopPropagation(); onArmadaClick && onArmadaClick(s.no_polisi); }}
+                           >
+                             <Icon name="Truck" size={10} className="text-amber-500" /> {s.no_polisi || "N/A"}
+                           </button>
                         </div>
                      </div>
 

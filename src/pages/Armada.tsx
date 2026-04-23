@@ -242,9 +242,9 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                                  <div className="font-bold text-[14px] text-text-main group-hover:text-amber-600 transition-colors tabular-nums">{u.unit}</div>
                               </div>
                            </td>
-                           <td className="py-4 px-6 text-right font-bold text-[13px] text-navy tabular-nums">{fmt(u.revenue)}</td>
-                           <td className="py-4 px-6 text-right font-bold text-[13px] text-red-brand tabular-nums">{fmt(u.expense)}</td>
-                           <td className="py-4 px-6 text-right">
+                           <td className="py-4 px-6 text-right font-bold text-[13px] text-navy tabular-nums whitespace-nowrap">{fmt(u.revenue)}</td>
+                           <td className="py-4 px-6 text-right font-bold text-[13px] text-red-brand tabular-nums whitespace-nowrap">{fmt(u.expense)}</td>
+                           <td className="py-4 px-6 text-right whitespace-nowrap">
                               <div className={`text-[14px] font-bold tabular-nums ${u.profit >= 0 ? "text-amber-600" : "text-red-brand"}`}>
                                  {fmt(u.profit)}
                               </div>
@@ -269,9 +269,9 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                  <tfoot>
                     <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
                        <td className="py-4 px-6 text-[11px] uppercase tracking-widest text-text-light opacity-60">Total Konsolidasi</td>
-                       <td className="py-4 px-6 text-right tabular-nums text-navy">{fmt(totalRevenue)}</td>
-                       <td className="py-4 px-6 text-right tabular-nums text-red-brand">{fmt(totalExpense)}</td>
-                       <td className="py-4 px-6 text-right tabular-nums text-amber-600">{fmt(totalProfit)}</td>
+                       <td className="py-4 px-6 text-right tabular-nums text-navy whitespace-nowrap">{fmt(totalRevenue)}</td>
+                       <td className="py-4 px-6 text-right tabular-nums text-red-brand whitespace-nowrap">{fmt(totalExpense)}</td>
+                       <td className="py-4 px-6 text-right tabular-nums text-amber-600 whitespace-nowrap">{fmt(totalProfit)}</td>
                        <td colSpan={2}></td>
                     </tr>
                  </tfoot>
@@ -627,7 +627,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                            <div className="text-[12px] font-black text-text-med tabular-nums">{r.km_terakhir?.toLocaleString()}</div>
                            <div className="text-[8px] font-black text-text-light uppercase tracking-[0.2em] opacity-40">KILOMETER</div>
                         </td>
-                        <td className="py-3 px-4 text-right font-black text-[12px] text-red-brand tabular-nums">{fmt(r.biaya)}</td>
+                        <td className="py-3 px-4 text-right font-black text-[12px] text-red-brand tabular-nums whitespace-nowrap">{fmt(r.biaya)}</td>
                         <td className="py-3 px-4 text-[10px] font-medium text-text-light italic opacity-60 max-w-[150px] truncate">{r.keterangan || "—"}</td>
                     </tr>
                     ))

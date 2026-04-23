@@ -358,12 +358,12 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                         <td className="px-4 py-2 text-[11px] tabular-nums font-bold text-text-light opacity-50">{r.kode}</td>
                         <td className="px-4 py-2 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight">{r.nama}</td>
                         <td className="px-4 py-2 text-[10px] text-text-light font-medium italic opacity-40">{r.kelompok}</td>
-                        <td className="px-4 py-2 text-right text-[12px] tabular-nums font-bold text-text-main">{fmt(r.saldo * factor)}</td>
+                        <td className="px-4 py-2 text-right text-[12px] tabular-nums font-bold text-text-main whitespace-nowrap">{fmt(r.saldo * factor)}</td>
                     </tr>
                 ))}
                 <tr className="bg-white border-b border-border-main/20">
                     <td colSpan={3} className="px-4 py-2 text-right text-[10px] font-bold text-text-light italic opacity-60">Total {label}</td>
-                    <td className="px-4 py-2 text-right text-[13px] font-black text-accent tabular-nums">{fmt(subtotal)}</td>
+                    <td className="px-4 py-2 text-right text-[13px] font-black text-accent tabular-nums whitespace-nowrap">{fmt(subtotal)}</td>
                 </tr>
                 <tr className="h-2"></tr>
             </>
@@ -454,7 +454,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
        <tr className="hover:bg-slate-50/50 transition-colors border-b border-border-main/10 group">
           <td className="py-2 px-4 text-[10px] text-text-light tabular-nums font-bold opacity-50 w-24">{kode}</td>
           <td className={`py-2 px-4 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight ${indent ? "pl-8" : "pl-4"}`}>{nama}</td>
-          <td className="py-2 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">{fmt(val)}</td>
+          <td className="py-2 px-4 text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(val)}</td>
        </tr>
     );
 
@@ -462,7 +462,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
        <tr className={highlight ? "bg-accent/5 border-b border-accent/20" : "border-b border-border-main/10"}>
           <td />
           <td className={`py-2 px-4 font-bold text-text-main ${highlight ? "text-[11px] bg-accent/5" : "text-[10px] text-text-light opacity-60 italic"}`}>{label}</td>
-          <td className={`py-2 px-4 text-right tabular-nums font-bold ${highlight ? "text-[14px] text-accent" : "text-[12px] text-text-med"}`}>{fmt(val)}</td>
+          <td className={`py-2 px-4 text-right tabular-nums font-bold whitespace-nowrap ${highlight ? "text-[14px] text-accent" : "text-[12px] text-text-med"}`}>{fmt(val)}</td>
        </tr>
     );
 
@@ -610,9 +610,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 <tr>
                   <th className="py-3 px-4">ORDER ID</th>
                   <th className="py-3 px-4">MITRA CUSTOMER</th>
-                  <th className="py-3 px-4 text-right">REVENUE</th>
-                  <th className="py-3 px-4 text-right">EXPENSE</th>
-                  <th className="py-3 px-4 text-right">PROFIT</th>
+                  <th className="py-3 px-4 text-right min-w-[160px]">REVENUE</th>
+                  <th className="py-3 px-4 text-right min-w-[160px]">EXPENSE</th>
+                  <th className="py-3 px-4 text-right min-w-[160px]">PROFIT</th>
                   <th className="py-3 px-4 text-right w-32">MARGIN</th>
                 </tr>
               </thead>
@@ -622,9 +622,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                    <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
                       <td className="py-3 px-4 text-[11px] font-black text-accent group-hover:underline underline-offset-4 decoration-accent/30">{p.order_id}</td>
                       <td className="py-3 px-4 text-[11px] font-bold text-text-main uppercase tracking-tight">{p.customer}</td>
-                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium">{fmt(p.revenue)}</td>
-                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium text-red-brand/70">{fmt(p.expense)}</td>
-                      <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black ${p.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>{fmt(p.profit)}</td>
+                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium whitespace-nowrap">{fmt(p.revenue)}</td>
+                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium text-red-brand/70 whitespace-nowrap">{fmt(p.expense)}</td>
+                      <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black whitespace-nowrap ${p.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>{fmt(p.profit)}</td>
                       <td className="py-3 px-4 text-right">
                         <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-[9px] font-black tracking-widest uppercase border ${p.margin >= 0 ? "bg-green-brand/5 text-green-brand border-green-brand/10" : "bg-red-brand/5 text-red-brand border-red-brand/10"}`}>
                            {Math.round(p.margin)}%
@@ -847,14 +847,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                                #{m.noJurnal}
                              </button>
                           </td>
-                          <td className="py-2 px-4 font-bold text-text-main leading-tight uppercase tracking-tight">{m.keterangan}</td>
-                          <td className={`py-2 px-4 text-right tabular-nums font-bold ${m.debit > 0 ? "text-green-brand" : "text-text-light opacity-30"}`}>
+                          <td className="py-2 px-4 max-w-[200px]">
+                            <div className="font-bold text-text-main leading-tight uppercase tracking-tight text-[11px] truncate" title={m.keterangan}>{m.keterangan}</div>
+                          </td>
+                          <td className={`py-2 px-4 text-right tabular-nums font-bold whitespace-nowrap ${m.debit > 0 ? "text-green-brand" : "text-text-light opacity-30"}`}>
                              {m.debit > 0 ? fmt(m.debit) : "—"}
                           </td>
-                          <td className={`py-2 px-4 text-right tabular-nums font-bold ${m.kredit > 0 ? "text-red-brand" : "text-text-light opacity-30"}`}>
+                          <td className={`py-2 px-4 text-right tabular-nums font-bold whitespace-nowrap ${m.kredit > 0 ? "text-red-brand" : "text-text-light opacity-30"}`}>
                              {m.kredit > 0 ? fmt(m.kredit) : "—"}
                           </td>
-                          <td className="py-2 px-4 text-right font-black tabular-nums border-l border-border-main/10 text-text-main">{fmt(m.saldo)}</td>
+                          <td className="py-2 px-4 text-right font-black tabular-nums border-l border-border-main/10 text-text-main whitespace-nowrap">{fmt(m.saldo)}</td>
                         </tr>
                       ))
                     )}

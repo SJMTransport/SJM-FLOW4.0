@@ -360,8 +360,8 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                   <th className="py-3 px-4">No SO / Jurnal</th>
                   <th className="py-3 px-4">{tab === "piutang" ? "Customer" : "Vendor/Armada"}</th>
                   <th className="py-3 px-4">Keterangan</th>
-                  <th className="py-3 px-4 text-right">Jumlah</th>
-                  <th className="py-3 px-4 text-right">Sisa</th>
+                  <th className="py-3 px-4 text-right min-w-[160px]">Jumlah</th>
+                  <th className="py-3 px-4 text-right min-w-[160px]">Sisa</th>
                   <th className="py-3 px-4 text-center">Status</th>
                 </tr>
               </thead>
@@ -395,8 +395,8 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                         <td className="py-3 px-4">
                           <div className="text-[11px] font-medium text-text-med max-w-xs truncate" title={r.keterangan}>{r.keterangan}</div>
                         </td>
-                        <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">{fmt(tab === "piutang" ? r.debit : r.kredit)}</td>
-                        <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black ${r.saldo > 0 ? "text-red-brand" : "text-green-brand"}`}>{fmt(r.saldo)}</td>
+                        <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(tab === "piutang" ? r.debit : r.kredit)}</td>
+                        <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black whitespace-nowrap ${r.saldo > 0 ? "text-red-brand" : "text-green-brand"}`}>{fmt(r.saldo)}</td>
                         <td className="py-3 px-4 text-center">{statusBadge(r.status)}</td>
                       </tr>
                     ))
@@ -405,8 +405,8 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                 <tfoot>
                   <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
                     <td colSpan={4} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Outcome & Outstanding</td>
-                    <td className="py-3 px-4 text-right tabular-nums text-text-main text-[12px]">{fmt(totalBayar)}</td>
-                    <td className="py-3 px-4 text-right tabular-nums text-red-brand text-[12px]">{fmt(totalSaldo)}</td>
+                    <td className="py-3 px-4 text-right tabular-nums text-text-main text-[12px] whitespace-nowrap">{fmt(totalBayar)}</td>
+                    <td className="py-3 px-4 text-right tabular-nums text-red-brand text-[12px] whitespace-nowrap">{fmt(totalSaldo)}</td>
                     <td></td>
                   </tr>
                 </tfoot>

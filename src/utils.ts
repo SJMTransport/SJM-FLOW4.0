@@ -1,17 +1,12 @@
 export const fmt = (n: number | string) => {
   const val = typeof n === "string" ? parseFloat(n) : n;
   const num = (val || 0).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return "Rp. " + num;
+  return "Rp. " + num;
 };
 
 export const fmtShort = (n: number | string) => {
   const val = typeof n === "string" ? parseFloat(n) : n;
-  if (!val) return "Rp. 0,00";
-  if (Math.abs(val) < 1e6) return fmt(val);
-  
-  // For dashboard stats, some short formatting is better if very large, 
-  // but the user said "TANPA penyederhanaan". 
-  // So I will stick to full format everywhere.
+  if (!val) return "Rp. 0,00";
   return fmt(val);
 };
 
@@ -54,7 +49,7 @@ export const filterUpToPeriod = (items: any[], period: any, dateField = "tanggal
     const d = new Date(raw);
     if (isNaN(d.getTime())) return true;
     const dateStr = raw.slice(0, 10);
-    
+
     if (period.mode === "day") return dateStr <= (period.day || "");
     if (period.mode === "month") {
       const lastDay = new Date(period.year, period.month + 1, 0);

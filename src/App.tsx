@@ -193,7 +193,7 @@ const ArmadaPositionForm = ({ armadaDetail, setGlobalArmadaDetail, setArmada, lo
 };
 
 // ─── DETAIL MODALS ──────────────────────────────────────────────────────────
-const SODetailModal = ({ data, onClose, coa, jurnal, currentUser, handleNav, setPendingEditSO, onJurnalClick }: any) => {
+const SODetailModal = ({ data, onClose, coa, jurnal, currentUser, handleNav, setPendingEditSO, onJurnalClick, onArmadaClick }: any) => {
   if (!data) return null;
   const relatedJurnals = (jurnal || []).filter((j: any) => 
     String(j.no_so || "").split(",").map((s: string) => s.trim()).includes(data.order_id)
@@ -242,7 +242,10 @@ const SODetailModal = ({ data, onClose, coa, jurnal, currentUser, handleNav, set
             <div className="grid grid-cols-2 gap-4 pt-2">
                <div>
                   <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Unit Armada</div>
-                  <div className="text-[13px] font-black text-text-main tabular-nums italic uppercase tracking-tight">{data.no_polisi || "—"}</div>
+                  <button
+                    className="text-[13px] font-black text-accent tabular-nums italic uppercase tracking-tight hover:underline"
+                    onClick={() => data.no_polisi && onArmadaClick && onArmadaClick(data.no_polisi)}
+                  >{data.no_polisi || "—"}</button>
                </div>
                <div>
                   <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Nama Sopir</div>
@@ -345,7 +348,7 @@ const SODetailModal = ({ data, onClose, coa, jurnal, currentUser, handleNav, set
     </Card>
   );
 };
-const JurnalDetailModal = ({ data, onClose }: any) => {
+const JurnalDetailModal = ({ data, onClose, onSOClick }: any) => {
   if (!data) return null;
 
   return (
@@ -368,7 +371,15 @@ const JurnalDetailModal = ({ data, onClose }: any) => {
             </div>
             <div>
                 <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Nomor SO</div>
-                <div className="text-[13px] font-black text-accent tabular-nums tracking-tighter">{data.no_so || "—"}</div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {data.no_so ? (data.no_so as string).split(",").map((s: string) => (
+                    <button
+                      key={s.trim()}
+                      onClick={() => onSOClick && onSOClick(s.trim())}
+                      className="text-[11px] font-black text-accent bg-accent/5 hover:bg-accent hover:text-white px-2 py-0.5 rounded border border-accent/20 transition-all uppercase tracking-tight"
+                    >{s.trim()}</button>
+                  )) : <span className="text-[13px] font-black text-text-light opacity-30">—</span>}
+                </div>
             </div>
             <div className="col-span-2 pt-1">
                 <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Keterangan Jurnal</div>
@@ -394,14 +405,14 @@ const JurnalDetailModal = ({ data, onClose }: any) => {
                                 <div className="text-[11px] font-black text-text-main leading-none mb-1 tabular-nums">{d.coa_kode}</div>
                                 <div className="text-[9px] font-bold text-text-light uppercase tracking-tighter opacity-60 truncate max-w-[120px]">{d.nama_akun}</div>
                             </td>
-                            <td className="px-4 py-4 text-right tabular-nums text-[11px] font-bold">
+                            <td className="px-4 py-4 text-right tabular-nums text-[11px] font-bold whitespace-nowrap min-w-[140px]">
                                {Number(d.debit) > 0 ? (
                                  <span className="text-green-brand">{fmt(d.debit)}</span>
                                ) : (
                                  <span className="text-text-light opacity-30">—</span>
                                )}
                             </td>
-                            <td className="px-4 py-4 text-right tabular-nums text-[11px] font-bold">
+                            <td className="px-4 py-4 text-right tabular-nums text-[11px] font-bold whitespace-nowrap min-w-[140px]">
                                {Number(d.kredit) > 0 ? (
                                  <span className="text-red-brand">{fmt(d.kredit)}</span>
                                ) : (
@@ -414,8 +425,8 @@ const JurnalDetailModal = ({ data, onClose }: any) => {
                 <tfoot className="bg-slate-900 border-t border-slate-700">
                     <tr>
                         <td className="px-4 py-4 text-[9px] font-black text-white/50 uppercase tracking-widest italic">BALANCE</td>
-                        <td className="px-4 py-4 text-right font-black text-[#10B981] text-[12px] tabular-nums">{fmt(data.total_debit)}</td>
-                        <td className="px-4 py-4 text-right font-black text-[#EF4444] text-[12px] tabular-nums">{fmt(data.total_kredit)}</td>
+                        <td className="px-4 py-4 text-right font-black text-[#10B981] text-[12px] tabular-nums whitespace-nowrap">{fmt(data.total_debit)}</td>
+                        <td className="px-4 py-4 text-right font-black text-[#EF4444] text-[12px] tabular-nums whitespace-nowrap">{fmt(data.total_kredit)}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -1085,8 +1096,8 @@ export default function App() {
               
               {activeModule === "operasional" && (
                 <>
-                  {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
-                  {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} logAction={logAction} />}
+                  {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
+                  {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} />}
                   {["quotation", "invoice"].includes(activeSub) && (
                     <OperasionalPage activeSub={activeSub} so={so} />
                   )}
@@ -1147,19 +1158,21 @@ export default function App() {
                       className="h-full flex items-stretch border-l border-border-main/20 shadow-2xl"
                     >
                       {modal.type === 'so' && (
-                        <SODetailModal 
-                          {...props} 
-                          coa={coa} 
-                          jurnal={jurnal} 
-                          currentUser={currentUser} 
-                          handleNav={handleNav} 
-                          setPendingEditSO={setPendingEditSO} 
+                        <SODetailModal
+                          {...props}
+                          coa={coa}
+                          jurnal={jurnal}
+                          currentUser={currentUser}
+                          handleNav={handleNav}
+                          setPendingEditSO={setPendingEditSO}
                           onJurnalClick={handleJurnalClick}
+                          onArmadaClick={handleArmadaClick}
                         />
                       )}
                       {modal.type === 'jurnal' && (
-                        <JurnalDetailModal 
-                          {...props} 
+                        <JurnalDetailModal
+                          {...props}
+                          onSOClick={handleSOClick}
                         />
                       )}
                       {modal.type === 'armada' && (
