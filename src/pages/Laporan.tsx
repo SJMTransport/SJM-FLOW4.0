@@ -242,8 +242,17 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             map[orderId].harga_pengiriman += Number(d.debit) * factor;
 
           if (kode.startsWith("4") && Number(d.kredit) > 0) {
-            const pendVal = (!d.no_so && soVals[orderId] && Number(totalSoVals) > 0)
-              ? Number(soVals[orderId]) : Number(d.kredit) * factor;
+            let pendVal: number;
+            if (d.no_so) {
+              pendVal = Number(d.kredit);
+            } else if (soVals[orderId] && Number(totalSoVals) > 0) {
+              pendVal = Number(soVals[orderId]);
+            } else {
+              // Sisa revenue setelah dikurangi soVals yang terdeklarasi dibagi rata ke SO tanpa nilai
+              const sosWithoutVals = targets.filter((id: string) => !soVals[id]);
+              const remaining = Math.max(0, Number(d.kredit) - Number(totalSoVals));
+              pendVal = sosWithoutVals.length > 0 ? remaining / sosWithoutVals.length : Number(d.kredit) / nHeader;
+            }
             map[orderId].revenue += pendVal;
           }
 
@@ -257,9 +266,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     const periodSo = filterByPeriod(so || [], period, "tgl_muat");
     return periodSo.map((s: any) => {
-      const fin = map[s.order_id] || { revenue: 0, expense: 0 };
-      const revenue = fin.revenue || (Number(s.total_harga || 0) - Number(s.nilai_pajak || 0));
-      const expense = fin.expense || s.base_harga || 0;
+      const fin = map[s.order_id];
+      const revenue = fin ? fin.revenue : (Number(s.total_harga || 0) - Number(s.nilai_pajak || 0));
+      const expense = fin ? fin.expense : (Number(s.base_harga || 0));
       const profit = revenue - expense;
       const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
       return { order_id: s.order_id, tgl: s.tgl_muat, customer: s.customer, revenue, expense, profit, margin };

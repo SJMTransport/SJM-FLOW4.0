@@ -62,7 +62,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
 
   const totalD = form.entries.reduce((s: number, e: any) => s + (parseFloat(e.debit) || 0), 0);
   const totalK = form.entries.reduce((s: number, e: any) => s + (parseFloat(e.kredit) || 0), 0);
-  const balanced = Math.abs(totalD - totalK) < 0.01 && totalD > 0;
+  const balanced = Math.abs(Math.round(totalD) - Math.round(totalK)) === 0 && totalD > 0;
 
   const updateEntry = (i: number, field: string, val: any) => {
     const entries = [...form.entries];
