@@ -251,18 +251,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             map[orderId].harga_pengiriman += Number(d.debit) * factor;
 
           if (kode.startsWith("4") && Number(d.kredit) > 0) {
-            let pendVal: number;
-            if (d.no_so) {
-              pendVal = Number(d.kredit);
-            } else if (soVals[orderId] && Number(totalSoVals) > 0) {
-              pendVal = Number(soVals[orderId]);
-            } else {
-              // Sisa revenue setelah dikurangi soVals yang terdeklarasi dibagi rata ke SO tanpa nilai
-              const sosWithoutVals = targets.filter((id: string) => !soVals[id]);
-              const remaining = Math.max(0, Number(d.kredit) - Number(totalSoVals));
-              pendVal = sosWithoutVals.length > 0 ? remaining / sosWithoutVals.length : Number(d.kredit) / nHeader;
-            }
-            map[orderId].revenue += pendVal;
+            map[orderId].revenue += Number(d.kredit) * factor;
           }
 
           // Beban operasional (5xx, kecuali PPN 553)
