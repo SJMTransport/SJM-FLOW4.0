@@ -265,9 +265,17 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             map[orderId].revenue += pendVal;
           }
 
-          if (kode.startsWith("5") && kode !== "553" && (Number(d.debit) > 0 || Number(d.kredit) > 0)) {
-            const bebanVal = (Number(d.debit) || Number(d.kredit)) * factor;
-            map[orderId].expense += bebanVal;
+          // Beban operasional (5xx, kecuali PPN 553)
+          if (kode.startsWith("5") && kode !== "553") {
+            const bVal = Math.max(Number(d.debit) || 0, Number(d.kredit) || 0);
+            if (bVal > 0) map[orderId].expense += bVal * factor;
+          }
+
+          // BUG #3 fix: Beban asuransi (67x) ikut masuk expense per SO
+          // Sebelumnya 67x tidak ditangani → biaya asuransi hilang → profit overstated
+          if (kode.startsWith("67")) {
+            const aVal = Math.max(Number(d.debit) || 0, Number(d.kredit) || 0);
+            if (aVal > 0) map[orderId].expense += aVal * factor;
           }
         });
       });
