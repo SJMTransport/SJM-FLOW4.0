@@ -31,13 +31,18 @@
   --color-oatmeal: #E2E8F0;
   --color-burning-flame: #FF8F00;
   --color-palladian: #F2F4F7;
-  
+
+  /* Financial data colors — distinct from semantic UI colors */
+  --color-profit: #059669;
+  --color-loss: #DC2626;
+  --color-revenue: #1F2937;
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.04);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.03);
-  
+
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -90,6 +95,10 @@
   .btn-primary {
     @apply bg-accent text-white rounded-lg h-10 px-4 text-[11px] font-black cursor-pointer transition-all duration-200 border-none hover:brightness-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5;
     background-color: var(--color-burning-flame);
+  }
+
+  .btn-secondary {
+    @apply bg-white text-accent border-2 border-accent rounded-lg h-10 px-4 text-[11px] font-black cursor-pointer transition-all duration-200 active:scale-95 hover:bg-accent-light inline-flex items-center gap-1.5;
   }
 
   .btn-ghost {
@@ -154,8 +163,42 @@
     @apply bg-border-dark/30 rounded-full hover:bg-border-dark transition-colors;
   }
 
+  /* Currency & number display utilities */
+  .text-currency {
+    @apply text-[13px] font-semibold tabular-nums whitespace-nowrap;
+  }
+
+  .text-number {
+    @apply font-semibold tabular-nums;
+  }
+
+  .text-profit {
+    @apply text-profit;
+  }
+
+  .text-loss {
+    @apply text-loss;
+  }
+
+  /* Badge variants */
+  .badge-success {
+    @apply inline-flex items-center py-0.5 px-2 rounded-full text-[10px] font-bold bg-green-brand-light text-green-brand border border-green-brand/10;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center py-0.5 px-2 rounded-full text-[10px] font-bold bg-yellow-brand-light text-yellow-brand border border-yellow-brand/10;
+  }
+
+  .badge-error {
+    @apply inline-flex items-center py-0.5 px-2 rounded-full text-[10px] font-bold bg-red-brand-light text-red-brand border border-red-brand/10;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center py-0.5 px-2 rounded-full text-[10px] font-bold bg-blue-brand-light text-blue-brand border border-blue-brand/10;
+  }
+
   .stat-label {
-    @apply text-[9px] font-bold text-text-light mb-0.5 opacity-90;
+    @apply text-[10px] font-bold text-text-light mb-0.5 opacity-90;
   }
 
   .stat-value {
@@ -163,11 +206,17 @@
   }
   
   table th {
-    @apply sticky top-0 z-[20] px-3 py-2 text-[9px] font-black text-text-light bg-slate-50/95 backdrop-blur-md border-b border-border-main/60 text-left uppercase tracking-widest shadow-[0_1px_0_0_rgba(0,0,0,0.05)];
+    @apply sticky top-0 z-[20] px-4 py-2.5 text-[11px] font-black text-text-light bg-slate-50/95 backdrop-blur-md border-b border-border-main/60 text-left uppercase tracking-widest shadow-[0_1px_0_0_rgba(0,0,0,0.05)];
   }
-  
+
   table td {
-    @apply px-3 py-1.5 text-[11px] font-medium border-b border-border-main/10 text-text-main bg-white/30 transition-colors;
+    @apply px-4 py-2.5 text-[13px] font-medium border-b border-border-main/10 text-text-main bg-white/30 transition-colors;
+  }
+
+  /* Right-align currency columns in tables */
+  table td.currency,
+  table th.currency {
+    @apply text-right text-currency;
   }
 
   tr:hover td {
@@ -274,14 +323,14 @@
   }
   .kpi-card:hover { @apply shadow-md; }
   .kpi-card-label {
-    @apply text-[11px] font-bold text-text-light uppercase tracking-[0.06em] leading-none opacity-70;
+    @apply text-[12px] font-bold text-text-light uppercase tracking-[0.06em] leading-none opacity-70;
   }
   .kpi-card-value {
     @apply text-[22px] font-black text-text-main tracking-tight leading-none tabular-nums
            whitespace-nowrap overflow-hidden text-ellipsis;
   }
   .kpi-card-sub {
-    @apply text-[10px] font-medium text-text-light opacity-60 leading-tight line-clamp-1;
+    @apply text-[11px] font-medium text-text-light opacity-60 leading-tight line-clamp-1;
   }
 
   /* Content card: consistent rounded, border, bg for table wrappers */
