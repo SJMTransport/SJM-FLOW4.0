@@ -254,8 +254,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             const pendVal = (!d.no_so && soVals[orderId] && totalSoVals > 0)
               ? Number(soVals[orderId])
               : Number(d.kredit) * factor;
-            map[orderId].pendapatan += pendVal;
-            map[orderId].total_harga += pendVal;
             map[orderId].revenue += pendVal;
           }
 
