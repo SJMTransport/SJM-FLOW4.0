@@ -773,7 +773,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           debit: Number(d.debit || 0),
           kredit: Number(d.kredit || 0)
         }))
-    ).sort((a: any, b: any) => a.tanggal.localeCompare(b.tanggal));
+    ).sort((a: any, b: any) =>
+      a.tanggal.localeCompare(b.tanggal) || a.noJurnal.localeCompare(b.noJurnal)
+    );
 
     // 3. Compute running balance
     let currentBalance = openingBalance;
