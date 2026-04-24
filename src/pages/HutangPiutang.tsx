@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { C } from "@/src/constants";
-import { fmt, fmtShort, filterByPeriod } from "@/src/utils";
+import { fmt, fmtShort } from "@/src/utils";
 import { Card, SectionHeader, StatCard, useConfirm, statusBadge, PeriodFilter, EmptyState, Icon, PageShell, KPIGrid } from "@/src/components/SJMComponents";
 
 export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClick, onJurnalClick, piutang = [], onGoToJurnal, prefill, onPrefillUsed }: any) => {
@@ -50,19 +50,21 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
   const piutangRows = useMemo(() => {
     const map: any = {};
     const piutangCoas = (coa || []).filter((c: any) => c.sub_kelompok === "Piutang Usaha" || c.kode === "112").map((c: any) => c.kode);
-    
-    filterByPeriod(jurnal, period).forEach((j: any) => {
+
+    // BUG #5 fix: COA 112 adalah balance sheet account — harus kumulatif dari semua waktu.
+    // Pakai semua jurnal (bukan filterByPeriod) agar piutang lama yang belum lunas tetap muncul.
+    (jurnal || []).forEach((j: any) => {
       const headerSOs = j.no_so ? j.no_so.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
       const legacySO  = headerSOs.length === 1 ? headerSOs[0] : "";
 
       (j.jurnal_detail || []).forEach((d: any) => {
         if (!piutangCoas.includes(d.coa_kode)) return;
         const detailSO = d.no_so || legacySO || "";
-        const key = detailSO || j.id; 
+        const key = detailSO || j.id;
         const soData = soMap[detailSO] || {};
         if (!map[key]) {
           map[key] = {
-            key, no_so: detailSO, 
+            key, no_so: detailSO,
             tanggal: j.tanggal, keterangan: j.keterangan || j.no_jurnal,
             customer: soData.customer || j.keterangan || "—",
             debit: 0, kredit: 0, no_jurnal_list: []
@@ -79,13 +81,16 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
       saldo: r.debit - r.kredit,
       status: (r.debit - r.kredit) <= 0 ? "Lunas" : r.kredit > 0 ? "Parsial" : "Belum Lunas"
     }));
-  }, [jurnal, period, coa, soMap]);
+  }, [jurnal, coa, soMap]);
 
   const hutangRows = useMemo(() => {
     const map: any = {};
     const hutangCoas = (coa || []).filter((c: any) => c.kelompok === "Liabilitas").map((c: any) => c.kode);
 
-    filterByPeriod(jurnal, period).forEach((j: any) => {
+    // BUG #5 fix: COA 2xx (Liabilitas) adalah balance sheet account — harus kumulatif.
+    // Pakai semua jurnal agar hutang lama yang belum lunas tetap muncul di outstanding.
+    // Key = coa_kode + '-' + no_so agar 1 SO yang punya hutang di 211 dan 214 tidak merge.
+    (jurnal || []).forEach((j: any) => {
       const headerSOs = j.no_so ? j.no_so.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
       const legacySO  = headerSOs.length === 1 ? headerSOs[0] : "";
 
@@ -96,7 +101,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
         const soData = soMap[detailSO] || {};
         if (!map[key]) {
           map[key] = {
-            key, no_so: detailSO, 
+            key, no_so: detailSO,
             tanggal: j.tanggal, keterangan: j.keterangan || j.no_jurnal,
             customer: soData.customer || "—",
             vendor: soData.vendor || "—",
@@ -111,10 +116,10 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
     });
     return Object.values(map).map((r: any) => ({
       ...r,
-      saldo: r.kredit - r.debit, 
+      saldo: r.kredit - r.debit,
       status: (r.kredit - r.debit) <= 0 ? "Lunas" : r.debit > 0 ? "Parsial" : "Belum Lunas"
     }));
-  }, [jurnal, period, coa, soMap]);
+  }, [jurnal, coa, soMap]);
 
   // Aging Logic
   const piutangOutstanding = useMemo(() => {
