@@ -93,7 +93,12 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
 
     const parseNumSafe = (val: any) => {
       if (!val) return 0;
-      const s = String(val).replace(/[^0-9.-]/g, "");
+      let s = String(val).trim().replace(/[^0-9.,]/g, "");
+      if (!s) return 0;
+      // Indonesian format: titik = ribuan, koma = desimal → "16.000.000,50"
+      if (s.includes(",")) return parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0;
+      // Multiple titik = pemisah ribuan → "16.000.000"
+      if ((s.match(/\./g) || []).length > 1) return parseFloat(s.replace(/\./g, "")) || 0;
       return parseFloat(s) || 0;
     };
 
