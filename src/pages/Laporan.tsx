@@ -319,11 +319,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const pnd = activeItems.filter(c => c.kelompok === "Pendapatan");
     const bbn = activeItems.filter(c => c.kelompok === "Beban");
 
-    const totalAset = aset.reduce((s, c) => s + c.saldo, 0);
-    const totalLiab = liab.reduce((s, c) => s + (c.saldo * -1), 0);
-    const totalEku = eku.reduce((s, c) => s + (c.saldo * -1), 0);
-    const totalPnd = pnd.reduce((s, c) => s + (c.saldo * -1), 0);
-    const totalBbn = bbn.reduce((s, c) => s + c.saldo, 0);
+    // tbNeraca sudah menyimpan saldo positif untuk semua kelompok akun:
+    // - Aset/Beban (normal Debit):  saldo = debit - kredit  → positif = ada saldo
+    // - Liab/Eku/Pnd (normal Kredit): saldo = kredit - debit → positif = ada saldo
+    // Mengalikan dengan -1 DI SINI adalah SALAH — itu menyebabkan totalPassiva negatif.
+    const totalAset   = aset.reduce((s, c) => s + c.saldo, 0);
+    const totalLiab   = liab.reduce((s, c) => s + c.saldo, 0);
+    const totalEku    = eku.reduce((s, c) => s + c.saldo, 0);
+    const totalPnd    = pnd.reduce((s, c) => s + c.saldo, 0);
+    const totalBbn    = bbn.reduce((s, c) => s + c.saldo, 0);
 
     const netIncome = totalPnd - totalBbn;
     const totalPassiva = totalLiab + totalEku + netIncome;
@@ -349,9 +353,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         };
 
         addSection("Aset", aset, 1);
-        addSection("Liabilitas", liab, -1);
-        addSection("Ekuitas", eku, -1);
-        addSection("Pendapatan", pnd, -1);
+        addSection("Liabilitas", liab, 1);
+        addSection("Ekuitas", eku, 1);
+        addSection("Pendapatan", pnd, 1);
         addSection("Beban", bbn, 1);
         
         rows.push({ kode: "", nama: "RINGKASAN", kelompok: "", saldo: "" });
@@ -426,9 +430,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             </thead>
             <tbody>
                 <CategoryTable label="Aset" items={aset} factor={1} />
-                <CategoryTable label="Liabilitas" items={liab} factor={-1} />
-                <CategoryTable label="Ekuitas" items={eku} factor={-1} />
-                <CategoryTable label="Pendapatan" items={pnd} factor={-1} />
+                <CategoryTable label="Liabilitas" items={liab} factor={1} />
+                <CategoryTable label="Ekuitas" items={eku} factor={1} />
+                <CategoryTable label="Pendapatan" items={pnd} factor={1} />
                 <CategoryTable label="Beban" items={bbn} factor={1} />
             </tbody>
             <tfoot>
