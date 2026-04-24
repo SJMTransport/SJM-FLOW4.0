@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { C } from "@/src/constants";
-import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, Icon } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, Icon, PageShell } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { fmt } from "@/src/utils";
 import { api, authActions } from "@/src/api";
@@ -120,7 +120,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
   if (activeSub === "coa") {
     const filtered = (coa || []).filter((c: any) => !search || c.nama?.toLowerCase().includes(search.toLowerCase()) || c.kode?.toLowerCase().includes(search.toLowerCase()));
     return (
-      <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+      <PageShell>
         <ModalUI />
         <ToastUI />
         <SectionHeader 
@@ -260,13 +260,13 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
              </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
 
   if (activeSub === "saldoawal") {
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <ToastUI />
         <SectionHeader 
             title="Konfigurasi Saldo Awal" 
@@ -329,14 +329,14 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                 </table>
             </div>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
   if (activeSub === "users") {
     const filtered = (users || []).filter((u: any) => !search || u.nama?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()));
     return (
-      <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+      <PageShell>
         <ModalUI />
         <ToastUI />
         <SectionHeader 
@@ -467,13 +467,14 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
              </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
 
   if (activeSub === "password") {
     return (
-      <div className="fade-up max-w-[500px] mx-auto py-12 pb-8">
+      <PageShell>
+        <div className="max-w-[500px] mx-auto">
         <ToastUI />
         <SectionHeader title="Keamanan" sub="Perbarui kredensial login Anda" />
         <Card className="p-8 space-y-5 shadow-2xl shadow-slate-200/50">
@@ -503,12 +504,13 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                 {loading ? 'Sedang memperbarui...' : 'Simpan Kredensial Baru'}
             </button>
         </Card>
-      </div>
+        </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="fade-up space-y-6">
+    <PageShell>
         <SectionHeader title="Master Data" sub={`Menu ${activeSub}`} />
         <Card className="flex flex-col items-center justify-center p-20 text-center bg-slate-50/50 border-dashed border-2 border-border-main/50">
             <div className="w-20 h-20 rounded-3xl bg-white shadow-xl flex items-center justify-center mb-6 border border-border-main/30">
@@ -519,7 +521,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                 Konfigurasi <span className="text-accent uppercase">{activeSub}</span> sedang disiapkan untuk mendukung operasional Anda.
             </p>
         </Card>
-    </div>
+    </PageShell>
   );
 };
 

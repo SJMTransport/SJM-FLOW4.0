@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { C } from "@/src/constants";
 import { fmt, fmtShort, filterByPeriod } from "@/src/utils";
-import { Card, SectionHeader, StatCard, useConfirm, statusBadge, PeriodFilter, EmptyState, Icon } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, StatCard, useConfirm, statusBadge, PeriodFilter, EmptyState, Icon, PageShell, KPIGrid } from "@/src/components/SJMComponents";
 
 export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClick, onJurnalClick, piutang = [], onGoToJurnal, prefill, onPrefillUsed }: any) => {
   const [tab, setTab] = useState("piutang");
@@ -226,11 +226,11 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
 
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <KPIGrid cols={3}>
           <StatCard label="Lewat Jatuh Tempo" value={overdue.length} sub={fmtShort(totalO)} color="var(--color-red-brand)" icon="AlertTriangle" />
           <StatCard label="Mendekati Tempo" value={warning.length} sub={fmtShort(totalW)} color="var(--color-accent)" icon="Clock" />
           <StatCard label="Dalam Tempo" value={normal.length} sub={fmtShort(totalN)} color="var(--color-green-brand)" icon="CheckCircle" />
-        </div>
+        </KPIGrid>
         {items.length === 0 ? (
           <Card className="py-20 flex flex-col items-center justify-center text-center opacity-40">
              <Icon name="CheckCircle" size={48} className="text-green-brand mb-4" />
@@ -266,7 +266,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
   const isNotifTab = tab.startsWith("notif");
 
   return (
-    <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+    <PageShell>
       <SectionHeader title="Hutang & Piutang" sub="Monitoring saldo outstanding mitra & customer" />
 
       {showPrefillBanner && prefillData && (
@@ -292,7 +292,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
         </div>
       )}
       
-      <div className="flex gap-4 border-b border-border-main mb-3 overflow-x-auto pb-px">
+      <div className="tab-bar">
         {[
           ["piutang", "Piutang Usaha"], 
           ["hutang", "Hutang Usaha"],
@@ -346,11 +346,11 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <KPIGrid cols={3}>
             <StatCard label={`Total ${tab === 'piutang' ? 'Tagihan' : 'Hutang'}`} value={fmtShort(totalTagih)} color="var(--color-accent)" icon="TrendingUp" />
             <StatCard label="Sudah Dibayar" value={fmtShort(totalBayar)} color="var(--color-green-brand)" icon="CheckCircle" />
             <StatCard label="Sisa Outstanding" value={fmtShort(totalSaldo)} color="var(--color-red-brand)" icon="AlertCircle" />
-          </div>
+          </KPIGrid>
 
           <div className="table-container max-h-[calc(100vh-340px)]">
             <table className="w-full border-collapse">
@@ -414,6 +414,6 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
             </div>
         </>
       )}
-    </div>
+    </PageShell>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { C } from "@/src/constants";
-import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, PeriodFilter, Icon, StatCard, FeedbackButton } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, PeriodFilter, Icon, StatCard, FeedbackButton, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
 import { fmt, fmtShort, filterByPeriod } from "@/src/utils";
 
@@ -183,7 +183,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
     const filteredUnits = currentTbPerUnit.filter(u => !search || u.unit.toLowerCase().includes(search.toLowerCase()));
 
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <SectionHeader 
           title="Analisis Finansial Per Unit" 
           sub="Ringkasan performa pendapatan dan beban operasional setiap armada" 
@@ -194,26 +194,26 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
           }
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <StatCard 
-              label="Total Revenue" 
-              value={fmt(totalRevenue)} 
-              icon="TrendingUp" 
-              color="var(--color-navy)" 
+        <KPIGrid cols={3}>
+           <StatCard
+              label="Total Revenue"
+              value={fmt(totalRevenue)}
+              icon="TrendingUp"
+              color="var(--color-navy)"
            />
-           <StatCard 
-              label="Total Expense" 
-              value={fmt(totalExpense)} 
-              icon="TrendingDown" 
-              color="var(--color-red-brand)" 
+           <StatCard
+              label="Total Expense"
+              value={fmt(totalExpense)}
+              icon="TrendingDown"
+              color="var(--color-red-brand)"
            />
-           <StatCard 
-              label="Grand Profit" 
-              value={fmt(totalProfit)} 
-              icon="BarChart3" 
-              color={totalProfit >= 0 ? "var(--color-accent)" : "var(--color-red-brand)"} 
+           <StatCard
+              label="Grand Profit"
+              value={fmt(totalProfit)}
+              icon="BarChart3"
+              color={totalProfit >= 0 ? "var(--color-accent)" : "var(--color-red-brand)"}
            />
-        </div>
+        </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
            <div className="overflow-x-auto">
@@ -278,14 +278,14 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
               </table>
            </div>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
   if (activeSub === "unit") {
     const filtered = (armada || []).filter((a: any) => !search || a.no_polisi?.toLowerCase().includes(search.toLowerCase()) || a.merk?.toLowerCase().includes(search.toLowerCase()));
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <ConfirmModalUI />
         <ToastUI />
         <SectionHeader 
@@ -423,14 +423,14 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
              </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
 
   if (activeSub === "dokumen") {
     const filtered = (dokumen || []).filter((d: any) => !search || d.no_polisi?.toLowerCase().includes(search.toLowerCase()) || d.nama_dokumen?.toLowerCase().includes(search.toLowerCase()));
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <ConfirmModalUI />
         <ToastUI />
         <SectionHeader 
@@ -564,14 +564,14 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
              </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
 
   if (activeSub === "service") {
     const filtered = (service || []).filter((s: any) => !search || s.no_polisi?.toLowerCase().includes(search.toLowerCase()) || s.jenis_service?.toLowerCase().includes(search.toLowerCase()));
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <ToastUI />
         <SectionHeader 
           title="Log Pemeliharaan" 
@@ -697,13 +697,13 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
              </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
   if (activeSub === "sopir") {
     const filtered = (sopir || []).filter((s: any) => !search || s.nama?.toLowerCase().includes(search.toLowerCase()));
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <ToastUI />
         <SectionHeader 
           title="Manajemen Pengemudi" 
@@ -814,7 +814,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
              </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
 

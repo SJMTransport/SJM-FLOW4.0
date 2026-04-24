@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { C, STATUS_SO, STATUS_COLOR, STATUS_BG } from "../constants";
-import { Card, SectionHeader, Icon, useToast, EmptyState } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, Icon, useToast, EmptyState, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
 import { fmt } from "../utils";
 
@@ -111,7 +111,7 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
   };
 
   return (
-    <div className="max-w-full mx-auto space-y-4 pb-8 fade-up">
+    <PageShell>
       <ToastUI />
       
       <SectionHeader 
@@ -119,25 +119,25 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
         sub="Kelola pergerakan logistik dan status pengiriman armada SJM" 
       />
       
-      <div className="flex flex-col lg:flex-row gap-3 mb-3 items-stretch lg:items-center">
-        <div className="flex-1 min-w-0">
-          <div className="relative group max-w-md">
+      <ActionBar
+        left={
+          <div className="relative group">
             <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50 group-focus-within:text-accent transition-all duration-300" />
-            <input 
-                className="input-field pl-10 h-10 bg-white border-border-main/40 focus:border-accent text-[11px] font-bold" 
-                placeholder="Cari Kode SO, Pelanggan, atau Unit..." 
-                value={search || ""} 
-                onChange={e => setSearch(e.target.value)} 
+            <input
+              className="input-field pl-10 bg-white border-border-main/40 focus:border-accent text-[11px] font-bold"
+              placeholder="Cari Kode SO, Pelanggan, atau Unit..."
+              value={search || ""}
+              onChange={e => setSearch(e.target.value)}
             />
           </div>
-        </div>
-        <div className="shrink-0">
-           <select className="input-field h-10 w-full lg:w-64 font-bold text-[11px] bg-white border-border-main/40 focus:border-accent" value={statusFilter || "all"} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="all">Semua Status Muat</option>
-              {STATUS_SO.map(st => <option key={st} value={st}>{st}</option>)}
-           </select>
-        </div>
-      </div>
+        }
+        right={
+          <select className="input-field w-56 font-bold text-[11px] bg-white border-border-main/40 focus:border-accent" value={statusFilter || "all"} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="all">Semua Status Muat</option>
+            {STATUS_SO.map(st => <option key={st} value={st}>{st}</option>)}
+          </select>
+        }
+      />
 
       <div className="space-y-3">
         {filtered.length === 0 ? (
@@ -382,6 +382,6 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
           })
         )}
       </div>
-    </div>
+    </PageShell>
   );
 };

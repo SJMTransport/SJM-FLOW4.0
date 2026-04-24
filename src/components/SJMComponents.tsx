@@ -39,43 +39,66 @@ export const Spark = ({ data = [], color = "#F97316" }: any) => {
   );
 };
 
+// ─── DESIGN SYSTEM LAYOUT COMPONENTS ───────────────────────────────────────
+
+/** Unified page shell — max 1320px, 24px horizontal padding */
+export const PageShell = ({ children, className = "" }: any) => (
+  <div className={`page-shell fade-up ${className}`}>{children}</div>
+);
+
+/** Mandatory page header: title left, period/actions right. 16px below. */
+export const PageHeader = ({ title, sub, action }: any) => (
+  <div className="ph-block">
+    <div>
+      <h1 className="ph-title">{title}</h1>
+      {sub && <p className="ph-sub">{sub}</p>}
+    </div>
+    {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
+  </div>
+);
+
+/** Action bar: left = primary buttons, right = filters. All items 40px. 24px below. */
+export const ActionBar = ({ left, right, className = "" }: any) => (
+  <div className={`action-bar ${className}`}>
+    <div className="action-bar-left">{left}</div>
+    <div className="action-bar-right">{right}</div>
+  </div>
+);
+
+/** KPI grid: locked 16px gap, each card 128px. 32px below. */
+export const KPIGrid = ({ children, cols = 3, className = "" }: any) => (
+  <div className={`kpi-grid kpi-grid-${cols} ${className}`}>{children}</div>
+);
+
+/** Fixed-height KPI card (128px). Icon top-right, label top-left, value middle, sub bottom. */
 export const StatCard = ({ label, value, sub, color, delay = 0, sparkData, sparkColor, icon }: any) => (
-  <Card style={{ animationDelay: `${delay}ms` }} className="fade-up relative overflow-hidden flex flex-col justify-between min-h-[100px]">
-    <div className="flex justify-between items-start">
-      <div>
-        <div className="text-[10px] font-bold text-text-light mb-1 opacity-60 leading-none">{label}</div>
-        <div className="text-xl font-black text-text-main tracking-tighter leading-none">{value}</div>
-      </div>
+  <div className="kpi-card fade-up" style={{ animationDelay: `${delay}ms` }}>
+    <div className="flex items-start justify-between gap-2">
+      <div className="kpi-card-label">{label}</div>
       {icon && (
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color || "var(--color-accent)"}10`, color: color || "var(--color-accent)" }}>
-           <Icon name={icon} size={18} />
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: `${color || "var(--color-accent)"}18`, color: color || "var(--color-accent)" }}
+        >
+          <Icon name={icon} size={16} />
         </div>
       )}
     </div>
-    <div className="mt-4 flex items-end justify-between gap-4">
-      {sub && (
-        <div className="text-[10px] font-bold text-text-light flex items-center gap-1.5 opacity-70">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: color || "var(--color-accent)" }} />
-          {sub}
-        </div>
-      )}
+    <div className="kpi-card-value" style={{ color: color || undefined }}>{value}</div>
+    <div className="flex items-end justify-between gap-2">
+      {sub && <div className="kpi-card-sub">{sub}</div>}
       {sparkData && sparkData.length > 0 && (
-        <div className="w-20 h-6 opacity-60 shrink-0">
+        <div className="w-16 h-5 opacity-50 shrink-0">
           <Spark data={sparkData} color={sparkColor || color || "var(--color-accent)"} />
         </div>
       )}
     </div>
-  </Card>
+  </div>
 );
 
+/** Legacy SectionHeader — kept for backward compat, delegates to PageHeader */
 export const SectionHeader = ({ title, sub, action }: any) => (
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-    <div>
-      <h2 className="text-xl font-black text-text-main tracking-tighter leading-none">{title}</h2>
-      {sub && <p className="text-[10px] font-bold text-text-light mt-1 whitespace-nowrap opacity-50 uppercase tracking-widest">{sub}</p>}
-    </div>
-    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2">{action}</div>
-  </div>
+  <PageHeader title={title} sub={sub} action={action} />
 );
 
 export const Stepper = ({ steps, currentStep, isCancelled = false }: { steps: string[], currentStep: number, isCancelled?: boolean }) => (

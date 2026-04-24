@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { C } from "@/src/constants";
 import { fmt } from "@/src/utils";
-import { Card, SectionHeader, EmptyState, statusBadge, Icon } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, statusBadge, Icon, PageShell } from "@/src/components/SJMComponents";
 
 export const OperasionalPage = ({ activeSub, so }: any) => {
     const [search, setSearch] = React.useState("");
@@ -11,7 +11,7 @@ export const OperasionalPage = ({ activeSub, so }: any) => {
           .filter((s: any) => !search || s.customer?.toLowerCase().includes(search.toLowerCase()) || s.order_id?.toLowerCase().includes(search.toLowerCase()));
         
         return (
-            <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+            <PageShell>
                 <SectionHeader 
                     title="Quotation" 
                     sub="Penawaran harga kepada customer potensial" 
@@ -66,7 +66,7 @@ export const OperasionalPage = ({ activeSub, so }: any) => {
                         </table>
                     </div>
                 </Card>
-            </div>
+            </PageShell>
         );
     }
 
@@ -75,7 +75,7 @@ export const OperasionalPage = ({ activeSub, so }: any) => {
           .filter((s: any) => !search || s.customer?.toLowerCase().includes(search.toLowerCase()) || s.no_invoice?.toLowerCase().includes(search.toLowerCase()) || s.order_id?.toLowerCase().includes(search.toLowerCase()));
         
         return (
-            <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+            <PageShell>
                 <SectionHeader title="Invoice" sub="Daftar tagihan pengiriman yang telah diterbitkan" />
                 
         <div className="flex flex-col md:flex-row gap-3 items-center">
@@ -128,12 +128,12 @@ export const OperasionalPage = ({ activeSub, so }: any) => {
                         </table>
                     </div>
                 </Card>
-            </div>
+            </PageShell>
         );
     }
 
     return (
-        <div className="fade-up space-y-6 max-w-full mx-auto pb-8">
+        <PageShell>
             <SectionHeader title="Operasional" sub={`Menu ${activeSub}`} />
             <Card className="flex flex-col items-center justify-center p-20 text-center bg-slate-50/50 border-dashed border-2 border-border-main/50">
                 <div className="w-20 h-20 rounded-3xl bg-white shadow-xl flex items-center justify-center mb-6 border border-border-main/30">
@@ -144,7 +144,7 @@ export const OperasionalPage = ({ activeSub, so }: any) => {
                     Fitur kontainer <span className="text-accent uppercase">{activeSub}</span> sedang dalam proses integrasi sistem dan akan segera tersedia.
                 </p>
             </Card>
-        </div>
+        </PageShell>
     );
 };
 

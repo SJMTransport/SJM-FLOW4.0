@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { C } from "@/src/constants";
-import { Card, SectionHeader, Icon, useConfirm, useToast } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, Icon, useConfirm, useToast, PageShell } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
 import { fmt } from "@/src/utils";
 
@@ -47,7 +47,7 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
   };
 
   return (
-    <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+    <PageShell>
       <ConfirmModalUI />
       <ToastUI />
       <SectionHeader title="Persetujuan Jurnal" sub="Validasi dan setujui entri jurnal secara massal untuk posting final"
@@ -111,6 +111,6 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
           </table>
         </div>
       </Card>
-    </div>
+    </PageShell>
   );
 };

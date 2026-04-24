@@ -88,16 +88,16 @@
   }
   
   .btn-primary {
-    @apply bg-accent text-white rounded-md py-1.5 px-3 text-[11px] font-black cursor-pointer transition-all duration-200 border-none hover:brightness-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-accent text-white rounded-lg h-10 px-4 text-[11px] font-black cursor-pointer transition-all duration-200 border-none hover:brightness-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5;
     background-color: var(--color-burning-flame);
   }
-  
+
   .btn-ghost {
-    @apply bg-white text-text-med border border-border-main rounded-md py-1.5 px-3 text-[11px] font-bold cursor-pointer transition-all duration-200 active:scale-95 hover:border-accent hover:text-accent hover:bg-accent-light;
+    @apply bg-white text-text-med border border-border-main rounded-lg h-10 px-4 text-[11px] font-bold cursor-pointer transition-all duration-200 active:scale-95 hover:border-accent hover:text-accent hover:bg-accent-light inline-flex items-center gap-1.5;
   }
-  
+
   .input-field {
-    @apply w-full bg-white border border-border-main rounded-xl h-[38px] px-3.5 text-text-main text-[12px] font-medium transition-all duration-200 focus:ring-4 focus:ring-accent/5 focus:border-accent shadow-sm flex items-center placeholder:text-text-light/80;
+    @apply w-full bg-white border border-border-main rounded-xl h-10 px-3.5 text-text-main text-[12px] font-medium transition-all duration-200 focus:ring-4 focus:ring-accent/5 focus:border-accent shadow-sm flex items-center placeholder:text-text-light/80;
   }
   
   .card-modern {
@@ -224,6 +224,75 @@
   
   .chip-so { @apply bg-blue-brand-light text-blue-brand py-[1.5px] px-[6px] rounded-[4px] text-[10px] font-bold whitespace-nowrap cursor-pointer hover:bg-blue-brand hover:text-white transition-all border border-blue-brand/10; }
   .chip-jurnal { @apply bg-accent-light text-accent py-[1.5px] px-[6px] rounded-[4px] text-[10px] font-bold whitespace-nowrap border border-accent/10; }
+
+  /* ─── DESIGN SYSTEM LAYOUT PRIMITIVES ───────────────────────────────── */
+
+  /* Unified page shell: max 1320px, 24px side padding, 48px bottom */
+  .page-shell {
+    @apply w-full max-w-[1320px] mx-auto px-6 pb-12;
+  }
+
+  /* Page header row: title left, period/actions right */
+  .ph-block {
+    @apply flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4;
+  }
+  .ph-title {
+    @apply text-[20px] font-black text-text-main tracking-tight leading-tight;
+  }
+  .ph-sub {
+    @apply text-[11px] font-bold text-text-light opacity-60 uppercase tracking-[0.08em] mt-1;
+  }
+
+  /* Action bar: 40px height for all controls, 8px gaps */
+  .action-bar {
+    @apply flex flex-wrap items-center justify-between gap-2 mb-6;
+  }
+  .action-bar-left  { @apply flex items-center gap-2; }
+  .action-bar-right { @apply flex items-center gap-2; }
+
+  /* Export button group (shared border, no inner rounded) */
+  .btn-export-group {
+    @apply flex h-10 bg-white border border-border-main rounded-lg overflow-hidden shadow-sm;
+  }
+  .btn-export-group button {
+    @apply flex items-center gap-1.5 px-4 text-[10px] font-bold transition-colors border-r border-border-main last:border-r-0 hover:bg-slate-50;
+  }
+
+  /* KPI grid: locked 16px gap, each card 128px tall */
+  .kpi-grid {
+    @apply grid grid-cols-1 gap-4 mb-8;
+  }
+  .kpi-grid-2 { @apply sm:grid-cols-2; }
+  .kpi-grid-3 { @apply sm:grid-cols-3; }
+  .kpi-grid-4 { @apply sm:grid-cols-2 lg:grid-cols-4; }
+  .kpi-grid-5 { @apply sm:grid-cols-3 lg:grid-cols-5; }
+
+  /* KPI card: fixed height, fixed structure */
+  .kpi-card {
+    @apply h-[128px] p-5 bg-white rounded-2xl border border-border-main/50 shadow-sm
+           flex flex-col justify-between overflow-hidden relative transition-shadow duration-300;
+  }
+  .kpi-card:hover { @apply shadow-md; }
+  .kpi-card-label {
+    @apply text-[11px] font-bold text-text-light uppercase tracking-[0.06em] leading-none opacity-70;
+  }
+  .kpi-card-value {
+    @apply text-[22px] font-black text-text-main tracking-tight leading-none tabular-nums
+           whitespace-nowrap overflow-hidden text-ellipsis;
+  }
+  .kpi-card-sub {
+    @apply text-[10px] font-medium text-text-light opacity-60 leading-tight line-clamp-1;
+  }
+
+  /* Content card: consistent rounded, border, bg for table wrappers */
+  .content-card {
+    @apply bg-white rounded-2xl border border-border-main/50 shadow-sm overflow-hidden;
+  }
+
+  /* Tab bar: locked height and border style */
+  .tab-bar {
+    @apply flex gap-0 border-b border-border-main overflow-x-auto mb-6;
+  }
 }
 
 @keyframes fadeUp {

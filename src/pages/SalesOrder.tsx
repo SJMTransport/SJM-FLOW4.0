@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import { C, STATUS_SO, STATUS_COLOR, STATUS_BG } from "../constants";
 import { fmt, fmtShort, filterByPeriod, today } from "@/src/utils";
-import { Card, SectionHeader, StatCard, useConfirm, PeriodFilter, Icon, EmptyState, useToast, statusBadge, Stepper, ModalShell, FeedbackButton } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, StatCard, useConfirm, PeriodFilter, Icon, EmptyState, useToast, statusBadge, Stepper, ModalShell, FeedbackButton, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
 import { Loader2 } from "lucide-react";
@@ -452,11 +452,11 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   filtered.forEach((x: any) => { if (statusCount[x.status_muatan] !== undefined) statusCount[x.status_muatan]++; });
 
   return (
-    <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+    <PageShell>
       <ConfirmModalUI />
       <ToastUI />
       <SectionHeader title="Sales Order" sub={`${so.length} SO tersimpan`}
-        action={canEdit && <button className="btn-primary flex items-center gap-2" onClick={openNew}><Icon name="Plus" size={16} /> SO Baru</button>} />
+        action={canEdit && <button className="btn-primary" onClick={openNew}><Icon name="Plus" size={16} /> SO Baru</button>} />
 
       <div className="flex gap-2 border-b border-border-main mb-3 overflow-x-auto pb-px">
         {[
@@ -488,42 +488,27 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       )}
 
       {(tab === "list" || tab === "form") && (
-        <div className="space-y-4">
-          <div className="flex flex-col lg:flex-row gap-3 justify-between items-start lg:items-center">
-            <div className="flex-1 w-full lg:max-w-2xl">
-              <PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} onAdd={canEdit ? openNew : null} />
-            </div>
-            
-            {canEdit && selected.length > 0 && (
-              <div className="flex items-center gap-2 p-1.5 bg-slate-50 border border-border-main rounded-xl animate-in slide-in-from-right-4">
-                <span className="text-[10px] font-bold text-text-med px-2 italic">
-                  {selected.length} Selected
-                </span>
-                <div className="flex gap-1.5">
-                  <button 
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-brand/20 text-red-brand rounded-lg text-[10px] font-bold hover:bg-slate-50 transition-all shadow-sm"
-                    onClick={deleteBulk} 
-                    disabled={processing}
-                  >
-                    <Icon name="Trash2" size={12} /> Hapus
-                  </button>
-                  <button 
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-lg text-[10px] font-bold hover:bg-accent/90 transition-all shadow-lg shadow-accent/10"
-                    onClick={approveBulk} 
-                    disabled={processing}
-                  >
-                    <Icon name="Send" size={12} /> Posting
-                  </button>
-                </div>
+        <div>
+          <ActionBar
+            left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} onAdd={canEdit ? openNew : null} />}
+            right={canEdit && selected.length > 0 && (
+              <div className="flex items-center gap-2 px-3 h-10 bg-slate-50 border border-border-main rounded-xl">
+                <span className="text-[10px] font-bold text-text-med italic">{selected.length} Selected</span>
+                <button className="btn-ghost !h-8 !px-3 border-red-brand/20 text-red-brand hover:bg-red-brand-light" onClick={deleteBulk} disabled={processing}>
+                  <Icon name="Trash2" size={12} /> Hapus
+                </button>
+                <button className="btn-primary !h-8 !px-3" onClick={approveBulk} disabled={processing}>
+                  <Icon name="Send" size={12} /> Posting
+                </button>
               </div>
             )}
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          />
+
+          <KPIGrid cols={3}>
             <StatCard label="Total SO" value={filtered.length} color="var(--color-accent)" icon="Package" />
             <StatCard label="Completed" value={statusCount.Completed || 0} color="var(--color-green-brand)" icon="CheckCircle" />
             <StatCard label="Cancelled" value={statusCount.Cancelled || 0} color="var(--color-red-brand)" icon="XCircle" />
-          </div>
+          </KPIGrid>
 
           <div className="table-container max-h-[calc(100vh-340px)]">
             <table className="w-full border-collapse">
@@ -796,6 +781,6 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </button>
         </div>
       </ModalShell>
-    </div>
+    </PageShell>
   );
 };

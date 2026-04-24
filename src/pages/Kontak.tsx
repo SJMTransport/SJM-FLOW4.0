@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { C } from "@/src/constants";
-import { Card, SectionHeader, EmptyState, useConfirm, Icon } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, useConfirm, Icon, PageShell } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
 
 export const KontakPage = ({ so, connected }: any) => {
@@ -57,7 +57,7 @@ export const KontakPage = ({ so, connected }: any) => {
   );
 
   return (
-    <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+    <PageShell>
       <ConfirmKontakModal />
       <SectionHeader 
         title="Direktori Kontak" 
@@ -203,7 +203,7 @@ export const KontakPage = ({ so, connected }: any) => {
             </table>
         </div>
       </Card>
-    </div>
+    </PageShell>
   );
 };
 

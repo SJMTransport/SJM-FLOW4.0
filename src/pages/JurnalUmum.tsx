@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { C, STATUS_SO } from "../constants";
 import { fmt, genJUNo, today } from "@/src/utils";
-import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Icon, useToast, ModalShell, FeedbackButton } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Icon, useToast, ModalShell, FeedbackButton, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api, supabase } from "@/src/api";
 import { Loader2 } from "lucide-react";
@@ -311,7 +311,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   };
 
   return (
-    <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+    <PageShell>
       <ConfirmJurnalModal />
       <ToastUI />
       <SectionHeader title={`Jurnal Umum`} sub={`${filtered.length} Transaksi terfilter`}
@@ -336,7 +336,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
           </div>
         } />
 
-      <div className="flex gap-2 border-b border-border-main mb-3 overflow-x-auto pb-px">
+      <div className="tab-bar">
         {[["list", "Daftar Jurnal"], ["input", "Input Jurnal"]].map(([k, l]) => (
           <button 
             key={k} 
@@ -354,10 +354,8 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       </div>
 
       {tab === "list" ? (
-        <div className="space-y-3 animate-fade-up">
-          <div className="w-full lg:max-w-xl">
-            <PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />
-          </div>
+        <div className="animate-fade-up">
+          <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />} />
           
           <div className="table-container">
             <table className="w-full border-collapse">
@@ -585,6 +583,6 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
           </div>
         </Card>
       )}
-    </div>
+    </PageShell>
   );
 };

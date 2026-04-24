@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { C } from "../constants";
 import { fmtShort, filterByPeriod } from "@/src/utils";
-import { Card, StatCard, Spark, PeriodFilter, Icon, EmptyState } from "@/src/components/SJMComponents";
+import { Card, StatCard, Spark, PeriodFilter, Icon, EmptyState, PageShell, PageHeader, KPIGrid } from "@/src/components/SJMComponents";
 
 export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], armadaDokumen = [], onNavigate, onSOClick, onJurnalClick }: any) => {
   const [period, setPeriod] = useState({ mode: "month", month: new Date().getMonth(), year: new Date().getFullYear() });
@@ -117,7 +117,7 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
   }, [so]);
 
   return (
-    <div className="fade-up max-w-full mx-auto space-y-4 pb-8">
+    <PageShell>
       {earlyWarnings.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {earlyWarnings.map((w, i) => (
@@ -144,20 +144,13 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-black text-text-main tracking-tighter flex items-center gap-3 italic">
-             Executive Overview
-             <div className="w-1.5 h-1.5 rounded-full bg-green-brand animate-pulse" />
-          </h2>
-          <p className="text-[10px] font-bold text-text-light mt-0.5 opacity-60">Logistics Performance Dashboard</p>
-        </div>
-        <div className="md:w-80">
-          <PeriodFilter period={period} setPeriod={setPeriod} hideSearch />
-        </div>
-      </div>
+      <PageHeader
+        title="Executive Overview"
+        sub="Logistics Performance Dashboard"
+        action={<PeriodFilter period={period} setPeriod={setPeriod} hideSearch />}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <KPIGrid cols={4}>
         <StatCard 
           label={`Omzet ${period.mode === "month" ? "Bulan Ini" : period.mode === "year" ? "Tahun Ini" : "Total"}`} 
           value={fmtShort(totalPendapatan)} 
@@ -190,9 +183,9 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
           sub={`${soOngoing} Unit Aktif`}
           sparkData={soHistory} 
         />
-      </div>
+      </KPIGrid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
         <Card className="lg:col-span-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
@@ -430,7 +423,6 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
           </div>
         </Card>
       </div>
-    </div>
-
+    </PageShell>
   );
 };

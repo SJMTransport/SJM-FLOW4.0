@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { C } from "../constants";
 import { fmt, fmtShort, filterByPeriod, filterUpToPeriod } from "@/src/utils";
-import { Card, SectionHeader, EmptyState, PeriodFilter, Icon } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, PeriodFilter, Icon, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
 
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -371,7 +371,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     };
 
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <SectionHeader title="Posisi Keuangan" sub={`Trial Balance / Neraca Saldo per ${periodLabel}`} />
         
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -390,11 +390,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           <PeriodFilter period={period} setPeriod={setPeriod} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KPIGrid cols={3}>
            <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" />
            <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net Profit: ${fmt(netIncome)}`} />
            <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} />
-        </div>
+        </KPIGrid>
         
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
           <div className="overflow-auto max-h-[calc(100vh-420px)]">
@@ -433,7 +433,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           </table>
           </div>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
@@ -504,7 +504,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     };
 
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <SectionHeader title="Kinerja Operasional" sub={`Laporan Laba Rugi periode ${periodLabel}`} />
 
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -519,11 +519,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           <PeriodFilter period={period} setPeriod={setPeriod} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KPIGrid cols={3}>
            <StatCardLocal label="Total Pendapatan" value={fmt(totPnd)} color="var(--color-blue-brand)" icon="TrendingUp" />
            <StatCardLocal label="Total Seluruh Beban" value={fmt(totBpp + totKend + totOpr + totFin + totTax)} color="var(--color-red-brand)" icon="TrendingDown" />
            <StatCardLocal label="Laba Rugi Bersih" value={fmt(labaBersih)} color={labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="CheckCircle" />
-        </div>
+        </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
           <div className="overflow-auto max-h-[calc(100vh-420px)]">
@@ -573,7 +573,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           </table>
           </div>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
@@ -583,7 +583,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const totalProfit = totalRevenue - totalExpense;
 
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <SectionHeader title="Analisis Profit Muatan" sub="Pemantauan margin keuntungan real-time per order" />
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
            <div className="flex items-center gap-2">
@@ -597,11 +597,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            <PeriodFilter period={period} setPeriod={setPeriod} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KPIGrid cols={3}>
            <StatCardLocal label="Nilai Muatan (Revenue)" value={fmt(totalRevenue)} color="var(--color-blue-brand)" icon="TrendingUp" />
            <StatCardLocal label="Beban Muatan (Expense)" value={fmt(totalExpense)} color="var(--color-red-brand)" icon="TrendingDown" />
            <StatCardLocal label="Profit Bruto" value={fmt(totalProfit)} color={totalProfit >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="PieChart" subLabel={`Berdasarkan analisis ${tbProfit.length} order muatan`} />
-        </div>
+        </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
           <div className="overflow-auto max-h-[calc(100vh-420px)] border-b border-border-main/10">
@@ -636,7 +636,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             </table>
           </div>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
@@ -649,7 +649,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     );
 
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <SectionHeader title="Log Aktivitas User" sub="Catatan riwayat penggunaan dan mutasi data aplikasi" />
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -713,7 +713,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            </table>
            </div>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
@@ -767,7 +767,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     });
 
     return (
-      <div className="fade-up max-w-[1700px] mx-auto space-y-4 pb-8">
+      <PageShell>
         <SectionHeader title="Rincian Buku Besar" sub="Laporan mutasi transaksi mendalam per akun COA" />
         
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -789,11 +789,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            <PeriodFilter period={period} setPeriod={setPeriod} hideSearch />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KPIGrid cols={3}>
            <StatCardLocal label="Saldo Awal Periode" value={fmt(openingBalance)} color="var(--color-blue-brand)" icon="Database" />
            <StatCardLocal label="Mutasi Berjalan" value={fmt(currentBalance - openingBalance)} color="var(--color-accent)" icon="Activity" subLabel={`Analisis mutasi pada ${rowsWithBalance.length} transaksi`} />
            <StatCardLocal label="Saldo Akhir Buku" value={fmt(currentBalance)} color="var(--color-green-brand)" icon="CheckCircle" />
-        </div>
+        </KPIGrid>
 
         {activeCoa && (
           <div className="fade-up space-y-3">
@@ -872,12 +872,12 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="fade-up max-w-[1700px] mx-auto space-y-4">
+    <PageShell>
       <SectionHeader title="Laporan & Analitik" sub="Laporan performa finansial, operasional, dan audit sistem" />
       <Card className="flex flex-col items-center justify-center p-20 text-center bg-slate-50/20 border-dashed border-2 border-border-main/40 rounded-3xl min-h-[400px]">
          <div className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-accent/5 flex items-center justify-center mb-6 border border-border-main/20">
@@ -888,6 +888,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            Gunakan menu navigasi di atas untuk mengakses data laporan spesifik mulai dari Neraca hingga Log Aktivitas.
          </p>
       </Card>
-    </div>
+    </PageShell>
   );
 };
