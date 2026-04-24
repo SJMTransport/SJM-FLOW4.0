@@ -168,33 +168,42 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   }, [coa, filteredJurnal]);
 
   const calcLabaRugi = useMemo(() => {
-    // ─── MAPPING SUB_KELOMPOK → SEKSI (from user snippet) ───────────────────
+    // Keys stored lowercase for case-insensitive matching (BUG #1 fix)
     const SEKSI_MAP: Record<string, string> = {
-      // Pendapatan
-      "Jasa Angkutan":       "pendapatanJasa",
-      "Pendapatan Mobil SJM":"pendapatanJasa",
-      "Lainnya":             "pendapatanLain",
-      // Beban
-      "BPP":                 "bpp",
-      "Asuransi":            "bpp",
-      "Operasional Kendaraan":"kendaraan",
-      "Operasional":         "operasional",
-      "Keuangan":            "keuangan",
-      "Pajak":               "pajak",
+      "jasa angkutan":        "pendapatanJasa",
+      "pendapatan mobil sjm": "pendapatanJasa",
+      "lainnya":              "pendapatanLain",
+      "bpp":                  "bpp",
+      "asuransi":             "bpp",
+      "operasional kendaraan":"kendaraan",
+      "operasional":          "operasional",
+      "keuangan":             "keuangan",
+      "pajak":                "pajak",
     };
+
+    // Normalize sub_kelompok before lookup: trim + lowercase
+    const getSeksi = (subKel: string | undefined): string | undefined =>
+      SEKSI_MAP[(subKel || "").trim().toLowerCase()];
 
     const sum = (arr: any[]) => arr.reduce((s, c) => s + (c.saldo || 0), 0);
 
     const pendapatan = tbLabaRugi.filter(c => c.kelompok === "Pendapatan");
-    const pndJasa = pendapatan.filter(c => SEKSI_MAP[c.sub_kelompok] === "pendapatanJasa");
-    const pndLain = pendapatan.filter(c => SEKSI_MAP[c.sub_kelompok] === "pendapatanLain" || !SEKSI_MAP[c.sub_kelompok]);
+    const pndJasa = pendapatan.filter(c => getSeksi(c.sub_kelompok) === "pendapatanJasa");
+    // Unmapped pendapatan falls into pndLain (original behaviour preserved)
+    const pndLain = pendapatan.filter(c => getSeksi(c.sub_kelompok) === "pendapatanLain" || !getSeksi(c.sub_kelompok));
 
     const beban = tbLabaRugi.filter(c => c.kelompok === "Beban");
-    const bpp = beban.filter(c => SEKSI_MAP[c.sub_kelompok] === "bpp");
-    const kend = beban.filter(c => SEKSI_MAP[c.sub_kelompok] === "kendaraan");
-    const opr = beban.filter(c => SEKSI_MAP[c.sub_kelompok] === "operasional");
-    const fin = beban.filter(c => SEKSI_MAP[c.sub_kelompok] === "keuangan");
-    const tax = beban.filter(c => SEKSI_MAP[c.sub_kelompok] === "pajak");
+    const bpp  = beban.filter(c => getSeksi(c.sub_kelompok) === "bpp");
+    const kend = beban.filter(c => getSeksi(c.sub_kelompok) === "kendaraan");
+    const fin  = beban.filter(c => getSeksi(c.sub_kelompok) === "keuangan");
+    const tax  = beban.filter(c => getSeksi(c.sub_kelompok) === "pajak");
+    // BUG #2 fix: explicit "operasional" + fallback — any beban not claimed by
+    // bpp/kendaraan/keuangan/pajak lands here (mirrors SJM Akuntansi fallback)
+    const BEBAN_CLAIMED = new Set(["bpp", "kendaraan", "keuangan", "pajak"]);
+    const opr  = beban.filter(c => {
+      const s = getSeksi(c.sub_kelompok);
+      return s === "operasional" || !BEBAN_CLAIMED.has(s as string);
+    });
 
     const totPnd = sum(pndJasa) + sum(pndLain);
     const totBpp = sum(bpp);
