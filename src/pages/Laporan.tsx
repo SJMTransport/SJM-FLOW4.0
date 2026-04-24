@@ -251,7 +251,12 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             map[orderId].harga_pengiriman += Number(d.debit) * factor;
 
           if (kode.startsWith("4") && Number(d.kredit) > 0) {
-            map[orderId].revenue += Number(d.kredit) * factor;
+            const pendVal = (!d.no_so && soVals[orderId] && totalSoVals > 0)
+              ? Number(soVals[orderId])
+              : Number(d.kredit) * factor;
+            map[orderId].pendapatan += pendVal;
+            map[orderId].total_harga += pendVal;
+            map[orderId].revenue += pendVal;
           }
 
           // Beban operasional (5xx, kecuali PPN 553)
