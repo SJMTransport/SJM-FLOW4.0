@@ -113,15 +113,20 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     );
   };
 
-  const StatCardLocal = ({ label, value, color, icon, subLabel }: any) => (
-    <Card className="flex flex-col justify-center p-4 border-l-4 shadow-sm" style={{ borderLeftColor: color }}>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold text-text-light opacity-60 italic">{label}</span>
-        {icon && <Icon name={icon} size={14} style={{ color }} className="opacity-30" />}
+  const StatCardLocal = ({ label, value, color, icon, subLabel, variant = "" }: any) => (
+    <div className={`kpi-card ${variant} fade-up`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="kpi-card-label">{label}</div>
+        {icon && (
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${color}18`, color }}>
+            <Icon name={icon} size={16} />
+          </div>
+        )}
       </div>
-      <div className="text-xl font-black tabular-nums tracking-tight text-text-main">{value}</div>
-      {subLabel && <div className="text-[9px] font-bold text-text-light mt-1.5 flex items-center gap-1.5 opacity-60 underline decoration-border-main">{subLabel}</div>}
-    </Card>
+      <div className="kpi-card-value">{value}</div>
+      {subLabel && <div className="kpi-card-sub">{subLabel}</div>}
+    </div>
   );
 
   const tbNeraca = useMemo(() => {
@@ -404,9 +409,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         </div>
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" />
-           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net Profit: ${fmt(netIncome)}`} />
-           <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} />
+           <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" variant="asset" />
+           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net Profit: ${fmt(netIncome)}`} variant="liability" />
+           <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} variant={balanced ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
         
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -533,9 +538,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         </div>
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Total Pendapatan" value={fmt(totPnd)} color="var(--color-blue-brand)" icon="TrendingUp" />
-           <StatCardLocal label="Total Seluruh Beban" value={fmt(totBpp + totKend + totOpr + totFin + totTax)} color="var(--color-red-brand)" icon="TrendingDown" />
-           <StatCardLocal label="Laba Rugi Bersih" value={fmt(labaBersih)} color={labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="CheckCircle" />
+           <StatCardLocal label="Total Pendapatan" value={fmt(totPnd)} color="var(--color-blue-brand)" icon="TrendingUp" variant="asset" />
+           <StatCardLocal label="Total Seluruh Beban" value={fmt(totBpp + totKend + totOpr + totFin + totTax)} color="var(--color-red-brand)" icon="TrendingDown" variant="liability" />
+           <StatCardLocal label="Laba Rugi Bersih" value={fmt(labaBersih)} color={labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="CheckCircle" variant={labaBersih >= 0 ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -611,9 +616,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         </div>
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Nilai Muatan (Revenue)" value={fmt(totalRevenue)} color="var(--color-blue-brand)" icon="TrendingUp" />
-           <StatCardLocal label="Beban Muatan (Expense)" value={fmt(totalExpense)} color="var(--color-red-brand)" icon="TrendingDown" />
-           <StatCardLocal label="Profit Bruto" value={fmt(totalProfit)} color={totalProfit >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="PieChart" subLabel={`Berdasarkan analisis ${tbProfit.length} order muatan`} />
+           <StatCardLocal label="Nilai Muatan (Revenue)" value={fmt(totalRevenue)} color="var(--color-blue-brand)" icon="TrendingUp" variant="asset" />
+           <StatCardLocal label="Beban Muatan (Expense)" value={fmt(totalExpense)} color="var(--color-red-brand)" icon="TrendingDown" variant="liability" />
+           <StatCardLocal label="Profit Bruto" value={fmt(totalProfit)} color={totalProfit >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="PieChart" subLabel={`Berdasarkan analisis ${tbProfit.length} order muatan`} variant={totalProfit >= 0 ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -806,9 +811,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         </div>
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Saldo Awal Periode" value={fmt(openingBalance)} color="var(--color-blue-brand)" icon="Database" />
+           <StatCardLocal label="Saldo Awal Periode" value={fmt(openingBalance)} color="var(--color-blue-brand)" icon="Database" variant="asset" />
            <StatCardLocal label="Mutasi Berjalan" value={fmt(currentBalance - openingBalance)} color="var(--color-accent)" icon="Activity" subLabel={`Analisis mutasi pada ${rowsWithBalance.length} transaksi`} />
-           <StatCardLocal label="Saldo Akhir Buku" value={fmt(currentBalance)} color="var(--color-green-brand)" icon="CheckCircle" />
+           <StatCardLocal label="Saldo Akhir Buku" value={fmt(currentBalance)} color="var(--color-green-brand)" icon="CheckCircle" variant="balance-positive" />
         </KPIGrid>
 
         {activeCoa && (
