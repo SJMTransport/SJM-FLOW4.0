@@ -4,10 +4,10 @@
   /* ===== BLACK FLAME PALETTE — SJM Flow Design System v1.0 ===== */
 
   /* App Backgrounds */
-  --color-bg: #FFFFFF;              /* Pure white background */
-  --color-bg-card: #FFFFFF;         /* Pure white cards */
-  --color-bg-side: #1B2632;
-  --color-bg-side-hover: #111827;
+  --color-bg: #F5F4F1;              /* Light grey page surface */
+  --color-bg-card: #FFFFFF;         /* Pure white cards — elevated on grey */
+  --color-bg-side: #252422;         /* Dark charcoal sidebar */
+  --color-bg-side-hover: #1E1C1A;   /* Slightly deeper on hover */
 
   /* Primary Brand — Deeper orange (Black Flame) */
   --color-accent: #EB5E28;
@@ -17,12 +17,12 @@
   --color-primary-hover: #D4531F;
   --color-primary-light: #FCEEE8;
   --color-burning-flame: #EB5E28;
-  --color-palladian: #FFFFFF;
+  --color-palladian: #F5F4F1;
 
-  /* Sidebar (keep dark navy — strong contrast against warm white) */
-  --color-navy: #1B2632;
-  --color-blue-fantastic: #1B2632;
-  --color-abyssal-blue: #111827;
+  /* Sidebar — dark charcoal */
+  --color-navy: #252422;
+  --color-blue-fantastic: #252422;
+  --color-abyssal-blue: #1A1917;    /* Brand header — slightly deeper than sidebar */
   --color-side-border: rgba(255, 255, 255, 0.1);
   --color-side-text: #E2E8F0;
   --color-side-text-muted: #94A3B8;
@@ -54,7 +54,7 @@
   --color-revenue: #403D39;
 
   /* Black Flame Neutral Scale */
-  --color-white: #FFFFFF;
+  --color-white: #FFFFFF;            /* Always pure white (cards, modals) */
   --color-neutral-light: #CCC5B9;
   --color-neutral-mid: #403D39;
   --color-neutral-dark: #252422;
@@ -230,7 +230,7 @@
   }
 
   .table-container {
-    @apply w-full overflow-x-auto rounded-xl border border-border-main/40 bg-white/50;
+    @apply w-full overflow-x-auto rounded-xl border border-border-main/40 bg-white;
   }
   .table-container::-webkit-scrollbar { height: 4px; width: 4px; }
   .table-container::-webkit-scrollbar-thumb {
@@ -314,7 +314,7 @@
 
   table td {
     @apply px-4 py-2.5 text-[13px] font-medium border-b border-border-main/50
-           text-text-main bg-white/30 transition-colors;
+           text-text-main bg-transparent transition-colors;
   }
 
   table td.currency,

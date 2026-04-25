@@ -17,20 +17,20 @@ export const C = {
 
 export const STATUS_SO = ["Order Confirmed", "Loading", "On Going", "Arrived", "Completed", "Cancelled"];
 export const STATUS_COLOR: Record<string, string> = {
-  "Order Confirmed": "#64748B",
-  "Loading": "#D97706",
-  "On Going": "#2563EB",
-  "Arrived": "#10B981",
-  "Completed": "#059669",
-  "Cancelled": "#EF4444",
+  "Order Confirmed": "#6B6862",   /* grey-500 — neutral pending */
+  "Loading":         "#C4914A",   /* yellow-brand — warm amber */
+  "On Going":        "#4A6FA5",   /* blue-brand — active */
+  "Arrived":         "#6B8E23",   /* green-brand — reached destination */
+  "Completed":       "#4D7A28",   /* profit — fully done */
+  "Cancelled":       "#B85450",   /* red-brand — brick red */
 };
 export const STATUS_BG: Record<string, string> = {
-  "Order Confirmed": "#F1F5F9",
-  "Loading": "#FFFBEB",
-  "On Going": "#EFF6FF",
-  "Arrived": "#ECFDF5",
-  "Completed": "#DCFCE7",
-  "Cancelled": "#FEF2F2",
+  "Order Confirmed": "#F5F4F1",   /* grey-100 */
+  "Loading":         "#F5EDE0",   /* yellow-brand-light */
+  "On Going":        "#E3EAF2",   /* blue-brand-light */
+  "Arrived":         "#EAF2DC",   /* green-brand-light */
+  "Completed":       "#DCF0C8",   /* deeper green-brand-light */
+  "Cancelled":       "#F5E8E7",   /* red-brand-light */
 };
 
 export const ROLE_COLOR: Record<string, string> = { Admin: "#F97316", Keuangan: "#3B82F6", Operasional: "#10B981", Viewer: "#64748B" };
