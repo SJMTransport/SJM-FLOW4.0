@@ -158,6 +158,23 @@
            hover:border-accent hover:text-accent hover:bg-accent-light inline-flex items-center gap-1.5;
   }
 
+  /* ─── EXPORT / FILTER BUTTONS ─── */
+
+  .btn-export {
+    @apply flex items-center gap-1.5 h-8 px-3 text-[10px] font-bold text-text-med
+           bg-white border border-border-main rounded-lg cursor-pointer
+           transition-all duration-200 hover:bg-grey-50 hover:border-border-dark active:scale-95;
+  }
+
+  .btn-filter {
+    @apply flex items-center gap-1.5 h-8 px-3 text-[10px] font-bold text-text-light
+           bg-white border border-border-main rounded-lg cursor-pointer
+           transition-all duration-200 hover:bg-grey-50;
+  }
+  .btn-filter.active {
+    @apply text-accent border-accent bg-accent-light;
+  }
+
   /* ─── FORM ─── */
 
   .input-field {
@@ -239,6 +256,18 @@
   .badge-info {
     @apply inline-flex items-center py-0.5 px-2.5 rounded-full text-[10px] font-bold
            bg-blue-brand-light text-blue-brand border border-blue-brand/15;
+  }
+
+  /* ─── STATUS BADGE ─── */
+
+  .status-badge {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 font-bold text-[10px];
+  }
+  .status-badge.balanced {
+    @apply bg-green-brand/5 border-green-brand/20 text-green-brand;
+  }
+  .status-badge.unbalanced {
+    @apply bg-red-brand/5 border-red-brand/20 text-red-brand;
   }
 
   /* Hutang/Piutang status tags */
@@ -392,6 +421,12 @@
   .kpi-card-sub {
     @apply text-[11px] font-medium text-text-light opacity-60 leading-tight line-clamp-1;
   }
+
+  /* KPI Card semantic color variants — left border accent */
+  .kpi-card.asset          { border-left: 4px solid var(--color-blue-brand); }
+  .kpi-card.liability      { border-left: 4px solid var(--color-red-brand); }
+  .kpi-card.balance-positive { border-left: 4px solid var(--color-green-brand); }
+  .kpi-card.balance-negative { border-left: 4px solid var(--color-red-brand); }
 
   /* Content Card — table wrappers */
   .content-card {

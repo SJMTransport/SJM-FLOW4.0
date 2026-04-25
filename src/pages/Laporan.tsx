@@ -389,13 +389,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
           <div className="flex items-center gap-2">
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => handleExportNeraca('xlsx')}>
-                <Icon name="Download" size={14} /> Excel
+             <button className="btn-export" onClick={() => handleExportNeraca('xlsx')}>
+                <Icon name="Download" size={13} /> Excel
              </button>
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => handleExportNeraca('pdf')}>
-                <Icon name="FileText" size={14} /> PDF
+             <button className="btn-export" onClick={() => handleExportNeraca('pdf')}>
+                <Icon name="FileText" size={13} /> PDF
              </button>
-             <div className={`ml-2 flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 font-bold text-[10px] ${balanced ? "bg-green-brand/5 border-green-brand/20 text-green-brand shadow-sm shadow-green-brand/10" : "bg-red-brand/5 border-red-brand/20 text-red-brand shadow-sm shadow-red-brand/10"}`}>
+             <div className={`status-badge ml-2 ${balanced ? "balanced" : "unbalanced"}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${balanced ? "bg-green-brand" : "bg-red-brand"}`}></div>
                 {balanced ? "Balanced" : "Unbalanced"}
              </div>
