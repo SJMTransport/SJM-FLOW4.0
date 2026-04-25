@@ -272,7 +272,12 @@
 
   table td.currency,
   table th.currency {
-    @apply text-right text-currency;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-grey-900);
   }
 
   tr:hover td { @apply bg-oatmeal/20; }
