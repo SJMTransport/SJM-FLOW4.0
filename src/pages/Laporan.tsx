@@ -363,22 +363,22 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         const subtotal = items.reduce((s: number, c: any) => s + (c.saldo * factor), 0);
         return (
             <>
-                <tr className="bg-slate-50/30">
-                    <td colSpan={4} className="px-4 py-2 font-bold text-text-light text-[10px] opacity-60 italic">{label}</td>
+                <tr className="bg-grey-100">
+                    <td colSpan={4} className="px-4 py-2 font-black text-text-med text-[10px] uppercase tracking-widest">{label}</td>
                 </tr>
                 {items.map((r: any) => (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors border-b border-border-main/10 group">
-                        <td className="px-4 py-2 text-[11px] tabular-nums font-bold text-text-light opacity-50">{r.kode}</td>
-                        <td className="px-4 py-2 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight">{r.nama}</td>
-                        <td className="px-4 py-2 text-[10px] text-text-light font-medium italic opacity-40">{r.kelompok}</td>
-                        <td className="px-4 py-2 text-right text-[12px] tabular-nums font-bold text-text-main whitespace-nowrap">{fmt(r.saldo * factor)}</td>
+                    <tr key={r.id} className="hover:bg-grey-50 transition-colors group">
+                        <td className="text-[11px] tabular-nums font-bold text-text-light opacity-50">{r.kode}</td>
+                        <td className="text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight">{r.nama}</td>
+                        <td className="text-[10px] text-text-light font-medium italic opacity-40">{r.kelompok}</td>
+                        <td className="text-right text-[12px] tabular-nums font-bold text-text-main whitespace-nowrap">{fmt(r.saldo * factor)}</td>
                     </tr>
                 ))}
-                <tr className="bg-white border-b border-border-main/20">
-                    <td colSpan={3} className="px-4 py-2 text-right text-[10px] font-bold text-text-light italic opacity-60">Total {label}</td>
-                    <td className="px-4 py-2 text-right text-[13px] font-black text-accent tabular-nums whitespace-nowrap">{fmt(subtotal)}</td>
+                <tr>
+                    <td colSpan={3} className="text-right text-[10px] font-bold text-text-light italic opacity-60">Total {label}</td>
+                    <td className="text-right text-[13px] font-black text-accent tabular-nums whitespace-nowrap">{fmt(subtotal)}</td>
                 </tr>
-                <tr className="h-2"></tr>
+                <tr className="h-2"><td colSpan={4} className="border-b-0 bg-transparent p-0"></td></tr>
             </>
         );
     };
@@ -387,7 +387,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       <PageShell>
         <SectionHeader title="Posisi Keuangan" sub={`Trial Balance / Neraca Saldo per ${periodLabel}`} />
         
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
              <button className="btn-export" onClick={() => handleExportNeraca('xlsx')}>
                 <Icon name="Download" size={13} /> Excel
@@ -395,7 +395,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
              <button className="btn-export" onClick={() => handleExportNeraca('pdf')}>
                 <Icon name="FileText" size={13} /> PDF
              </button>
-             <div className={`status-badge ml-2 ${balanced ? "balanced" : "unbalanced"}`}>
+             <div className={`status-badge ml-1 ${balanced ? "balanced" : "unbalanced"}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${balanced ? "bg-green-brand" : "bg-red-brand"}`}></div>
                 {balanced ? "Balanced" : "Unbalanced"}
              </div>
@@ -414,10 +414,10 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="py-3 px-4 w-24">Kode</th>
-                <th className="py-3 px-4">Akun COA</th>
-                <th className="py-3 px-4 w-32">Kategori</th>
-                <th className="py-3 px-4 text-right w-44">Saldo (Rp)</th>
+                <th className="w-24">Kode</th>
+                <th>Akun COA</th>
+                <th className="w-32">Kategori</th>
+                <th className="text-right w-44">Saldo (Rp)</th>
               </tr>
             </thead>
             <tbody>
@@ -428,7 +428,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 <CategoryTable label="Beban" items={bbn} factor={1} />
             </tbody>
             <tfoot>
-              <tr className="bg-slate-50/80 border-t border-border-main/40">
+              <tr className="bg-grey-100 border-t border-border-main/50">
                 <td className="px-4 py-4" colSpan={3}>
                    <div className="flex items-center gap-2 text-[10px] font-bold text-text-light italic">
                      <Icon name="Info" size={14} className="text-accent opacity-50" />
@@ -457,25 +457,25 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     } = calcLabaRugi;
 
     const SectionHeaderRow = ({ label }: any) => (
-       <tr className="bg-slate-50/50">
+       <tr className="bg-grey-100">
           <td />
-          <td colSpan={2} className="py-2 px-4 text-[10px] font-bold text-text-light italic opacity-60">{label}</td>
+          <td colSpan={2} className="py-2 font-black text-text-med text-[10px] uppercase tracking-widest">{label}</td>
        </tr>
     );
 
     const ItemRow = ({ kode, nama, val, indent = false }: any) => (
-       <tr className="hover:bg-slate-50/50 transition-colors border-b border-border-main/10 group">
-          <td className="py-2 px-4 text-[10px] text-text-light tabular-nums font-bold opacity-50 w-24">{kode}</td>
-          <td className={`py-2 px-4 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight ${indent ? "pl-8" : "pl-4"}`}>{nama}</td>
-          <td className="py-2 px-4 text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(val)}</td>
+       <tr className="hover:bg-grey-50 transition-colors group">
+          <td className="text-[10px] text-text-light tabular-nums font-bold opacity-50 w-24">{kode}</td>
+          <td className={`text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight ${indent ? "pl-8" : ""}`}>{nama}</td>
+          <td className="text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(val)}</td>
        </tr>
     );
 
     const SummaryRow = ({ label, val, highlight = false }: any) => (
-       <tr className={highlight ? "bg-accent/5 border-b border-accent/20" : "border-b border-border-main/10"}>
+       <tr className={highlight ? "bg-accent/5" : ""}>
           <td />
-          <td className={`py-2 px-4 font-bold text-text-main ${highlight ? "text-[11px] bg-accent/5" : "text-[10px] text-text-light opacity-60 italic"}`}>{label}</td>
-          <td className={`py-2 px-4 text-right tabular-nums font-bold whitespace-nowrap ${highlight ? "text-[14px] text-accent" : "text-[12px] text-text-med"}`}>{fmt(val)}</td>
+          <td className={`font-bold text-text-main ${highlight ? "text-[11px]" : "text-[10px] text-text-light opacity-60 italic"}`}>{label}</td>
+          <td className={`text-right tabular-nums font-bold whitespace-nowrap ${highlight ? "text-[14px] text-accent" : "text-[12px] text-text-med"}`}>{fmt(val)}</td>
        </tr>
     );
 
@@ -520,13 +520,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       <PageShell>
         <SectionHeader title="Kinerja Operasional" sub={`Laporan Laba Rugi periode ${periodLabel}`} />
 
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => handleExportLR('xlsx')}>
-                <Icon name="Download" size={14} /> Excel
+             <button className="btn-export" onClick={() => handleExportLR('xlsx')}>
+                <Icon name="Download" size={13} /> Excel
              </button>
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => handleExportLR('pdf')}>
-                <Icon name="FileText" size={14} /> PDF
+             <button className="btn-export" onClick={() => handleExportLR('pdf')}>
+                <Icon name="FileText" size={13} /> PDF
              </button>
           </div>
           <PeriodFilter period={period} setPeriod={setPeriod} />
@@ -543,9 +543,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="py-3 px-4 w-24">KODE</th>
-                <th className="py-3 px-4">RINCIAN POS KEUANGAN</th>
-                <th className="py-3 px-4 text-right w-56">JUMLAH (RP)</th>
+                <th className="w-24">KODE</th>
+                <th>RINCIAN POS KEUANGAN</th>
+                <th className="text-right w-56">JUMLAH (RP)</th>
               </tr>
             </thead>
             <tbody>
@@ -598,13 +598,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     return (
       <PageShell>
         <SectionHeader title="Analisis Profit Muatan" sub="Pemantauan margin keuntungan real-time per order" />
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
            <div className="flex items-center gap-2">
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
-                 <Icon name="Download" size={14} /> Excel
+              <button className="btn-export" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
+                 <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
-                 <Icon name="FileText" size={14} /> PDF
+              <button className="btn-export" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
+                 <Icon name="FileText" size={13} /> PDF
               </button>
            </div>
            <PeriodFilter period={period} setPeriod={setPeriod} />
@@ -621,15 +621,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="py-3 px-4">ORDER ID</th>
-                  <th className="py-3 px-4">MITRA CUSTOMER</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">REVENUE</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">EXPENSE</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">PROFIT</th>
-                  <th className="py-3 px-4 text-right w-32">MARGIN</th>
+                  <th>ORDER ID</th>
+                  <th>MITRA CUSTOMER</th>
+                  <th className="text-right min-w-[160px]">REVENUE</th>
+                  <th className="text-right min-w-[160px]">EXPENSE</th>
+                  <th className="text-right min-w-[160px]">PROFIT</th>
+                  <th className="text-right w-32">MARGIN</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-main/10">
+              <tbody>
                 {tbProfit.length === 0 ? <EmptyState colSpan={6} /> :
                  tbProfit.map((p: any, i:number) => (
                    <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
@@ -665,17 +665,19 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       <PageShell>
         <SectionHeader title="Log Aktivitas User" sub="Catatan riwayat penggunaan dan mutasi data aplikasi" />
         
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
            <div className="w-full sm:max-w-md relative group">
               <Icon name="Search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light group-focus-within:text-accent transition-all duration-300 opacity-50" />
-              <input 
-                className="input-field pl-11 bg-slate-50 border-transparent focus:bg-white focus:border-accent" 
-                placeholder="Cari user atau aktivitas..." 
-                value={search || ""} 
-                onChange={e => setSearch(e.target.value)} 
+              <input
+                className="input-field pl-11 bg-grey-50 border-transparent focus:bg-white focus:border-accent"
+                placeholder="Cari user atau aktivitas..."
+                value={search || ""}
+                onChange={e => setSearch(e.target.value)}
               />
            </div>
-           <button className="btn-ghost px-6 uppercase tracking-widest text-[9px] font-black" onClick={() => setSearch("")}>Reset Filter</button>
+           <button className="btn-export" onClick={() => setSearch("")}>
+             <Icon name="X" size={12} /> Reset Filter
+           </button>
         </div>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -683,13 +685,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            <table className="w-full border-collapse">
               <thead>
                  <tr>
-                    <th className="py-3 px-4 w-44">WAKTU SISTEM</th>
-                    <th className="py-3 px-4 w-64">PELAKSANA</th>
-                    <th className="py-3 px-4">AKSI / AKTIVITAS</th>
-                    <th className="py-3 px-4 border-l border-border-main/10">METADATA</th>
+                    <th className="w-44">WAKTU SISTEM</th>
+                    <th className="w-64">PELAKSANA</th>
+                    <th>AKSI / AKTIVITAS</th>
+                    <th>METADATA</th>
                  </tr>
               </thead>
-              <tbody className="divide-y divide-border-main/10">
+              <tbody>
                  {filteredLogs.length === 0 ? <EmptyState colSpan={4} /> : 
                   filteredLogs.map((log: any, idx: number) => (
                     <tr key={log.id || idx} className="hover:bg-slate-50/50 transition-colors group">
@@ -785,17 +787,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       <PageShell>
         <SectionHeader title="Rincian Buku Besar" sub="Laporan mutasi transaksi mendalam per akun COA" />
         
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
-                 <Icon name="Download" size={14} /> Excel
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+           <div className="flex flex-wrap items-center gap-2">
+              <button className="btn-export" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+                 <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
-                 <Icon name="FileText" size={14} /> PDF
+              <button className="btn-export" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+                 <Icon name="FileText" size={13} /> PDF
               </button>
-              
-              <div className="w-full sm:min-w-[320px] sm:w-[320px]">
-                 <select className="input-field h-10 font-black text-[11px] uppercase tracking-widest bg-slate-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
+              <div className="sm:min-w-[280px]">
+                 <select className="input-field h-8 font-black text-[11px] uppercase tracking-widest bg-grey-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
                     <option value="">— PILIH AKUN COA —</option>
                     {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} — {c.nama.toUpperCase()}</option>)}
                  </select>
@@ -822,15 +823,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="py-3 px-4 w-28">TANGGAL</th>
-                      <th className="py-3 px-4 w-32">NO. JURNAL</th>
-                      <th className="py-3 px-4">KETERANGAN TRANSAKSI</th>
-                      <th className="py-3 px-4 text-right w-36">DEBIT</th>
-                      <th className="py-3 px-4 text-right w-36">KREDIT</th>
-                      <th className="py-3 px-4 text-right w-44 font-black">SALDO</th>
+                      <th className="w-28">TANGGAL</th>
+                      <th className="w-32">NO. JURNAL</th>
+                      <th>KETERANGAN TRANSAKSI</th>
+                      <th className="text-right w-36">DEBIT</th>
+                      <th className="text-right w-36">KREDIT</th>
+                      <th className="text-right w-44 font-black">SALDO</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border-main/10 text-[11px]">
+                  <tbody className="text-[11px]">
                     <tr className="bg-amber-50/20 italic group border-b border-border-main/10">
                       <td className="py-2 px-4 text-text-light opacity-50 font-bold">—</td>
                       <td className="py-2 px-4">
@@ -876,7 +877,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                       ))
                     )}
                   </tbody>
-                  <tfoot className="bg-slate-50/50 border-t border-border-main/40">
+                  <tfoot className="bg-grey-100 border-t border-border-main/50">
                      <tr>
                         <td colSpan={5} className="py-3 px-4 text-right text-[9px] font-black text-text-light uppercase tracking-widest opacity-60">Saldo Akhir Kumulatif</td>
                         <td className="py-3 px-4 text-right text-[13px] font-black text-accent tabular-nums bg-accent/5 shadow-[inset_0_0_10px_rgba(0,0,0,0.02)]">{fmt(currentBalance)}</td>
