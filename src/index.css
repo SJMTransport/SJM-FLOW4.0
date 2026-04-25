@@ -4,8 +4,8 @@
   /* ===== BLACK FLAME PALETTE — SJM Flow Design System v1.0 ===== */
 
   /* App Backgrounds */
-  --color-bg: #FFFCF2;              /* Warm white — dominant, breathable */
-  --color-bg-card: #FFFFFF;         /* Pure white cards for contrast */
+  --color-bg: #FFFFFF;              /* Pure white background */
+  --color-bg-card: #FFFFFF;         /* Pure white cards */
   --color-bg-side: #1B2632;
   --color-bg-side-hover: #111827;
 
@@ -17,7 +17,7 @@
   --color-primary-hover: #D4531F;
   --color-primary-light: #FCEEE8;
   --color-burning-flame: #EB5E28;
-  --color-palladian: #FFFCF2;
+  --color-palladian: #FFFFFF;
 
   /* Sidebar (keep dark navy — strong contrast against warm white) */
   --color-navy: #1B2632;
@@ -54,7 +54,7 @@
   --color-revenue: #403D39;
 
   /* Black Flame Neutral Scale */
-  --color-white: #FFFCF2;
+  --color-white: #FFFFFF;
   --color-neutral-light: #CCC5B9;
   --color-neutral-mid: #403D39;
   --color-neutral-dark: #252422;
@@ -288,10 +288,10 @@
   /* ─── GLOBAL TABLE STYLES ─── */
 
   table th {
-    @apply sticky top-0 z-[20] px-4 py-2.5 text-[11px] font-black text-text-light
-           bg-grey-50/95 backdrop-blur-md border-b border-border-main/60
+    @apply sticky top-0 z-[20] px-4 py-2.5 text-[11px] font-black text-text-med
+           bg-grey-200 backdrop-blur-md border-b border-border-dark/40
            text-left uppercase tracking-widest;
-    box-shadow: 0 1px 0 0 rgba(37, 36, 34, 0.06);
+    box-shadow: 0 1px 0 0 rgba(37, 36, 34, 0.08);
   }
 
   table td {

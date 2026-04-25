@@ -941,7 +941,7 @@ export default function App() {
 
       {/* Main Content - PALLADIAN BACKGROUND */}
       <div className="flex-1 flex flex-col bg-bg h-screen overflow-hidden relative">
-      <header className="bg-white/80 backdrop-blur-md border-b border-border-main px-6 h-[56px] flex items-center justify-between z-[90] shrink-0 gap-6">
+      <header className="bg-grey-100 border-b border-border-dark/40 px-6 h-[56px] flex items-center justify-between z-[90] shrink-0 gap-6">
            <div className="flex items-center gap-6 flex-1 min-w-0">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
@@ -967,7 +967,7 @@ export default function App() {
               />
               {globalSearch && (
                 <div className="absolute top-full right-0 w-[420px] mt-2 bg-white rounded-xl shadow-2xl border border-border-main overflow-hidden animate-fade-down z-[100] max-h-[500px] flex flex-col">
-                   <div className="p-4 border-b border-border-main bg-slate-50 flex justify-between items-center">
+                   <div className="p-4 border-b border-border-main bg-grey-100 flex justify-between items-center">
                       <span className="text-[11px] font-bold text-text-main leading-none">Hasil Pencarian</span>
                       <button onClick={() => setGlobalSearch("")} className="text-text-light hover:text-accent"><Icon name="X" size={16} /></button>
                    </div>
