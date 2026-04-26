@@ -407,12 +407,12 @@
 
   /* Page shell: max-width 1320px, consistent horizontal padding */
   .page-shell {
-    @apply w-full max-w-[1320px] mx-auto px-6 pb-12;
+    @apply w-full max-w-[1320px] mx-auto px-6 pt-2 pb-12;
   }
 
   /* Page header block */
   .ph-block {
-    @apply flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4;
+    @apply flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6;
   }
   .ph-title {
     @apply text-[28px] font-black text-text-main tracking-tight leading-tight;
@@ -428,7 +428,7 @@
 
   /* Filter/action row spacing */
   .filter-row {
-    @apply flex flex-wrap items-center gap-3 mb-8;
+    @apply flex flex-wrap items-center gap-3 mb-6;
   }
 
   /* Standardized button-row: all children 40px, vertically centered */
@@ -469,8 +469,9 @@
     @apply text-[12px] font-bold text-text-light uppercase tracking-[0.06em] leading-none opacity-70;
   }
   .kpi-card-value {
-    @apply text-[22px] font-black text-text-main tracking-tight leading-none tabular-nums
+    @apply text-[20px] font-black text-text-main tracking-tight leading-none tabular-nums
            whitespace-nowrap overflow-hidden text-ellipsis;
+    font-size: clamp(14px, 2.5vw, 20px);
   }
   .kpi-card-sub {
     @apply text-[11px] font-medium text-text-light opacity-60 leading-tight line-clamp-1;

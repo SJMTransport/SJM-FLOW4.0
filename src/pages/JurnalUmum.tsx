@@ -317,11 +317,11 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       <SectionHeader title={`Jurnal Umum`} sub={`${filtered.length} Transaksi terfilter`}
         action={
           <div className="flex flex-wrap gap-2">
-            <div className="flex bg-white shadow-sm border border-border-main rounded-lg overflow-hidden">
-               <button className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-green-brand hover:bg-slate-50 border-r border-border-main transition-colors" onClick={exportExcel} title="Export Excel">
+            <div className="btn-export-group">
+               <button className="flex items-center gap-1.5 px-4 text-[10px] font-bold text-green-brand hover:bg-grey-50 border-r border-border-main transition-colors" onClick={exportExcel} title="Export Excel">
                   <Icon name="Download" size={14} /> XLS
                </button>
-               <button className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-red-brand hover:bg-slate-50 transition-colors" onClick={exportPDF} title="Export PDF">
+               <button className="flex items-center gap-1.5 px-4 text-[10px] font-bold text-red-brand hover:bg-grey-50 transition-colors" onClick={exportPDF} title="Export PDF">
                   <Icon name="FileText" size={14} /> PDF
                </button>
             </div>
@@ -357,17 +357,17 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         <div className="animate-fade-up">
           <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />} />
           
-          <div className="table-container">
+          <div className="table-container max-h-[calc(100vh-340px)] overflow-y-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-border-main/40">
-                  <th className="py-2 px-4 !static">Tanggal</th>
-                  <th className="py-2 px-4 !static">No Jurnal</th>
-                  <th className="py-2 px-4 !static">No SO</th>
-                  <th className="py-2 px-4 !static">Keterangan / Akun</th>
-                  <th className="py-2 px-4 !static text-right min-w-[160px]">Debit</th>
-                  <th className="py-2 px-4 !static text-right min-w-[160px]">Kredit</th>
-                  <th className="py-2 px-4 !static text-center">Aksi</th>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>No Jurnal</th>
+                  <th>No SO</th>
+                  <th>Keterangan / Akun</th>
+                  <th className="text-right min-w-[160px]">Debit</th>
+                  <th className="text-right min-w-[160px]">Kredit</th>
+                  <th className="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-main/10 bg-white/40">

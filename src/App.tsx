@@ -1019,8 +1019,8 @@ export default function App() {
 
             <div className="flex items-center gap-4">
               <div className="relative">
-                 <button 
-                    className="btn-primary h-8 flex items-center gap-2"
+                 <button
+                    className="btn-primary flex items-center gap-2"
                     onClick={() => setShowQuickMenu(!showQuickMenu)}
                  >
                     <Plus size={16} /> <span className="hidden sm:inline font-black uppercase tracking-tight">Quick Action</span>
@@ -1082,7 +1082,7 @@ export default function App() {
           </div>
         )}
         
-        <main className="flex-1 overflow-y-auto p-3 custom-scrollbar bg-bg relative">
+        <main className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-bg relative">
           <AnimatePresence mode="wait">
             <motion.div 
               key={`${activeModule}-${activeSub}`}

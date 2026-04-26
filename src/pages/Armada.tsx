@@ -216,48 +216,48 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
         </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-           <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+           <div className="table-container overflow-x-auto max-h-[calc(100vh-420px)]">
+              <table className="w-full border-collapse">
                  <thead>
-                    <tr className="bg-slate-50/80 border-b border-border-main/40 shadow-sm">
-                       <th className="py-4 px-6 text-[11px] font-bold text-text-light text-left">Unit Armada</th>
-                       <th className="py-4 px-6 text-[11px] font-bold text-text-light text-right">Pendapatan</th>
-                       <th className="py-4 px-6 text-[11px] font-bold text-text-light text-right">Beban Ops</th>
-                       <th className="py-4 px-6 text-[11px] font-bold text-text-light text-right">Nett Profit</th>
-                       <th className="py-4 px-6 text-[11px] font-bold text-text-light text-center">Status</th>
-                       <th className="py-4 px-6 text-[11px] font-bold text-text-light text-center">Aksi</th>
+                    <tr>
+                       <th>Unit Armada</th>
+                       <th className="text-right">Pendapatan</th>
+                       <th className="text-right">Beban Ops</th>
+                       <th className="text-right">Nett Profit</th>
+                       <th className="text-center">Status</th>
+                       <th className="text-center">Aksi</th>
                     </tr>
                  </thead>
-                 <tbody className="divide-y divide-border-main/20">
+                 <tbody>
                     {filteredUnits.length === 0 ? (
                       <EmptyState colSpan={6} msg="Unit tidak ditemukan" />
                     ) : (
                       filteredUnits.map(u => (
-                        <tr key={u.unit} className="group hover:bg-amber-50/30 transition-colors">
-                           <td className="py-4 px-6">
+                        <tr key={u.unit} className="group hover:bg-oatmeal/20 transition-colors">
+                           <td>
                               <div className="flex items-center gap-3">
-                                 <div className="w-9 h-9 rounded-lg bg-navy/5 text-navy flex items-center justify-center border border-navy/10">
-                                    <Icon name="Truck" size={18} />
+                                 <div className="w-8 h-8 rounded-lg bg-navy/5 text-navy flex items-center justify-center border border-navy/10 shrink-0">
+                                    <Icon name="Truck" size={16} />
                                  </div>
-                                 <div className="font-bold text-[14px] text-text-main group-hover:text-amber-600 transition-colors tabular-nums">{u.unit}</div>
+                                 <div className="font-black text-[13px] text-text-main group-hover:text-accent transition-colors tabular-nums">{u.unit}</div>
                               </div>
                            </td>
-                           <td className="py-4 px-6 text-right font-bold text-[13px] text-navy tabular-nums whitespace-nowrap">{fmt(u.revenue)}</td>
-                           <td className="py-4 px-6 text-right font-bold text-[13px] text-red-brand tabular-nums whitespace-nowrap">{fmt(u.expense)}</td>
-                           <td className="py-4 px-6 text-right whitespace-nowrap">
-                              <div className={`text-[14px] font-bold tabular-nums ${u.profit >= 0 ? "text-amber-600" : "text-red-brand"}`}>
+                           <td className="text-right font-bold text-[12px] text-blue-brand tabular-nums whitespace-nowrap">{fmt(u.revenue)}</td>
+                           <td className="text-right font-bold text-[12px] text-red-brand tabular-nums whitespace-nowrap">{fmt(u.expense)}</td>
+                           <td className="text-right whitespace-nowrap">
+                              <span className={`text-[13px] font-black tabular-nums ${u.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>
                                  {fmt(u.profit)}
-                              </div>
-                           </td>
-                           <td className="py-4 px-6 text-center">
-                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[9px] font-bold text-text-light border border-border-main/20">
-                                 INTERNAL SJM
                               </span>
                            </td>
-                           <td className="py-4 px-6 text-center">
-                              <button 
+                           <td className="text-center">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-grey-100 text-[9px] font-bold text-text-light border border-border-main/20 uppercase tracking-widest">
+                                 SJM
+                              </span>
+                           </td>
+                           <td className="text-center">
+                              <button
                                 onClick={() => onArmadaClick(u.unit)}
-                                className="text-[10px] font-bold text-navy hover:text-amber-600 flex items-center gap-1 mx-auto transition-colors"
+                                className="text-[10px] font-bold text-text-light hover:text-accent flex items-center gap-1 mx-auto transition-colors"
                               >
                                  Detail <Icon name="ArrowRight" size={12} />
                               </button>
@@ -267,11 +267,11 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                     )}
                  </tbody>
                  <tfoot>
-                    <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
-                       <td className="py-4 px-6 text-[11px] uppercase tracking-widest text-text-light opacity-60">Total Konsolidasi</td>
-                       <td className="py-4 px-6 text-right tabular-nums text-navy whitespace-nowrap">{fmt(totalRevenue)}</td>
-                       <td className="py-4 px-6 text-right tabular-nums text-red-brand whitespace-nowrap">{fmt(totalExpense)}</td>
-                       <td className="py-4 px-6 text-right tabular-nums text-amber-600 whitespace-nowrap">{fmt(totalProfit)}</td>
+                    <tr className="bg-grey-100 border-t border-border-dark/30">
+                       <td className="text-[10px] font-black uppercase tracking-widest text-text-light opacity-60">Total Konsolidasi</td>
+                       <td className="text-right font-black tabular-nums text-blue-brand whitespace-nowrap">{fmt(totalRevenue)}</td>
+                       <td className="text-right font-black tabular-nums text-red-brand whitespace-nowrap">{fmt(totalExpense)}</td>
+                       <td className="text-right font-black tabular-nums text-green-brand whitespace-nowrap">{fmt(totalProfit)}</td>
                        <td colSpan={2}></td>
                     </tr>
                  </tfoot>
@@ -314,13 +314,13 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                 <thead>
-                     <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                        <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">No Polisi</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Nama Unit</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Spesifikasi / Merk</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Kepemilikan</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-text-light text-center opacity-60">Status</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Aksi</th>
+                    <tr>
+                        <th>No Polisi</th>
+                        <th>Nama Unit</th>
+                        <th>Spesifikasi / Merk</th>
+                        <th>Kepemilikan</th>
+                        <th className="text-center">Status</th>
+                        <th className="text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border-main/20">

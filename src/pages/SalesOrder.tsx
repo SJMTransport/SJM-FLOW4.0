@@ -463,15 +463,15 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       <SectionHeader title="Sales Order" sub={`${so.length} SO tersimpan`}
         action={canEdit && <button className="btn-primary" onClick={openNew}><Icon name="Plus" size={16} /> SO Baru</button>} />
 
-      <div className="flex gap-2 border-b border-border-main mb-3 overflow-x-auto pb-px">
+      <div className="tab-bar">
         {[
-           ["list", "Daftar SO"], 
+           ["list", "Daftar SO"],
            canEdit && ["form", editItem ? "Edit SO" : "Input SO"],
            canEdit && ["import", "Import CSV"]
         ].filter(Boolean).map(([k, l]: any) => (
-          <button 
-            key={k} 
-            className={`tab-btn ${tab === k ? "active" : ""}`} 
+          <button
+            key={k}
+            className={`tab-btn ${tab === k ? "active" : ""}`}
             onClick={() => handleTabChange(k)}
           >
             {l.toUpperCase()}
@@ -499,10 +499,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             right={canEdit && selected.length > 0 && (
               <div className="flex items-center gap-2 px-3 h-10 bg-slate-50 border border-border-main rounded-xl">
                 <span className="text-[10px] font-bold text-text-med italic">{selected.length} Selected</span>
-                <button className="btn-ghost !h-8 !px-3 border-red-brand/20 text-red-brand hover:bg-red-brand-light" onClick={deleteBulk} disabled={processing}>
+                <button className="btn-ghost !px-3 border-red-brand/20 text-red-brand hover:bg-red-brand-light" onClick={deleteBulk} disabled={processing}>
                   <Icon name="Trash2" size={12} /> Hapus
                 </button>
-                <button className="btn-primary !h-8 !px-3" onClick={approveBulk} disabled={processing}>
+                <button className="btn-primary !px-3" onClick={approveBulk} disabled={processing}>
                   <Icon name="Send" size={12} /> Posting
                 </button>
               </div>

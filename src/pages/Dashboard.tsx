@@ -118,17 +118,23 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
 
   return (
     <PageShell>
+      <PageHeader
+        title="Executive Overview"
+        sub="Logistics Performance Dashboard"
+        action={<PeriodFilter period={period} setPeriod={setPeriod} hideSearch />}
+      />
+
       {earlyWarnings.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 -mt-2 mb-6">
           {earlyWarnings.map((w, i) => (
-            <div 
-              key={i} 
-              onClick={w.action} 
+            <div
+              key={i}
+              onClick={w.action}
               className={`p-3 rounded-xl flex items-center gap-3 transition-all duration-300 group shadow-sm ${
-                w.type === "danger" 
-                  ? "bg-red-brand-light text-red-brand border border-red-brand/10 hover:border-red-brand/30" 
-                  : w.type === "warning" 
-                    ? "bg-yellow-brand-light text-yellow-brand border border-yellow-brand/10 hover:border-yellow-brand/30" 
+                w.type === "danger"
+                  ? "bg-red-brand-light text-red-brand border border-red-brand/10 hover:border-red-brand/30"
+                  : w.type === "warning"
+                    ? "bg-yellow-brand-light text-yellow-brand border border-yellow-brand/10 hover:border-yellow-brand/30"
                     : "bg-blue-brand-light text-blue-brand border border-blue-brand/10 hover:border-blue-brand/30"
               } ${w.action ? "cursor-pointer hover:bg-white" : "cursor-default"}`}
             >
@@ -143,12 +149,6 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
           ))}
         </div>
       )}
-
-      <PageHeader
-        title="Executive Overview"
-        sub="Logistics Performance Dashboard"
-        action={<PeriodFilter period={period} setPeriod={setPeriod} hideSearch />}
-      />
 
       <KPIGrid cols={4}>
         <StatCard 
