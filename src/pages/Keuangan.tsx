@@ -9,7 +9,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
 
   const vendorRows = useMemo(() => {
     const rows: any[] = [];
-    filterByPeriod(jurnal, period).flatMap((j: any) => (j.jurnal_detail || [])
+    filterByPeriod(jurnal || [], period).flatMap((j: any) => (j.jurnal_detail || [])
       .filter((d: any) => d.coa_kode.startsWith("211")) // Sub-accounts of Account Payable or the main one
       .map((d: any) => ({ ...d, tanggal: j.tanggal, no_jurnal: j.no_jurnal, keterangan: j.keterangan }))
     ).filter((r: any) => 
@@ -27,7 +27,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
     .filter((s: any) => !search || s.order_id?.toLowerCase().includes(search.toLowerCase()) || s.no_polisi?.toLowerCase().includes(search.toLowerCase()) || s.nama_sopir?.toLowerCase().includes(search.toLowerCase()))
     .map((s: any) => {
       // Improved logic for UJ (Uang Jalan) - 511 is default but ideally we should check COA group
-      const relatedUJ = (jurnal.filter((j: any) => s.order_id && (j.keterangan || "").includes(s.order_id))
+      const relatedUJ = ((jurnal || []).filter((j: any) => s.order_id && (j.keterangan || "").includes(s.order_id))
         .flatMap((j: any) => (j.jurnal_detail || []))
         .filter((d: any) => d.coa_kode === "511" || d.nama_akun?.toLowerCase().includes("uang jalan"))
         .reduce((sum: number, d: any) => sum + (Number(d.debit) - Number(d.kredit)), 0));
