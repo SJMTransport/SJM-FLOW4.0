@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { C, STATUS_SO } from "../constants";
-import { fmt, genJUNo, today } from "@/src/utils";
+import { fmt, genJUNo, today, filterByPeriod as filterByPeriodUtil } from "@/src/utils";
 import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Icon, useToast, ModalShell, FeedbackButton, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api, supabase } from "@/src/api";
@@ -10,22 +10,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-const filterByPeriod = (items: any[], period: any) => {
-  if (period.mode === "all") return items;
-  return items.filter(j => {
-    if (!j.tanggal) return true;
-    if (period.mode === "day") return j.tanggal.slice(0, 10) === (period.day || "");
-    if (period.mode === "month") {
-      const d = new Date(j.tanggal);
-      return d.getMonth() === period.month && d.getFullYear() === period.year;
-    }
-    if (period.mode === "year") {
-      const d = new Date(j.tanggal);
-      return d.getFullYear() === period.year;
-    }
-    return true;
-  });
-};
+const filterByPeriod = (items: any[], period: any) => filterByPeriodUtil(items, period);
 
 export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser, prefill, onPrefillUsed, onSOClick, onJurnalClick, logAction }: any) => {
   const { confirm: askConfirmJurnal, Modal: ConfirmJurnalModal } = useConfirm();
