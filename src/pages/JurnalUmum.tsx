@@ -325,9 +325,9 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   <Icon name="FileText" size={14} /> PDF
                </button>
             </div>
-            <button 
-              className="btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest" 
-              onClick={syncSO} 
+            <button
+              className="btn-ghost"
+              onClick={syncSO}
               disabled={syncing}
             >
               <Icon name="RefreshCw" size={12} className={syncing ? "animate-spin" : ""} />
@@ -375,7 +375,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                     filtered.flatMap((j: any) => {
                       const details = j.jurnal_detail || [];
                       return details.map((e: any, ei: number) => (
-          <tr key={`${j.id}-${ei}`} className="hover:bg-slate-50/50 transition-colors group border-b border-border-main/5">
+          <tr key={`${j.id}-${ei}`} className="group transition-colors border-b border-border-main/5">
             {ei === 0 && <>
               <td rowSpan={details.length} className="py-1.5 px-4 text-[10px] font-bold text-text-light align-top tabular-nums italic border-r border-border-main/5">{j.tanggal}</td>
               <td rowSpan={details.length} className="py-1.5 px-4 align-top border-r border-border-main/5">

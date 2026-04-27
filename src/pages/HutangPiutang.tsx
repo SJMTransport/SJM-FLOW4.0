@@ -288,7 +288,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
            <div className="flex items-center gap-3">
               <button 
                 onClick={() => { onGoToJurnal?.({ noSO: prefillData.noSO, noBukti: prefillData.noInvoice || "", keterangan: prefillData.keterangan }); }}
-                className="btn-primary py-1.5 px-6 text-[10px] shadow-lg shadow-accent/20"
+                className="btn-primary"
               >
                 Buat Jurnal
               </button>
@@ -322,7 +322,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
               </div>
               <div className="flex items-center gap-2">
                  <span className="text-[10px] font-bold text-text-light uppercase tracking-tight">Threshold Jatuh Tempo:</span>
-                 <select className="input-field h-8 w-28 text-[11px] font-bold" value={notifDays} onChange={e => setNotifDays(+e.target.value)}>
+                 <select className="input-field h-10 w-28 text-[11px] font-bold" value={notifDays} onChange={e => setNotifDays(+e.target.value)}>
                     {[14, 30, 45, 60].map(d => <option key={d} value={d}>{d} Hari</option>)}
                  </select>
               </div>
@@ -335,7 +335,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
         </div>
       ) : (
         <>
-          <div className="flex flex-col lg:flex-row gap-3 mb-4 items-start lg:items-center">
+          <div className="flex flex-col lg:flex-row gap-3 mb-6 items-start lg:items-center">
             <div className="flex-1 w-full">
               <PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />
             </div>
@@ -361,21 +361,21 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="py-3 px-4">Tanggal</th>
-                  <th className="py-3 px-4">No SO / Jurnal</th>
-                  <th className="py-3 px-4">{tab === "piutang" ? "Customer" : "Vendor/Armada"}</th>
-                  <th className="py-3 px-4">Keterangan</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">Jumlah</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">Sisa</th>
-                  <th className="py-3 px-4 text-center">Status</th>
+                  <th>Tanggal</th>
+                  <th>No SO / Jurnal</th>
+                  <th>{tab === "piutang" ? "Customer" : "Vendor/Armada"}</th>
+                  <th>Keterangan</th>
+                  <th className="text-right min-w-[160px]">Jumlah</th>
+                  <th className="text-right min-w-[160px]">Sisa</th>
+                  <th className="text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-main/20">
                   {filtered.length === 0 ? <EmptyState colSpan={7} /> : 
                     filtered.map((r: any, i: number) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="py-3 px-4 text-[11px] font-bold text-text-med italic tabular-nums">{r.tanggal}</td>
-                        <td className="py-3 px-4 space-y-1">
+                      <tr key={i} className="group transition-colors">
+                        <td className="text-[11px] font-bold text-text-med italic tabular-nums">{r.tanggal}</td>
+                        <td className="space-y-1">
                           {r.no_so ? (
                             <span className="block text-[11px] font-bold text-accent hover:underline cursor-pointer italic tracking-tight" onClick={() => onSOClick && onSOClick(r.no_so)}>
                               {r.no_so}
@@ -383,8 +383,8 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                           ) : <span className="block opacity-20 text-[10px]">None</span>}
                           <div className="flex flex-wrap gap-1">
                             {(r.no_jurnal_list || []).map((nj: string) => (
-                              <button 
-                                key={nj} 
+                              <button
+                                key={nj}
                                 onClick={() => onJurnalClick && onJurnalClick(nj)}
                                 className="badge bg-slate-50 border border-border-main/40 text-[9px] text-text-light font-black hover:bg-accent hover:text-white hover:border-accent transition-all active:scale-95"
                               >
@@ -393,16 +393,16 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                             ))}
                           </div>
                         </td>
-                        <td className="py-3 px-4 font-bold text-[12px] text-text-main group-hover:text-blue-brand transition-colors">
+                        <td className="font-bold text-[12px] text-text-main group-hover:text-blue-brand transition-colors">
                            {tab === "piutang" ? r.customer : r.vendor}
                            {tab === "hutang" && r.customer && <p className="text-[10px] font-bold text-text-light opacity-50 italic mt-0.5">{r.customer}</p>}
                         </td>
-                        <td className="py-3 px-4">
+                        <td>
                           <div className="text-[11px] font-medium text-text-med max-w-xs truncate" title={r.keterangan}>{r.keterangan}</div>
                         </td>
-                        <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(tab === "piutang" ? r.debit : r.kredit)}</td>
-                        <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black whitespace-nowrap ${r.saldo > 0 ? "text-red-brand" : "text-green-brand"}`}>{fmt(r.saldo)}</td>
-                        <td className="py-3 px-4 text-center">{statusBadge(r.status)}</td>
+                        <td className="text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(tab === "piutang" ? r.debit : r.kredit)}</td>
+                        <td className={`text-right tabular-nums text-[12px] font-black whitespace-nowrap ${r.saldo > 0 ? "text-red-brand" : "text-green-brand"}`}>{fmt(r.saldo)}</td>
+                        <td className="text-center">{statusBadge(r.status)}</td>
                       </tr>
                     ))
                   }

@@ -292,7 +292,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
           title="Master Armada" 
           sub={`Manajemen ${armada.length} unit kendaraan operasional`} 
           action={
-            <button className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest shadow-xl shadow-accent/10" onClick={() => { setEditing(null); setItem({}); setShowModal(true); }}>
+            <button className="btn-primary" onClick={() => { setEditing(null); setItem({}); setShowModal(true); }}>
               <Icon name="Plus" size={14} /> Tambah Unit
             </button>
           } 
@@ -326,27 +326,27 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                 <tbody className="divide-y divide-border-main/20">
                     {filtered.length === 0 ? <EmptyState colSpan={6} /> :
                         filtered.map((r: any) => (
-                        <tr key={r.id} className="group hover:bg-slate-50/50 transition-colors">
-                            <td className="py-3 px-4">
+                        <tr key={r.id} className="group transition-colors">
+                            <td>
                                 <button onClick={() => onArmadaClick(r.no_polisi)} className="text-[12px] font-bold text-accent hover:text-blue-brand tabular-nums tracking-tighter transition-colors italic">
                                     {r.no_polisi}
                                 </button>
                             </td>
-                            <td className="py-3 px-4">
+                            <td>
                                 <div className="text-[12px] font-bold text-text-main leading-none">{r.nama_armada || "—"}</div>
                                 <div className="text-[9px] font-bold text-text-light mt-1 opacity-40 italic">{r.tahun || "Tahun —"}</div>
                             </td>
-                            <td className="py-3 px-4">
+                            <td>
                                 <div className="text-[11px] font-bold text-text-med leading-none">{r.merk}</div>
                                 <div className="text-[9px] font-bold text-text-light mt-1 italic opacity-50">{r.jenis}</div>
                             </td>
-                            <td className="py-3 px-4">
+                            <td>
                                <span className="inline-block px-1.5 py-0.5 rounded-md border border-blue-brand/20 bg-blue-brand-light/40 text-[10px] font-bold text-blue-brand italic">
                                  {r.kepemilikan || "SJM"}
                                </span>
                             </td>
-                            <td className="py-3 px-4 text-center">{statusBadge(r.status || "Aktif")}</td>
-                            <td className="py-3 px-4 text-right">
+                            <td className="text-center">{statusBadge(r.status || "Aktif")}</td>
+                            <td className="text-right">
                                 <button className="p-1.5 hover:bg-slate-100 text-text-med rounded-lg transition-colors opacity-40 group-hover:opacity-100" onClick={() => { setEditing(r); setItem(r); setShowModal(true); }}>
                                     <Icon name="Edit3" size={14} />
                                 </button>
@@ -437,7 +437,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
             title="Legalitas Armada" 
             sub="Pemantauan masa berlaku dokumen (STNK, KIR, SIPA, dll)" 
             action={
-                <button className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest shadow-xl shadow-accent/10" onClick={() => { setItem({}); setShowDocModal(true); }}>
+                <button className="btn-primary" onClick={() => { setItem({}); setShowDocModal(true); }}>
                   <Icon name="FilePlus" size={14} /> Register
                 </button>
             } 
@@ -460,13 +460,13 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                            <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60">UNIT</th>
-                            <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60">DOKUMEN</th>
-                            <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60">TGL EXPIRED</th>
-                            <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-center opacity-60">STATUS</th>
-                            <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60 whitespace-nowrap">CATATAN</th>
-                            <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-right opacity-60">AKSI</th>
+                        <tr>
+                            <th>UNIT</th>
+                            <th>DOKUMEN</th>
+                            <th>TGL EXPIRED</th>
+                            <th className="text-center">STATUS</th>
+                            <th className="whitespace-nowrap">CATATAN</th>
+                            <th className="text-right">AKSI</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border-main/20">
@@ -474,17 +474,17 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                             filtered.map((r: any) => {
                                 const isExp = new Date(r.tgl_expired) < new Date();
                                 return (
-                                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="py-3 px-4 font-bold text-accent text-[12px] tabular-nums italic">{r.no_polisi}</td>
-                                        <td className="py-3 px-4 font-bold text-text-main text-[11px] italic tracking-tight">{r.nama_dokumen}</td>
-                                        <td className={`py-3 px-4 font-black text-[12px] tabular-nums ${isExp ? "text-red-brand underline decoration-red-brand/30" : "text-text-main"}`}>{r.tgl_expired}</td>
-                                        <td className="py-3 px-4 text-center">
+                                    <tr key={r.id} className="transition-colors group">
+                                        <td className="font-bold text-accent text-[12px] tabular-nums italic">{r.no_polisi}</td>
+                                        <td className="font-bold text-text-main text-[11px] italic tracking-tight">{r.nama_dokumen}</td>
+                                        <td className={`font-black text-[12px] tabular-nums ${isExp ? "text-red-brand underline decoration-red-brand/30" : "text-text-main"}`}>{r.tgl_expired}</td>
+                                        <td className="text-center">
                                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border italic ${isExp ? "bg-red-brand-light/40 border-red-brand/10 text-red-brand" : "bg-green-brand-light/40 border-green-brand/10 text-green-brand"}`}>
                                                 {isExp ? "Expired" : "Aktif"}
                                             </span>
                                         </td>
-                                        <td className="py-3 px-4 text-[10px] font-medium text-text-light italic opacity-60 max-w-[200px] truncate">{r.keterangan || "—"}</td>
-                                        <td className="py-3 px-4 text-right">
+                                        <td className="text-[10px] font-medium text-text-light italic opacity-60 max-w-[200px] truncate">{r.keterangan || "—"}</td>
+                                        <td className="text-right">
                                            <div className="flex justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                                                <button className="p-1.5 hover:bg-slate-100 text-accent rounded-lg" onClick={() => { setEditing(r); setItem(r); setShowDocModal(true); }}>
                                                   <Icon name="Edit" size={14} />
@@ -577,7 +577,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
           title="Log Pemeliharaan" 
           sub="Riwayat maintenance rutin dan perbaikan unit" 
           action={
-              <button className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest shadow-xl shadow-accent/10" onClick={() => { setItem({}); setShowServiceModal(true); }}>
+              <button className="btn-primary" onClick={() => { setItem({}); setShowServiceModal(true); }}>
                 <Icon name="Wrench" size={14} /> Catat Log
               </button>
           } 
@@ -600,22 +600,22 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Unit</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Tgl Service</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Diperbaiki</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Kilometer</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Biaya (Rp)</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Dok / Ket</th>
+                <tr>
+                    <th>Unit</th>
+                    <th>Tgl Service</th>
+                    <th>Diperbaiki</th>
+                    <th className="text-right">Kilometer</th>
+                    <th className="text-right">Biaya (Rp)</th>
+                    <th>Dok / Ket</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-main/20">
                 {filtered.length === 0 ? <EmptyState colSpan={6} /> :
                     filtered.map((r: any) => (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="py-3 px-4 font-black text-accent text-[12px] uppercase">{r.no_polisi}</td>
-                        <td className="py-3 px-4 font-bold text-text-med text-[11px] uppercase tracking-tight">{r.tgl_service}</td>
-                        <td className="py-3 px-4">
+                    <tr key={r.id} className="transition-colors group">
+                        <td className="font-black text-accent text-[12px] uppercase">{r.no_polisi}</td>
+                        <td className="font-bold text-text-med text-[11px] uppercase tracking-tight">{r.tgl_service}</td>
+                        <td>
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded-md bg-orange-500/10 text-orange-600 flex items-center justify-center border border-orange-500/10">
                                     <Icon name="Hammer" size={12} />
@@ -623,12 +623,12 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                                 <span className="text-[11px] font-bold text-text-main group-hover:text-accent transition-colors uppercase leading-none">{r.jenis_service}</span>
                             </div>
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="text-right">
                            <div className="text-[12px] font-black text-text-med tabular-nums">{r.km_terakhir?.toLocaleString()}</div>
                            <div className="text-[8px] font-black text-text-light uppercase tracking-[0.2em] opacity-40">KILOMETER</div>
                         </td>
-                        <td className="py-3 px-4 text-right font-black text-[12px] text-red-brand tabular-nums whitespace-nowrap">{fmt(r.biaya)}</td>
-                        <td className="py-3 px-4 text-[10px] font-medium text-text-light italic opacity-60 max-w-[150px] truncate">{r.keterangan || "—"}</td>
+                        <td className="text-right font-black text-[12px] text-red-brand tabular-nums whitespace-nowrap">{fmt(r.biaya)}</td>
+                        <td className="text-[10px] font-medium text-text-light italic opacity-60 max-w-[150px] truncate">{r.keterangan || "—"}</td>
                     </tr>
                     ))
                 }
@@ -709,7 +709,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
           title="Manajemen Pengemudi" 
           sub={`Data personil ${sopir.length} sopir operasional`} 
           action={
-              <button className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest shadow-xl shadow-accent/10" onClick={() => { setEditing(null); setItem({}); setShowSopirModal(true); }}>
+              <button className="btn-primary" onClick={() => { setEditing(null); setItem({}); setShowSopirModal(true); }}>
                 <Icon name="UserPlus" size={14} /> Tambah
               </button>
           } 
@@ -731,19 +731,19 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
            <div className="overflow-x-auto">
              <table className="w-full text-left border-collapse">
                <thead>
-                 <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                    <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60">NAMA LENGKAP</th>
-                    <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60">HUBUNGI</th>
-                    <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-left opacity-60">ALAMAT</th>
-                    <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-center opacity-60">STATUS</th>
-                    <th className="py-3 px-4 text-[9px] font-black text-text-light uppercase tracking-widest text-right opacity-60">AKSI</th>
+                 <tr>
+                    <th>NAMA LENGKAP</th>
+                    <th>HUBUNGI</th>
+                    <th>ALAMAT</th>
+                    <th className="text-center">STATUS</th>
+                    <th className="text-right">AKSI</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-border-main/20">
                  {filtered.length === 0 ? <EmptyState colSpan={5} /> :
                     filtered.map((r: any) => (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="py-3 px-4">
+                    <tr key={r.id} className="transition-colors group">
+                      <td>
                          <button onClick={() => onSopirClick(r.id)} className="flex items-center gap-2.5 text-[12px] font-black text-accent hover:text-blue-brand transition-colors text-left uppercase">
                             <div className="w-7 h-7 rounded-lg bg-accent/5 border border-accent/10 flex items-center justify-center text-[10px] font-black text-accent leading-none">
                                 {r.nama?.[0]}
@@ -751,12 +751,12 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                             <span>{r.nama}</span>
                          </button>
                       </td>
-                      <td className="py-3 px-4">
+                      <td>
                          <a href={`tel:${r.telepon}`} className="text-[11px] font-bold text-text-med hover:text-blue-brand underline decoration-blue-brand/20 transition-colors tabular-nums">{r.telepon || "—"}</a>
                       </td>
-                      <td className="py-3 px-4 text-[10px] font-medium text-text-light italic opacity-60 max-w-[250px] truncate">{r.alamat || "—"}</td>
-                      <td className="py-3 px-4 text-center">{statusBadge(r.status || "Aktif")}</td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="text-[10px] font-medium text-text-light italic opacity-60 max-w-[250px] truncate">{r.alamat || "—"}</td>
+                      <td className="text-center">{statusBadge(r.status || "Aktif")}</td>
+                      <td className="text-right">
                          <button className="p-1.5 hover:bg-slate-100 text-text-med rounded-lg transition-colors opacity-40 group-hover:opacity-100" onClick={() => { setEditing(r); setItem(r); setShowSopirModal(true); }}>
                             <Icon name="Edit3" size={14} />
                          </button>

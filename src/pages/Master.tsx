@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { C } from "@/src/constants";
-import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, Icon, PageShell } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, Icon, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { fmt } from "@/src/utils";
 import { api, authActions } from "@/src/api";
@@ -123,57 +123,52 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
       <PageShell>
         <ModalUI />
         <ToastUI />
-        <SectionHeader 
-            title="Master COA" 
-            sub="Kelola bagan akun perkiraan standar akuntansi PT SJM" 
+        <SectionHeader
+            title="Master COA"
+            sub="Kelola bagan akun perkiraan standar akuntansi PT SJM"
             action={
-                <button className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest" onClick={() => { setForm({}); setShowModal('coa'); }}>
+                <button className="btn-primary" onClick={() => { setForm({}); setShowModal('coa'); }}>
                     <Icon name="Plus" size={14} /> Tambah Akun
                 </button>
-            } 
+            }
         />
-        
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="w-full md:w-96 relative group">
-                <Icon name="Search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light group-focus-within:text-accent transition-all duration-300 opacity-50" />
-                <input 
-                    className="input-field pl-11 bg-slate-50 border-transparent focus:bg-white focus:border-accent" 
-                    placeholder="Cari kode atau nama akun..." 
-                    value={search || ""} 
-                    onChange={e => setSearch(e.target.value)} 
-                />
-            </div>
-        </div>
 
-        <Card className="p-0 border-border-main/40 overflow-hidden">
-            <div className="overflow-x-auto">
+        <ActionBar left={
+            <div className="relative">
+                <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
+                <input className="input-field h-10 pl-9 w-72 text-[12px]" placeholder="Cari kode atau nama akun..." value={search || ""} onChange={e => setSearch(e.target.value)} />
+            </div>
+        } />
+
+        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
+            <div className="overflow-auto max-h-[calc(100vh-360px)]">
                 <table className="w-full border-collapse">
                     <thead>
-                        <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Kode</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Nama Akun</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Klasifikasi</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Kelompok</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Sub-Kelompok</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-center opacity-60">Status</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Aksi</th>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Akun</th>
+                            <th>Klasifikasi</th>
+                            <th>Kelompok</th>
+                            <th>Sub-Kelompok</th>
+                            <th className="text-center">Status</th>
+                            <th className="text-right">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border-main/20">
+                    <tbody>
                         {filtered.length === 0 ? <EmptyState colSpan={7} /> :
                             filtered.map((r: any) => (
-                                <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="py-3 px-4 font-black text-accent tabular-nums tracking-tighter text-[12px]">{r.kode}</td>
-                                    <td className="py-3 px-4 font-bold text-text-main group-hover:text-accent transition-colors leading-tight text-[12px]">{r.nama}</td>
-                                    <td className="py-3 px-4">
-                                        <span className="text-[10px] font-bold text-text-med bg-slate-100/80 px-2 py-0.5 rounded-md border border-border-main/20 italic">{r.klasifikasi || "Umum"}</span>
+                                <tr key={r.id} className="group transition-colors">
+                                                    <td className="font-black text-accent tabular-nums tracking-tighter text-[12px]">{r.kode}</td>
+                                    <td className="font-bold text-text-main group-hover:text-accent transition-colors leading-tight text-[12px]">{r.nama}</td>
+                                    <td>
+                                        <span className="text-[10px] font-bold text-text-med bg-grey-100 px-2 py-0.5 rounded-md border border-border-main/20 italic">{r.klasifikasi || "Umum"}</span>
                                     </td>
-                                    <td className="py-3 px-4 font-bold text-text-med text-[11px] opacity-70 italic">{r.kelompok}</td>
-                                    <td className="py-3 px-4 font-medium text-text-light italic text-[11px]">{r.sub_kelompok || "—"}</td>
-                                    <td className="py-3 px-4 text-center">{statusBadge(r.status || "Aktif")}</td>
-                                    <td className="py-3 px-4 text-right">
+                                    <td className="font-bold text-text-med text-[11px] opacity-70 italic">{r.kelompok}</td>
+                                    <td className="font-medium text-text-light italic text-[11px]">{r.sub_kelompok || "—"}</td>
+                                    <td className="text-center">{statusBadge(r.status || "Aktif")}</td>
+                                    <td className="text-right">
                                         <div className="flex justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors" onClick={() => { setForm(r); setShowModal('coa'); }} title="Edit Akun">
+                                            <button className="p-1.5 rounded-lg hover:bg-grey-100 text-text-med transition-colors" onClick={() => { setForm(r); setShowModal('coa'); }} title="Edit Akun">
                                                 <Icon name="Edit3" size={14} />
                                             </button>
                                             <button className="p-1.5 rounded-lg hover:bg-red-brand/10 text-red-brand transition-colors" onClick={() => deleteCoa(r.id, r.nama)} title="Hapus Akun">
@@ -251,7 +246,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                 </div>
 
                 <div className="flex flex-col gap-2 mt-8 pt-6 border-t border-border-main/40">
-                    <button className="btn-primary h-11 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2" onClick={saveCoa} disabled={loading}>
+                    <button className="btn-primary w-full flex items-center justify-center gap-2" onClick={saveCoa} disabled={loading}>
                        {loading ? <Icon name="Loader2" className="animate-spin" size={16} /> : <Icon name="Save" size={16} />}
                        {loading ? "Menyimpan..." : "Simpan Akun"}
                     </button>
@@ -272,9 +267,9 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
             title="Konfigurasi Saldo Awal" 
             sub="Pencatatan saldo pembukaan akun per periode akuntansi" 
             action={
-                <button 
-                    className={`btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest shadow-xl transition-all ${loading ? "opacity-50 pointer-events-none" : "shadow-accent/10"}`} 
-                    onClick={handleUpdateSaldo} 
+                <button
+                    className="btn-primary"
+                    onClick={handleUpdateSaldo}
                     disabled={loading}
                 >
                     <Icon name={loading ? "Loader2" : "Save"} size={14} className={loading ? "animate-spin" : ""} />
@@ -283,26 +278,26 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
             } 
         />
         
-        <Card className="p-0 overflow-hidden border-border-main/40">
-            <div className="overflow-x-auto">
+        <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm">
+            <div className="overflow-auto max-h-[calc(100vh-320px)]">
                 <table className="w-full border-collapse">
                     <thead>
-                        <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Kode Akun</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Nama Akun</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Saldo Debit (Rp)</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Saldo Kredit (Rp)</th>
+                        <tr>
+                            <th>Kode Akun</th>
+                            <th>Nama Akun</th>
+                            <th className="text-right">Saldo Debit (Rp)</th>
+                            <th className="text-right">Saldo Kredit (Rp)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border-main/20">
+                    <tbody>
                         {coa.filter((c: any) => c.status === "Aktif").map((c: any) => {
                             const sa = saldoAwal.find((s: any) => s.coa_kode === c.kode);
                             const current = saChanges[c.kode] || { debit: sa?.debit || 0, kredit: sa?.kredit || 0 };
                             return (
-                                <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="py-3 px-4 font-black text-accent tabular-nums tracking-tighter text-[12px]">{c.kode}</td>
-                                    <td className="py-3 px-4 font-bold text-text-main uppercase tracking-tight text-[12px] leading-none">{c.nama}</td>
-                                    <td className="py-3 px-4 text-right">
+                                <tr key={c.id} className="group transition-colors">
+                                    <td className="font-black text-accent tabular-nums tracking-tighter text-[12px]">{c.kode}</td>
+                                    <td className="font-bold text-text-main uppercase tracking-tight text-[12px] leading-none">{c.nama}</td>
+                                    <td className="text-right">
                                         <div className="w-40 ml-auto scale-90 origin-right">
                                             <CurrencyInput 
                                                 value={current.debit} 
@@ -312,7 +307,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                                             />
                                         </div>
                                     </td>
-                                    <td className="py-3 px-4 text-right">
+                                    <td className="text-right">
                                         <div className="w-40 ml-auto scale-90 origin-right">
                                             <CurrencyInput 
                                                 value={current.kredit} 
@@ -339,45 +334,40 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
       <PageShell>
         <ModalUI />
         <ToastUI />
-        <SectionHeader 
-            title="Manajemen Pengguna" 
-            sub={`Kelola akses dan hak istimewa akun internal SJM`} 
+        <SectionHeader
+            title="Manajemen Pengguna"
+            sub="Kelola akses dan hak istimewa akun internal SJM"
             action={
-                <button className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest" onClick={() => { setForm({}); setShowModal('user'); }}>
+                <button className="btn-primary" onClick={() => { setForm({}); setShowModal('user'); }}>
                     <Icon name="UserPlus" size={16} /> Undang Staf
                 </button>
-            } 
+            }
         />
-        
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="w-full md:w-96 relative group">
-                <Icon name="Search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light group-focus-within:text-accent transition-all duration-300 opacity-50" />
-                <input 
-                    className="input-field pl-11 bg-slate-50 border-transparent focus:bg-white focus:border-accent" 
-                    placeholder="Cari user berdasarkan nama atau email..." 
-                    value={search || ""} 
-                    onChange={e => setSearch(e.target.value)} 
-                />
-            </div>
-        </div>
 
-        <Card className="p-0 border-border-main/40 overflow-hidden">
-            <div className="overflow-x-auto">
+        <ActionBar left={
+            <div className="relative">
+                <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
+                <input className="input-field h-10 pl-9 w-72 text-[12px]" placeholder="Cari nama atau email..." value={search || ""} onChange={e => setSearch(e.target.value)} />
+            </div>
+        } />
+
+        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
+            <div className="overflow-auto max-h-[calc(100vh-360px)]">
                 <table className="w-full border-collapse">
                     <thead>
-                        <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Nama Pengguna</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Alamat Email</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Hak Akses / Role</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-center opacity-60">Status</th>
-                            <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Aksi</th>
+                        <tr>
+                            <th>Nama Pengguna</th>
+                            <th>Alamat Email</th>
+                            <th>Hak Akses / Role</th>
+                            <th className="text-center">Status</th>
+                            <th className="text-right">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border-main/20">
+                    <tbody>
                         {filtered.length === 0 ? <EmptyState colSpan={5} msg="Tidak ada pengguna ditemukan" /> :
                             filtered.map((r: any) => (
-                                <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="py-3 px-4">
+                                <tr key={r.id} className="group transition-colors">
+                                    <td>
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-blue-brand/5 text-blue-brand flex items-center justify-center font-bold text-[10px] border border-blue-brand/10 shadow-sm italic">
                                                 {r.nama?.[0]}
@@ -385,18 +375,18 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                                             <div className="font-bold text-text-main group-hover:text-blue-brand transition-colors tracking-tight text-[12px]">{r.nama}</div>
                                         </div>
                                     </td>
-                                    <td className="py-3 px-4 font-bold text-text-med italic text-[11px] opacity-60">{r.email}</td>
-                                    <td className="py-3 px-4">
+                                    <td className="font-bold text-text-med italic text-[11px] opacity-60">{r.email}</td>
+                                    <td>
                                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold italic border ${
                                             r.role === "Admin" ? "bg-red-brand-light/40 border-red-brand/10 text-red-brand" :
                                             r.role === "Keuangan" ? "bg-green-brand-light/40 border-green-brand/10 text-green-brand" :
-                                            r.role === "Operasional" ? "bg-blue-brand-light/40 border-blue-brand/10 text-blue-brand" : "bg-slate-100 border-border-main/10 text-text-light"
+                                            r.role === "Operasional" ? "bg-blue-brand-light/40 border-blue-brand/10 text-blue-brand" : "bg-grey-100 border-border-main/10 text-text-light"
                                         }`}>
                                             {r.role}
                                         </span>
                                     </td>
-                                    <td className="py-3 px-4 text-center">{statusBadge(r.status || "Aktif")}</td>
-                                    <td className="py-3 px-4 text-right">
+                                    <td className="text-center">{statusBadge(r.status || "Aktif")}</td>
+                                    <td className="text-right">
                                         <button className="p-1.5 rounded-lg hover:bg-red-brand/10 text-red-brand transition-colors opacity-40 group-hover:opacity-100" onClick={() => deleteUser(r.id, r.nama)} title="Nonaktifkan User">
                                             <Icon name="UserX" size={14} />
                                         </button>

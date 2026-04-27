@@ -637,13 +637,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               <tbody>
                 {tbProfit.length === 0 ? <EmptyState colSpan={6} /> :
                  tbProfit.map((p: any, i:number) => (
-                   <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
-                      <td className="py-3 px-4 text-[11px] font-black text-accent group-hover:underline underline-offset-4 decoration-accent/30">{p.order_id}</td>
-                      <td className="py-3 px-4 text-[11px] font-bold text-text-main uppercase tracking-tight">{p.customer}</td>
-                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium whitespace-nowrap">{fmt(p.revenue)}</td>
-                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium text-red-brand/70 whitespace-nowrap">{fmt(p.expense)}</td>
-                      <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black whitespace-nowrap ${p.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>{fmt(p.profit)}</td>
-                      <td className="py-3 px-4 text-right">
+                   <tr key={i} className="transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
+                      <td className="text-[11px] font-black text-accent group-hover:underline underline-offset-4 decoration-accent/30">{p.order_id}</td>
+                      <td className="text-[11px] font-bold text-text-main uppercase tracking-tight">{p.customer}</td>
+                      <td className="text-right tabular-nums text-[11px] font-medium whitespace-nowrap">{fmt(p.revenue)}</td>
+                      <td className="text-right tabular-nums text-[11px] font-medium text-red-brand/70 whitespace-nowrap">{fmt(p.expense)}</td>
+                      <td className={`text-right tabular-nums text-[12px] font-black whitespace-nowrap ${p.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>{fmt(p.profit)}</td>
+                      <td className="text-right">
                         <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-[9px] font-black tracking-widest uppercase border ${p.margin >= 0 ? "bg-green-brand/5 text-green-brand border-green-brand/10" : "bg-red-brand/5 text-red-brand border-red-brand/10"}`}>
                            {Math.round(p.margin)}%
                         </span>
@@ -699,19 +699,19 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               <tbody>
                  {filteredLogs.length === 0 ? <EmptyState colSpan={4} /> : 
                   filteredLogs.map((log: any, idx: number) => (
-                    <tr key={log.id || idx} className="hover:bg-slate-50/50 transition-colors group">
-                       <td className="py-3 px-4 text-[10px] text-text-light tabular-nums font-medium opacity-60">
+                    <tr key={log.id || idx} className="transition-colors group">
+                       <td className="text-[10px] text-text-light tabular-nums font-medium opacity-60">
                           {new Date(log.timestamp || log.created_at).toLocaleString("id-ID", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                        </td>
-                       <td className="py-3 px-4">
+                       <td>
                           <div className="font-black text-text-main text-[11px] leading-tight uppercase">{log.user_name}</div>
                           <div className="text-[9px] font-bold text-text-light tracking-widest uppercase mt-0.5 opacity-40">{log.user_email}</div>
                        </td>
-                       <td className="py-3 px-4">
+                       <td>
                           <div className="flex items-center gap-2">
                              <span className={`shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase ${
-                               log.action?.includes("Hapus") ? "bg-red-brand/10 text-red-brand" : 
-                               log.action?.includes("Simpan") || log.action?.includes("Create") ? "bg-green-brand/10 text-green-brand" : 
+                               log.action?.includes("Hapus") ? "bg-red-brand/10 text-red-brand" :
+                               log.action?.includes("Simpan") || log.action?.includes("Create") ? "bg-green-brand/10 text-green-brand" :
                                "bg-slate-100/80 text-text-light"
                              }`}>
                                 {log.action?.includes("Hapus") ? "DELETE" : log.action?.includes("Simpan") || log.action?.includes("Create") || log.action?.includes("Add") ? "SAVE" : "INFO"}
@@ -719,7 +719,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                              <span className="font-bold text-text-med text-[11px] truncate max-w-xs">{log.action}</span>
                           </div>
                        </td>
-                       <td className="py-3 px-4">
+                       <td>
                           {log.metadata ? (
                             <div className="max-h-20 overflow-auto whitespace-pre-wrap text-[9px] font-medium text-text-light bg-slate-50/50 p-2.5 rounded-lg border border-border-main/20 leading-relaxed italic opacity-70 group-hover:opacity-100 transition-opacity">
                                {log.metadata}
@@ -801,7 +801,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                  <Icon name="FileText" size={13} /> PDF
               </button>
               <div className="sm:min-w-[280px]">
-                 <select className="input-field h-8 font-black text-[11px] uppercase tracking-widest bg-grey-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
+                 <select className="input-field h-10 font-black text-[11px] uppercase tracking-widest bg-grey-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
                     <option value="">— PILIH AKUN COA —</option>
                     {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} — {c.nama.toUpperCase()}</option>)}
                  </select>
@@ -858,7 +858,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                       </tr>
                     ) : (
                       rowsWithBalance.map((m: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                        <tr key={i} className="transition-colors group">
                           <td className="py-2 px-4 text-text-light tabular-nums font-medium opacity-60">{m.tanggal}</td>
                           <td className="py-2 px-4">
                              <button 

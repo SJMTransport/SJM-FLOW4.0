@@ -311,11 +311,11 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
           <div className="flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-border-main/40 shadow-sm">
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-left opacity-60">Tgl</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-left opacity-60">Nomor</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-left opacity-60">Ket</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-right opacity-60">Nominal</th>
+                <tr>
+                  <th>Tgl</th>
+                  <th>Nomor</th>
+                  <th>Ket</th>
+                  <th className="text-right">Nominal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-main/20">
@@ -323,20 +323,20 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
                   <EmptyState colSpan={4} />
                 ) : (
                   recentTx.map((j: any) => (
-                    <tr key={j.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="py-3 px-4 text-[11px] font-bold text-text-med tabular-nums whitespace-nowrap">{j.tanggal}</td>
-                      <td className="py-3 px-4">
-                        <button 
-                         onClick={() => onJurnalClick && onJurnalClick(j.no_jurnal)} 
+                    <tr key={j.id} className="group transition-colors">
+                      <td className="text-[11px] font-bold text-text-med tabular-nums whitespace-nowrap">{j.tanggal}</td>
+                      <td>
+                        <button
+                         onClick={() => onJurnalClick && onJurnalClick(j.no_jurnal)}
                          className="text-[11px] font-black text-blue-brand hover:underline uppercase tracking-tight"
                         >
                           {j.no_jurnal}
                         </button>
                       </td>
-                      <td className="py-3 px-4 wrap max-w-[200px]">
+                      <td className="wrap max-w-[200px]">
                         <div className="text-[12px] font-bold text-text-main line-clamp-1 opacity-90 group-hover:text-blue-brand transition-colors" title={j.keterangan}>{j.keterangan}</div>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="text-right">
                         <span className={`text-[12px] font-black tracking-tight ${
                           (j.jurnal_detail || []).some((e: any) => String(e.coa_kode).startsWith("4")) ? "text-green-brand" : "text-text-main"
                         }`}>

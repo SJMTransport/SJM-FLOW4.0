@@ -215,7 +215,7 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
                     </thead>
                     <tbody className="divide-y divide-border-main/30">
                        {previewData.map((d, i) => (
-                         <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                         <tr key={i} className="transition-colors">
                            {SO_IMPORT_FIELDS.slice(0, 8).map(f => (
                              <td key={f.key} className={`py-4 text-[11px] font-bold ${d[f.key] ? "text-text-main" : "text-red-brand italic"}`}>
                                 {d[f.key] || "Null"}
@@ -529,45 +529,45 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         />
                       </th>
                     )}
-                    <th className="py-3 px-4">Order ID</th>
-                    <th className="py-3 px-4">Tgl Muat</th>
-                    <th className="py-3 px-4">Rute</th>
-                    <th className="py-3 px-4">Customer</th>
-                    <th className="py-3 px-4">Unit / Sopir</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-center">Aksi</th>
+                    <th>Order ID</th>
+                    <th>Tgl Muat</th>
+                    <th>Rute</th>
+                    <th>Customer</th>
+                    <th>Unit / Sopir</th>
+                    <th>Status</th>
+                    <th className="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-main/20">
                   {filtered.length === 0 ? <EmptyState colSpan={8} /> : 
                     filtered.map((s: any) => (
-                      <tr key={s.id} className="hover:bg-slate-50/50 cursor-pointer transition-colors group" onClick={(e) => {
+                      <tr key={s.id} className="cursor-pointer transition-colors group" onClick={(e) => {
                         if ((e.target as HTMLElement).tagName === "BUTTON" || (e.target as HTMLElement).tagName === "INPUT") return;
                         onSOClick && onSOClick(s.order_id);
                       }}>
                         {canEdit && (
-                          <td className="py-3 px-4">
-                            <input 
-                              type="checkbox" 
+                          <td>
+                            <input
+                              type="checkbox"
                               className="w-3.5 h-3.5 rounded border-border-main text-accent focus:ring-accent"
-                              checked={selected.includes(s.id)} 
-                              onChange={(e) => toggleSelect(s.id, e as any)} 
+                              checked={selected.includes(s.id)}
+                              onChange={(e) => toggleSelect(s.id, e as any)}
                             />
                           </td>
                         )}
-                        <td className="py-3 px-4">
-                          <button 
-                             onClick={(e) => { 
+                        <td>
+                          <button
+                             onClick={(e) => {
                                if (!canEdit) return;
-                               e.stopPropagation(); 
-                               openEdit(s); 
-                             }} 
+                               e.stopPropagation();
+                               openEdit(s);
+                             }}
                              className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight"
                            >
                              {s.order_id || "(Draft)"}
                            </button>
                         </td>
-                        <td className="py-3 px-4 tabular-nums text-[11px] font-bold text-text-med italic">
+                        <td className="tabular-nums text-[11px] font-bold text-text-med italic">
                           <div className="flex items-center gap-2">
                             {jurnal.some((j: any) => j.no_so?.includes(s.order_id)) && (
                               <div className="w-1.5 h-1.5 rounded-full bg-green-brand animate-pulse" title="Terhubung Jurnal" />
@@ -575,25 +575,25 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                             {s.tgl_muat}
                           </div>
                         </td>
-                        <td className="py-3 px-4 max-w-[200px]">
+                        <td className="max-w-[200px]">
                           <div className="text-[12px] font-bold text-text-main truncate group-hover:text-blue-brand transition-colors" title={s.lokasi_muat}>{s.lokasi_muat}</div>
                           <div className="text-[10px] font-medium text-text-light opacity-70 italic truncate" title={s.lokasi_bongkar}>to {s.lokasi_bongkar}</div>
                         </td>
-                        <td className="py-3 px-4">
+                        <td>
                           <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{s.customer}</div>
                           <div className={`badge text-[8px] mt-1 ${s.is_posted ? "bg-green-brand-light text-green-brand" : "bg-slate-100 text-slate-500"}`}>
                             {s.is_posted ? "Posted" : "Draft"}
                           </div>
                         </td>
-                        <td className="py-3 px-4">
+                        <td>
                            <button
                              className="text-[12px] font-black text-accent hover:underline tabular-nums tracking-tight"
                              onClick={(e) => { e.stopPropagation(); onArmadaClick && onArmadaClick(s.no_polisi); }}
                            >{s.no_polisi}</button>
                            <div className="text-[10px] text-text-light font-medium">{s.nama_sopir}</div>
                         </td>
-                        <td className="py-3 px-4">{statusBadge(s.status_muatan)}</td>
-                        <td className="py-3 px-4">
+                        <td>{statusBadge(s.status_muatan)}</td>
+                        <td>
                           {canEdit && (
                             <div className="flex gap-0.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
                               <button className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors" onClick={(e) => { e.stopPropagation(); openEdit(s); }} title="Edit">
