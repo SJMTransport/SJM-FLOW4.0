@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Hexagon outline segments (dark charcoal, with small gaps at vertices) -->
+  <!-- top-right edge -->
+  <line x1="53" y1="7" x2="87" y2="26" stroke="#252525" stroke-width="7" stroke-linecap="round"/>
+  <!-- right edge -->
+  <line x1="89" y1="30" x2="89" y2="70" stroke="#252525" stroke-width="7" stroke-linecap="round"/>
+  <!-- bottom-right edge -->
+  <line x1="87" y1="74" x2="53" y2="93" stroke="#252525" stroke-width="7" stroke-linecap="round"/>
+  <!-- bottom-left edge -->
+  <line x1="47" y1="93" x2="13" y2="74" stroke="#252525" stroke-width="7" stroke-linecap="round"/>
+  <!-- left edge -->
+  <line x1="11" y1="70" x2="11" y2="30" stroke="#252525" stroke-width="7" stroke-linecap="round"/>
+  <!-- top-left edge -->
+  <line x1="13" y1="26" x2="47" y2="7" stroke="#252525" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Orange S / flow symbol -->
+  <!-- The S path: upper curve goes from lower-left to upper-right, lower curve mirrors -->
+  <path d="M28 55 C28 38 50 32 65 35 C76 38 73 50 60 52 C45 55 26 56 26 68 C26 80 48 82 65 76"
+        fill="none" stroke="#F97316" stroke-width="9.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Arrowhead pointing right at top end -->
+  <polyline points="57,27 68,33 62,44"
+        fill="none" stroke="#F97316" stroke-width="7.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
