@@ -387,10 +387,10 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   {Math.abs(Number(j.total_debit) - Number(j.total_kredit)) > 0.01 && <Icon name="AlertTriangle" size={12} className="text-red-brand animate-pulse" title="Jurnal tidak seimbang!" />}
                 </div>
               </td>
-              <td rowSpan={details.length} className="py-1.5 px-4 align-top space-y-1 border-r border-border-main/5">
+              <td rowSpan={details.length} className="py-1.5 px-4 align-top space-y-1 border-r border-border-main/5 min-w-[130px]">
                   {j.no_so ? (j.no_so as string).split(",").map(s => (
-                      <span key={s} className="text-[9px] font-black text-blue-brand bg-blue-brand/5 px-1.5 py-0.5 rounded-sm hover:bg-blue-brand/10 cursor-pointer block w-fit italic truncate max-w-[80px]" onClick={() => onSOClick && onSOClick(s.trim())}>{s.trim()}</span>
-                  )) : <span className="text-[9px] font-bold text-text-light opacity-20 italic">None</span>}
+                      <span key={s} className="text-[9px] font-black text-blue-brand bg-blue-brand/5 px-1.5 py-0.5 rounded-sm hover:bg-blue-brand/10 cursor-pointer block w-fit italic" onClick={() => onSOClick && onSOClick(s.trim())}>{s.trim()}</span>
+                  )) : <span className="text-[9px] font-bold text-text-light opacity-20 italic">—</span>}
               </td>
             </>}
             <td className={`py-1.5 px-4 max-w-[260px] ${ei === details.length - 1 ? "pb-2" : ""}`} style={{ paddingLeft: Number(e.kredit) > 0 ? 32 : 16 }}>
@@ -431,158 +431,309 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
             </div>
           </div>
       ) : (
-        <Card className="p-0 overflow-hidden border-border-main/60 shadow-xl animate-fade-left bg-white">
-          <div className="p-4 border-b border-border-main flex justify-between items-center bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg shadow-accent/20">
-                      <Icon name={editJurnalId ? "Edit" : "Plus"} size={18} />
-                  </div>
-                  <div>
-                     <h3 className="text-sm font-black tracking-tight leading-none text-abyssal-blue uppercase">{editJurnalId ? "Perbarui Entri Jurnal" : "Input Jurnal Baru"}</h3>
-                     <p className="text-[9px] font-bold text-text-light mt-1 opacity-60 italic uppercase tracking-wider">Pencatatan transaksi keuangan manual</p>
-                  </div>
-              </div>
-              <button className="p-2 rounded-full hover:bg-slate-100 transition-colors" onClick={() => { setTab("list"); setEditJurnalId(null); }}>
-                  <Icon name="X" size={20} className="text-text-main" />
-              </button>
-          </div>
+        <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm animate-fade-left bg-white">
 
-          <div className="p-5 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-text-light px-1 opacity-60 uppercase tracking-widest">Tanggal Transaksi</label>
-                  <input type="date" className="input-field h-10 text-[11px] font-bold bg-slate-50 border-transparent focus:bg-white focus:border-accent" value={form.tanggal || ""} onChange={e => setForm((f: any) => ({ ...f, tanggal: e.target.value }))} />
+          {/* ── FORM BODY ─────────────────────────────────────────────── */}
+          <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(100vh-220px)]">
+
+            {/* Title */}
+            <h2 className="text-xl font-black tracking-tight text-text-main">
+              {editJurnalId ? "Edit Jurnal" : "Buat Jurnal Baru"}
+            </h2>
+
+            {/* NO JURNAL */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-0.5">
+                <label className="text-[10px] font-black text-text-light uppercase tracking-widest">NO JURNAL *</label>
+                <span className="text-[9px] font-medium text-text-light opacity-40 italic">otomatis dari tanggal · bisa diedit</span>
+              </div>
+              <input
+                className="input-field h-10 font-black text-[13px] tracking-tight"
+                placeholder={genJUNo(form.tanggal, jurnal)}
+                value={form.noJurnal || ""}
+                onChange={e => setForm((f: any) => ({ ...f, noJurnal: e.target.value }))}
+              />
+            </div>
+
+            {/* TANGGAL | NO BUKTI */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-text-light uppercase tracking-widest px-0.5">TANGGAL *</label>
+                <input type="date" className="input-field h-10 text-[12px] font-bold" value={form.tanggal || ""} onChange={e => setForm((f: any) => ({ ...f, tanggal: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-text-light uppercase tracking-widest px-0.5">NO BUKTI</label>
+                <input className="input-field h-10 text-[12px] font-bold" placeholder="No. Invoice / Kwitansi" value={form.noBukti || ""} onChange={e => setForm((f: any) => ({ ...f, noBukti: e.target.value }))} />
+              </div>
+            </div>
+
+            {/* KETERANGAN */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-text-light uppercase tracking-widest px-0.5">KETERANGAN *</label>
+              <textarea
+                className="input-field pt-2.5 text-[13px] resize-none font-medium leading-snug"
+                rows={2}
+                placeholder="Contoh: Order PT. Berca Mandiri Perkasa — SJM.ID-0017.26"
+                value={form.keterangan || ""}
+                onChange={e => setForm((f: any) => ({ ...f, keterangan: e.target.value }))}
+              />
+            </div>
+
+            {/* SO chips — click to auto-fill keterangan */}
+            {(form.noSO || []).length > 0 && (() => {
+              const chips = (form.noSO as string[]).map(id => (so || []).find((s: any) => s.order_id === id)).filter(Boolean);
+              return chips.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {chips.map((s: any) => (
+                    <button
+                      key={s.order_id}
+                      type="button"
+                      title="Klik untuk isi keterangan"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-green-brand/10 border border-green-brand/20 text-green-brand rounded-lg text-[11px] font-black hover:bg-green-brand hover:text-white transition-all"
+                      onClick={() => setForm((f: any) => ({ ...f, keterangan: `Order ${s.customer} — ${s.order_id}` }))}
+                    >
+                      <Icon name="Truck" size={12} />
+                      {s.no_polisi} · {s.nama_sopir}
+                      <span className="opacity-50 font-medium ml-1">↑ klik untuk isi keterangan</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-text-light px-1 opacity-60 uppercase tracking-widest">Nomor Jurnal</label>
-                    <input className="input-field h-10 text-[11px] font-bold bg-slate-50 border-transparent focus:bg-white focus:border-accent" placeholder="Otomatis" value={form.noJurnal || ""} onChange={e => setForm((f: any) => ({ ...f, noJurnal: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-text-light px-1 opacity-60 uppercase tracking-widest">Referensi Bukti</label>
-                    <input className="input-field h-10 text-[11px] font-bold bg-slate-50 border-transparent focus:bg-white focus:border-accent" placeholder="No. Invoice / Kwitansi" value={form.noBukti || ""} onChange={e => setForm((f: any) => ({ ...f, noBukti: e.target.value }))} />
-                </div>
-                <div className="md:col-span-3 space-y-1.5">
-                  <label className="text-[10px] font-black text-text-light px-1 opacity-60 uppercase tracking-widest">Keterangan Utama</label>
-                  <textarea 
-                    className="input-field h-14 pt-2 text-[12px] resize-none font-bold bg-slate-50 border-transparent focus:bg-white focus:border-accent" 
-                    placeholder="Contoh: Pembayaran muatan armada ke rek supplier..." 
-                    value={form.keterangan || ""} 
-                    onChange={e => setForm((f: any) => ({ ...f, keterangan: e.target.value }))} 
-                  />
-                </div>
+              ) : null;
+            })()}
+
+            {/* NO SO selector */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-text-light uppercase tracking-widest px-0.5">
+                NO SO <span className="normal-case font-medium opacity-50">(opsional · bisa pilih banyak)</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5 p-2 min-h-[40px] border border-border-main rounded-xl bg-white items-center">
+                {(form.noSO || []).map((id: string) => (
+                  <span key={id} className="flex items-center gap-1 px-2 py-0.5 bg-accent text-white rounded-md text-[11px] font-black">
+                    {id}
+                    <button
+                      type="button"
+                      className="ml-0.5 hover:opacity-70 transition-opacity"
+                      onClick={() => {
+                        const next = (form.noSO as string[]).filter((x: string) => x !== id);
+                        setForm((f: any) => ({
+                          ...f,
+                          noSO: next,
+                          entries: f.entries.map((e: any) => e.no_so === id && next.length === 0 ? { ...e, no_so: "" } : e)
+                        }));
+                      }}
+                    >×</button>
+                  </span>
+                ))}
+                <select
+                  className="flex-1 min-w-[160px] bg-transparent text-[11px] font-bold border-none outline-none cursor-pointer text-text-light"
+                  value=""
+                  onChange={e => {
+                    const id = e.target.value;
+                    if (!id || (form.noSO || []).includes(id)) return;
+                    const next = [...(form.noSO || []), id];
+                    setForm((f: any) => ({
+                      ...f,
+                      noSO: next,
+                      entries: f.entries.map((entry: any) => entry.no_so ? entry : { ...entry, no_so: id })
+                    }));
+                  }}
+                >
+                  <option value="">+ Tambah SO referensi...</option>
+                  {(so || [])
+                    .filter((s: any) => s.is_posted && !(form.noSO || []).includes(s.order_id))
+                    .sort((a: any, b: any) => (b.order_id || "").localeCompare(a.order_id || ""))
+                    .map((s: any) => (
+                      <option key={s.id} value={s.order_id}>{s.order_id} — {s.customer}</option>
+                    ))}
+                </select>
               </div>
 
-              {(() => {
-                const uniqueSO = [...new Set(form.entries.map((e: any) => e.no_so).filter(Boolean))];
-                if (uniqueSO.length <= 1) return null;
+              {/* SO info card */}
+              {(form.noSO || []).length > 0 && (() => {
+                const soList = (form.noSO as string[]).map(id => (so || []).find((s: any) => s.order_id === id)).filter(Boolean);
+                if (soList.length === 0) return null;
+                const totalVal = soList.reduce((s: number, x: any) => s + Number(x.total_harga_pajak || x.total_harga || 0), 0);
                 return (
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-border-main/50 space-y-4">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-navy uppercase tracking-widest px-1 italic">
-                       <Icon name="PieChart" size={13} className="text-accent" /> Distribusi Nilai per SO
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {uniqueSO.map((oid: any) => (
-                        <div key={oid} className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-text-light px-1 opacity-60">{oid}</label>
-                          <CurrencyInput 
-                            value={form.soValues?.[oid] || ""} 
-                            placeholder="Nilai SO ini"
-                            onChange={(v: any) => setForm((f: any) => ({ ...f, soValues: { ...(f.soValues||{}), [oid]: v } }))}
-                            className="h-9 text-[11px] font-bold bg-white"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-[9px] font-bold text-text-light italic opacity-60 px-1">
-                      ℹ Isi nilai pendapatan/tagihan masing-masing SO untuk perhitungan margin profit yang akurat.
-                    </div>
+                  <div className="mt-2 p-3 bg-blue-brand/5 border border-blue-brand/20 rounded-xl space-y-1">
+                    {soList.map((s: any) => (
+                      <div key={s.order_id} className="flex items-center justify-between text-[11px]">
+                        <span className="font-medium text-text-med">
+                          <span className="font-black text-text-main">{s.customer}</span>
+                          {s.lokasi_muat && s.lokasi_bongkar && <span className="opacity-60"> · {s.lokasi_muat} → {s.lokasi_bongkar}</span>}
+                        </span>
+                        <span className="font-black text-blue-brand tabular-nums">{fmt(s.total_harga_pajak || s.total_harga || 0)}</span>
+                      </div>
+                    ))}
+                    {soList.length > 1 && (
+                      <div className="flex items-center justify-between pt-1 border-t border-blue-brand/10 text-[11px]">
+                        <span className="font-black text-text-light opacity-60">Total {soList.length} SO</span>
+                        <span className="font-black text-accent tabular-nums">{fmt(totalVal)}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
+            </div>
 
-              <div className="space-y-4">
-                 <div className="flex items-center gap-2 text-[10px] font-black text-text-light px-1 opacity-60 mb-2 italic uppercase tracking-widest">
-                    <Icon name="List" size={12} className="text-accent" /> Rincian Transaksi
-                 </div>
-
-                <div className="space-y-2">
-                  {form.entries.map((e: any, i: number) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start bg-slate-50/30 p-3 rounded-xl border border-border-main/20 group hover:border-accent/40 hover:bg-white transition-all shadow-sm hover:shadow-md">
-                      <div className="md:col-span-5 space-y-1">
-                        <select className="input-field h-10 text-[11px] font-black uppercase" value={e.coa || ""} onChange={ev => updateEntry(i, "coa", ev.target.value)}>
-                            <option value="">Pilih Akun</option>
-                            {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} · {c.nama}</option>)}
-                        </select>
-                        {e.akun && <div className="text-[9px] font-black text-accent px-2 uppercase tracking-widest opacity-80 italic">{e.akun}</div>}
+            {/* Multi-SO distribution */}
+            {(() => {
+              const allSOs = [...new Set([...(form.noSO || []), ...form.entries.map((e: any) => e.no_so).filter(Boolean)])];
+              if (allSOs.length <= 1) return null;
+              return (
+                <div className="p-4 bg-slate-50 rounded-xl border border-border-main/50 space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-navy uppercase tracking-widest italic">
+                    <Icon name="PieChart" size={13} className="text-accent" /> Distribusi Nilai per SO
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {allSOs.map((oid: any) => (
+                      <div key={oid} className="space-y-1">
+                        <label className="text-[10px] font-bold text-text-light px-1 opacity-60">{oid}</label>
+                        <CurrencyInput
+                          value={form.soValues?.[oid] || ""}
+                          placeholder="Nilai SO ini"
+                          onChange={(v: any) => setForm((f: any) => ({ ...f, soValues: { ...(f.soValues || {}), [oid]: v } }))}
+                          className="h-9 text-[11px] font-bold bg-white"
+                        />
                       </div>
-                      <div className="md:col-span-2">
-                         <select className="input-field h-10 text-[11px] font-bold" value={e.no_so || ""} onChange={ev => updateEntry(i, "no_so", ev.target.value)}>
-                            <option value="">SO REF</option>
-                            {(so || []).filter((s:any) => s.is_posted).sort((a: any, b: any) => (b.order_id || "").localeCompare(a.order_id || "")).map((s:any) => <option key={s.id} value={s.order_id}>{s.order_id}</option>)}
-                        </select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <CurrencyInput value={e.debit} onChange={(v: any) => updateEntry(i, "debit", v)} color="#10B981" className="h-10 font-black text-[12px] bg-slate-50 border-transparent focus:bg-white focus:border-green-brand/30" />
-                      </div>
-                      <div className="md:col-span-2">
-                        <CurrencyInput value={e.kredit} onChange={(v: any) => updateEntry(i, "kredit", v)} color="#EF4444" className="h-10 font-black text-[12px] bg-slate-50 border-transparent focus:bg-white focus:border-red-brand/30" />
-                      </div>
-                      <div className="md:col-span-1 flex items-center justify-center gap-1 h-10">
-                         <div className="flex flex-col gap-0.5">
-                            <button className="p-1 rounded bg-white border border-border-main/50 hover:bg-accent hover:text-white transition-colors text-text-light" onClick={() => moveRow(i, "up")} disabled={i === 0}><Icon name="ChevronUp" size={10} /></button>
-                            <button className="p-1 rounded bg-white border border-border-main/50 hover:bg-accent hover:text-white transition-colors text-text-light" onClick={() => moveRow(i, "down")} disabled={i === form.entries.length-1}><Icon name="ChevronDown" size={10} /></button>
-                         </div>
-                         <button className="p-2 rounded-lg bg-red-brand/10 text-red-brand hover:bg-red-brand hover:text-white transition-all shadow-sm" onClick={() => setForm((f: any) => ({ ...f, entries: f.entries.filter((_: any, idx: number) => idx !== i) }))} title="Hapus Baris"><Icon name="X" size={14} /></button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <p className="text-[9px] font-bold text-text-light italic opacity-50">ℹ Isi nilai per SO untuk perhitungan margin profit yang akurat.</p>
                 </div>
+              );
+            })()}
 
-                <button 
-                  className="w-full py-3 border-2 border-dashed border-border-main shadow-inner rounded-xl text-[10px] font-black text-text-light uppercase tracking-widest hover:border-accent hover:text-accent hover:bg-accent/5 hover:scale-[1.005] active:scale-95 transition-all flex items-center justify-center gap-2 group" 
-                  onClick={() => setForm((f: any) => ({ ...f, entries: [...f.entries, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] }))}
-                >
-                  <Icon name="PlusCircle" size={16} className="group-hover:rotate-90 transition-transform duration-500" /> Tambah Baris Transaksi
-                </button>
+            {/* Entry table */}
+            <div className="space-y-0">
+              <div className="overflow-x-auto rounded-xl border border-border-main/50 shadow-sm">
+                <table className="w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-border-main/40">
+                      <th className="text-left py-2 px-3 text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 w-[38%]">AKUN COA</th>
+                      <th className="text-left py-2 px-3 text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 w-[14%]">NAMA AKUN</th>
+                      <th className="text-right py-2 px-3 text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 w-[16%]">DEBIT (RP)</th>
+                      <th className="text-right py-2 px-3 text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 w-[16%]">KREDIT (RP)</th>
+                      <th className="text-left py-2 px-3 text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 w-[14%]">NO SO</th>
+                      <th className="w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-main/10">
+                    {form.entries.map((e: any, i: number) => (
+                      <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
+                        <td className="py-2 px-3">
+                          <select
+                            className="w-full bg-transparent text-[11px] font-black border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none"
+                            value={e.coa || ""}
+                            onChange={ev => updateEntry(i, "coa", ev.target.value)}
+                          >
+                            <option value="">Pilih Akun COA</option>
+                            {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} – {c.nama}</option>)}
+                          </select>
+                        </td>
+                        <td className="py-2 px-3">
+                          <input
+                            className="w-full bg-transparent text-[11px] font-bold border-none outline-none text-text-med"
+                            value={e.akun || ""}
+                            placeholder="—"
+                            onChange={ev => updateEntry(i, "akun", ev.target.value)}
+                          />
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          <CurrencyInput
+                            value={e.debit}
+                            onChange={(v: any) => updateEntry(i, "debit", v)}
+                            color="#10B981"
+                            className="h-8 text-right font-black text-[12px] border-none bg-transparent focus:bg-white focus:border-green-brand/30 px-1"
+                          />
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          <CurrencyInput
+                            value={e.kredit}
+                            onChange={(v: any) => updateEntry(i, "kredit", v)}
+                            color="#EF4444"
+                            className="h-8 text-right font-black text-[12px] border-none bg-transparent focus:bg-white focus:border-red-brand/30 px-1"
+                          />
+                        </td>
+                        <td className="py-2 px-3">
+                          <select
+                            className="w-full bg-transparent text-[11px] font-bold border-none outline-none cursor-pointer appearance-none"
+                            value={e.no_so || ""}
+                            onChange={ev => updateEntry(i, "no_so", ev.target.value)}
+                          >
+                            <option value="">—</option>
+                            {(so || [])
+                              .filter((s: any) => s.is_posted)
+                              .sort((a: any, b: any) => (b.order_id || "").localeCompare(a.order_id || ""))
+                              .map((s: any) => <option key={s.id} value={s.order_id}>{s.order_id}</option>)}
+                          </select>
+                        </td>
+                        <td className="py-2 px-1 text-center">
+                          <button
+                            className="w-6 h-6 rounded flex items-center justify-center text-text-light hover:bg-red-brand/10 hover:text-red-brand transition-colors opacity-0 group-hover:opacity-100"
+                            onClick={() => setForm((f: any) => ({ ...f, entries: f.entries.filter((_: any, idx: number) => idx !== i) }))}
+                          >
+                            <Icon name="X" size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              <div className={`p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-6 transition-all border-2 ${balanced ? "bg-green-brand/5 border-green-brand/20 shadow-lg shadow-green-brand/5" : "bg-slate-50 border-border-main/30"}`}>
-                <div className="flex gap-10">
-                  <div className="flex flex-col gap-0.5">
-                    <div className="text-[10px] font-black text-text-light opacity-60 uppercase tracking-widest italic">Total Debit</div>
-                    <div className="text-xl font-black text-green-brand tabular-nums drop-shadow-sm">{fmt(totalD)}</div>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <div className="text-[10px] font-black text-text-light opacity-60 uppercase tracking-widest italic">Total Kredit</div>
-                    <div className="text-xl font-black text-red-brand tabular-nums drop-shadow-sm">{fmt(totalK)}</div>
-                  </div>
+              <button
+                className="w-full py-2.5 border border-dashed border-border-main rounded-xl text-[11px] font-black text-text-light uppercase tracking-widest hover:border-accent hover:text-accent hover:bg-accent/5 transition-all flex items-center justify-center gap-2 mt-2"
+                onClick={() => {
+                  const defaultSO = (form.noSO || []).length === 1 ? form.noSO[0] : "";
+                  setForm((f: any) => ({ ...f, entries: [...f.entries, { coa: "", akun: "", debit: "", kredit: "", no_so: defaultSO }] }));
+                }}
+              >
+                <Icon name="Plus" size={14} /> Tambah Baris
+              </button>
+            </div>
+
+            {/* Totals row */}
+            <div className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${balanced ? "bg-green-brand/5 border-green-brand/20" : "bg-red-brand/5 border-red-brand/20"}`}>
+              <div className="flex gap-10">
+                <div>
+                  <div className="text-[9px] font-black text-text-light opacity-50 uppercase tracking-widest mb-0.5">TOTAL DEBIT</div>
+                  <div className="text-lg font-black text-green-brand tabular-nums">{fmt(totalD)}</div>
                 </div>
-                <div className={`px-4 py-2 rounded-xl flex items-center gap-2 font-black text-[11px] uppercase tracking-widest shadow-sm ${balanced ? "bg-green-brand text-white" : "bg-red-brand text-white"}`}>
-                  <Icon name={balanced ? "ShieldCheck" : "ShieldAlert"} size={16} />
-                  {balanced ? "Balanced" : "Unbalanced"}
+                <div>
+                  <div className="text-[9px] font-black text-text-light opacity-50 uppercase tracking-widest mb-0.5">TOTAL KREDIT</div>
+                  <div className="text-lg font-black text-red-brand tabular-nums">{fmt(totalK)}</div>
                 </div>
               </div>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black ${balanced ? "text-green-brand" : "text-red-brand"}`}>
+                <Icon name={balanced ? "CheckCircle2" : "AlertCircle"} size={16} />
+                {balanced ? "✓ Seimbang" : "Belum Seimbang"}
+              </div>
+            </div>
 
-              {err && (
-                <div className="flex items-center gap-3 p-4 bg-red-brand-light text-red-brand rounded-2xl border border-red-brand/20 font-black text-[11px] uppercase tracking-tight shadow-md animate-shake">
-                  <Icon name="AlertCircle" size={18} /> {err}
-                </div>
-              )}
+            {err && (
+              <div className="flex items-center gap-2 p-3 bg-red-brand/5 text-red-brand rounded-lg border border-red-brand/20 text-[11px] font-bold">
+                <Icon name="AlertCircle" size={14} /> {err}
+              </div>
+            )}
           </div>
 
-          <div className="p-6 border-t border-border-main bg-slate-50 flex flex-col sm:flex-row gap-4">
-            <FeedbackButton 
-              className="flex-1 h-12 text-[11px] font-black uppercase tracking-widest gap-2 flex items-center justify-center order-2 sm:order-1 shadow-2xl shadow-accent/20" 
-              onClick={submit} 
+          {/* ── FOOTER ────────────────────────────────────────────────── */}
+          <div className="p-4 border-t border-border-main bg-white flex gap-3 sticky bottom-0">
+            <FeedbackButton
+              className="flex-1 h-11 text-[12px] font-black gap-2 flex items-center justify-center shadow-lg shadow-accent/20"
+              onClick={submit}
               loading={saving}
               success={saveSuccess}
               error={saveError}
               disabled={!balanced}
             >
-              <Icon name="CheckCircle2" size={18} />
-              {editJurnalId ? "Simpan Perubahan Jurnal" : "Verifikasi & Posting Jurnal"}
+              Simpan ke Supabase
             </FeedbackButton>
-            <button className="h-12 px-10 rounded-xl text-text-light border border-border-main font-black uppercase tracking-widest text-[11px] hover:bg-white hover:text-red-brand hover:border-red-brand transition-all order-1 sm:order-2 active:scale-95" onClick={() => { setTab("list"); setEditJurnalId(null); }}>Batal</button>
+            <button
+              className="h-11 px-8 rounded-xl border border-border-main text-text-med font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all"
+              onClick={() => { setTab("list"); setEditJurnalId(null); }}
+            >
+              Batal
+            </button>
           </div>
         </Card>
       )}
