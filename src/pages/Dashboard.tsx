@@ -152,7 +152,7 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
 
       <KPIGrid cols={4}>
         <StatCard 
-          label={`Omzet ${period.mode === "month" ? "Bulan Ini" : period.mode === "year" ? "Tahun Ini" : "Total"}`} 
+          label={`Omzet ${period.mode === "day" ? "Hari Ini" : period.mode === "month" ? "Bulan Ini" : period.mode === "year" ? "Tahun Ini" : "Total"}`} 
           value={fmtShort(totalPendapatan)} 
           color="var(--color-green-brand)"
           icon="TrendingUp"

@@ -14,6 +14,7 @@ const filterByPeriod = (items: any[], period: any) => {
   if (period.mode === "all") return items;
   return items.filter(j => {
     if (!j.tanggal) return true;
+    if (period.mode === "day") return j.tanggal.slice(0, 10) === (period.day || "");
     if (period.mode === "month") {
       const d = new Date(j.tanggal);
       return d.getMonth() === period.month && d.getFullYear() === period.year;
@@ -216,7 +217,9 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const grandK = filtered.reduce((s: number, j: any) => s + Number(j.total_kredit || 0), 0);
 
   const getPeriodText = () => {
-    return period.mode === "year" ? `Tahun ${period.year}` : `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    if (period.mode === "day") return `Tanggal ${period.day || ""}`;
+    if (period.mode === "year") return `Tahun ${period.year}`;
+    return `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
   };
 
   const exportExcel = () => {
@@ -252,7 +255,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Jurnal");
       
-      const fileName = `Jurnal_Umum_${period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.xlsx`;
+      const fileName = `Jurnal_Umum_${period.mode === 'day' ? period.day : period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.xlsx`;
       XLSX.writeFile(wb, fileName);
       showToast("Download Excel dimulai...");
     } catch (err: any) {
@@ -301,7 +304,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         }
       });
       
-      const fileName = `Jurnal_Umum_${period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.pdf`;
+      const fileName = `Jurnal_Umum_${period.mode === 'day' ? period.day : period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.pdf`;
       doc.save(fileName);
       showToast("Download PDF dimulai...");
     } catch (err: any) {

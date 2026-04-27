@@ -15,7 +15,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   const cumulativeJurnal = useMemo(() => filterUpToPeriod(jurnal || [], period), [jurnal, period]);
 
   const getPeriodText = () => {
-    return period.mode === "year" ? `Tahun ${period.year}` : `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    if (period.mode === "day") return `Tanggal ${period.day || ""}`;
+    if (period.mode === "year") return `Tahun ${period.year}`;
+    return `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
   };
 
   const exportExcel = (title: string, data: any[], columns: string[]) => {
@@ -331,7 +333,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const selisih = totalAset - totalPassiva;
     const balanced = Math.abs(selisih) < 1;
 
-    const periodLabel = period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    const periodLabel = period.mode === "day" ? `Tanggal ${period.day || ""}` : period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
 
     const handleExportNeraca = (mode: 'pdf' | 'xlsx') => {
         const rows: any[] = [];
@@ -488,7 +490,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
        </tr>
     );
 
-    const periodLabel = period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    const periodLabel = period.mode === "day" ? `Tanggal ${period.day || ""}` : period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
 
     const handleExportLR = (mode: 'pdf' | 'xlsx') => {
         const rows: any[] = [];
