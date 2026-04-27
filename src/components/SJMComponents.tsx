@@ -324,9 +324,10 @@ export const FeedbackButton = ({
 
 export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, loading = false, hideSearch = false, hidePeriod = false }: any) => {
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-  
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="flex flex-col lg:flex-row gap-2 mb-4 items-stretch lg:items-center w-full">
@@ -334,33 +335,49 @@ export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, load
         <div className="flex-1 min-w-0">
           <div className="relative group w-full lg:max-w-md">
             <Lucide.Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light opacity-50 group-focus-within:text-accent transition-colors" size={14} />
-            <input 
-              className="input-field pl-10" 
-              placeholder="Search data..." 
-              value={search || ""} 
-              onChange={e => setSearch(e.target.value)} 
+            <input
+              className="input-field pl-10"
+              placeholder="Search data..."
+              value={search || ""}
+              onChange={e => setSearch(e.target.value)}
             />
           </div>
         </div>
       )}
-      
+
       <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center shrink-0">
         {!hidePeriod && (
           <div className="flex items-center gap-0 bg-white border border-border-main rounded-xl h-[38px] px-1 shadow-sm overflow-hidden divide-x divide-border-main/50">
-            <select 
-              className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none" 
-              value={period.mode || "all"} 
-              onChange={e => setPeriod({ ...period, mode: e.target.value })}
+            <select
+              className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none"
+              value={period.mode || "all"}
+              onChange={e => {
+                const mode = e.target.value;
+                setPeriod(mode === "day"
+                  ? { ...period, mode, day: period.day || todayStr }
+                  : { ...period, mode }
+                );
+              }}
             >
               <option value="all">Semua</option>
+              <option value="day">Harian</option>
               <option value="month">Bulanan</option>
               <option value="year">Tahunan</option>
             </select>
 
+            {period.mode === "day" && (
+              <input
+                type="date"
+                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer accent-accent tabular-nums"
+                value={period.day || todayStr}
+                onChange={e => setPeriod({ ...period, day: e.target.value })}
+              />
+            )}
+
             {period.mode === "month" && (
-              <select 
-                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center" 
-                value={period.month ?? 0} 
+              <select
+                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center"
+                value={period.month ?? 0}
                 onChange={e => setPeriod({ ...period, month: parseInt(e.target.value) })}
               >
                 {months.map((m, i) => <option key={i} value={i}>{m.substring(0,3)}</option>)}
@@ -368,9 +385,9 @@ export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, load
             )}
 
             {(period.mode === "month" || period.mode === "year") && (
-              <select 
-                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center" 
-                value={period.year ?? new Date().getFullYear()} 
+              <select
+                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center"
+                value={period.year ?? new Date().getFullYear()}
                 onChange={e => setPeriod({ ...period, year: parseInt(e.target.value) })}
               >
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
