@@ -5,6 +5,7 @@ import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Ico
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api, supabase } from "@/src/api";
 import { Loader2 } from "lucide-react";
+import { buildMeta } from "@/src/lib/activityLogger";
 
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -37,6 +38,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const [saveError, setSaveError] = useState(false);
   const [err, setErr] = useState("");
   const [editJurnalId, setEditJurnalId] = useState<string | null>(null);
+  const [editJurnalSnap, setEditJurnalSnap] = useState<any>(null);
   const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
 
   React.useEffect(() => {
@@ -76,6 +78,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   };
 
   const handleDelete = async (id: string, no: string) => {
+    const beforeSnap = (jurnal || []).find((j: any) => j.id === id);
     askConfirmJurnal({
         title: "Hapus Jurnal",
         msg: `Apakah Anda yakin ingin menghapus jurnal ${no}? Ini akan menghapus transaksi dan detailnya secara permanen.`,
@@ -84,7 +87,10 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                 await supabase.from("jurnal_detail").delete().eq("jurnal_id", id);
                 await api.deleteJurnal(id);
                 showToast("Jurnal berhasil dihapus");
-                logAction(`Hapus Jurnal Umum: ${no}`, { id });
+                logAction(`Hapus Jurnal Umum: ${no}`, buildMeta({
+                  module: 'jurnal', action_type: 'DELETE', record_id: no,
+                  before_data: beforeSnap ? { no_jurnal: beforeSnap.no_jurnal, tanggal: beforeSnap.tanggal, keterangan: beforeSnap.keterangan, total_debit: beforeSnap.total_debit } : { id },
+                }));
                 const updated = await api.getJurnal();
                 setJurnal(updated);
             } catch (e: any) { alert("Gagal hapus: " + e.message); }
@@ -94,6 +100,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
 
   const openEdit = (j: any) => {
       setEditJurnalId(j.id);
+      setEditJurnalSnap({ no_jurnal: j.no_jurnal, tanggal: j.tanggal, keterangan: j.keterangan, total_debit: j.total_debit, entries: j.jurnal_detail?.length });
       setForm({
           tanggal: j.tanggal,
           noJurnal: j.no_jurnal,
@@ -163,10 +170,17 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       })));
       const updated = await api.getJurnal();
       setJurnal(updated);
-      logAction(`Simpan Jurnal Umum: ${nj}`, { no_jurnal: nj });
+      const afterSnap = { no_jurnal: nj, tanggal: t, keterangan: form.keterangan, total_debit: totalD, entries: form.entries.length };
+      logAction(editJurnalId ? `Update Jurnal Umum: ${nj}` : `Buat Jurnal Umum: ${nj}`, buildMeta({
+        module: 'jurnal',
+        action_type: editJurnalId ? 'UPDATE' : 'CREATE',
+        record_id: nj,
+        before_data: editJurnalId ? editJurnalSnap : null,
+        after_data: afterSnap,
+      }));
       setSaveSuccess(true);
       setTimeout(() => {
-        setTab("list"); setEditJurnalId(null);
+        setTab("list"); setEditJurnalId(null); setEditJurnalSnap(null);
         setSaveSuccess(false);
       }, 1000);
       showToast("Jurnal berhasil disimpan!");
@@ -200,7 +214,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       
       if (linked > 0) {
           showToast(`${linked} jurnal berhasil dihubungkan kembali dengan SO.`);
-          logAction(`Sinkronisasi Jurnal ke SO: ${linked} jurnal dihubungkan`, { count: linked });
+          logAction(`Sinkronisasi Jurnal ke SO: ${linked} jurnal dihubungkan`, buildMeta({ module: 'jurnal', action_type: 'SYNC', after_data: { linked_count: linked } }));
           const updated = await api.getJurnal();
           setJurnal(updated);
       } else {
