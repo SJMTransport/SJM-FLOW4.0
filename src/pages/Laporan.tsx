@@ -390,23 +390,27 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Posisi Keuangan" sub={`Trial Balance / Neraca Saldo per ${periodLabel}`} />
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-             <button className="btn-export" onClick={() => handleExportNeraca('xlsx')}>
-                <Icon name="Download" size={13} /> Excel
-             </button>
-             <button className="btn-export" onClick={() => handleExportNeraca('pdf')}>
-                <Icon name="FileText" size={13} /> PDF
-             </button>
-             <div className={`status-badge ml-1 ${balanced ? "balanced" : "unbalanced"}`}>
+        <SectionHeader
+          title="Posisi Keuangan"
+          sub={`Trial Balance / Neraca Saldo per ${periodLabel}`}
+          action={
+            <div className="flex items-center gap-2">
+              <div className="btn-export-group">
+                <button className="text-green-brand" onClick={() => handleExportNeraca('xlsx')}>
+                  <Icon name="Download" size={13} /> Excel
+                </button>
+                <button className="text-red-brand" onClick={() => handleExportNeraca('pdf')}>
+                  <Icon name="FileText" size={13} /> PDF
+                </button>
+              </div>
+              <div className={`status-badge ${balanced ? "balanced" : "unbalanced"}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${balanced ? "bg-green-brand" : "bg-red-brand"}`}></div>
                 {balanced ? "Balanced" : "Unbalanced"}
-             </div>
-          </div>
-          <PeriodFilter period={period} setPeriod={setPeriod} />
-        </div>
+              </div>
+            </div>
+          }
+        />
+        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
            <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" variant="asset" />
@@ -523,19 +527,21 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Kinerja Operasional" sub={`Laporan Laba Rugi periode ${periodLabel}`} />
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-             <button className="btn-export" onClick={() => handleExportLR('xlsx')}>
+        <SectionHeader
+          title="Kinerja Operasional"
+          sub={`Laporan Laba Rugi periode ${periodLabel}`}
+          action={
+            <div className="btn-export-group">
+              <button className="text-green-brand" onClick={() => handleExportLR('xlsx')}>
                 <Icon name="Download" size={13} /> Excel
-             </button>
-             <button className="btn-export" onClick={() => handleExportLR('pdf')}>
+              </button>
+              <button className="text-red-brand" onClick={() => handleExportLR('pdf')}>
                 <Icon name="FileText" size={13} /> PDF
-             </button>
-          </div>
-          <PeriodFilter period={period} setPeriod={setPeriod} />
-        </div>
+              </button>
+            </div>
+          }
+        />
+        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
            <StatCardLocal label="Total Pendapatan" value={fmt(totPnd)} color="var(--color-blue-brand)" icon="TrendingUp" variant="asset" />
@@ -602,18 +608,21 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Analisis Profit Muatan" sub="Pemantauan margin keuntungan real-time per order" />
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-           <div className="flex items-center gap-2">
-              <button className="btn-export" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
-                 <Icon name="Download" size={13} /> Excel
+        <SectionHeader
+          title="Analisis Profit Muatan"
+          sub="Pemantauan margin keuntungan real-time per order"
+          action={
+            <div className="btn-export-group">
+              <button className="text-green-brand" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
+                <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="btn-export" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
-                 <Icon name="FileText" size={13} /> PDF
+              <button className="text-red-brand" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
+                <Icon name="FileText" size={13} /> PDF
               </button>
-           </div>
-           <PeriodFilter period={period} setPeriod={setPeriod} />
-        </div>
+            </div>
+          }
+        />
+        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
            <StatCardLocal label="Nilai Muatan (Revenue)" value={fmt(totalRevenue)} color="var(--color-blue-brand)" icon="TrendingUp" variant="asset" />
@@ -669,21 +678,24 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     return (
       <PageShell>
         <SectionHeader title="Log Aktivitas User" sub="Catatan riwayat penggunaan dan mutasi data aplikasi" />
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-           <div className="w-full sm:max-w-md relative group">
-              <Icon name="Search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light group-focus-within:text-accent transition-all duration-300 opacity-50" />
+        <ActionBar
+          left={
+            <div className="relative">
+              <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
               <input
-                className="input-field pl-11 bg-grey-50 border-transparent focus:bg-white focus:border-accent"
+                className="input-field h-10 pl-9 w-72 text-[12px]"
                 placeholder="Cari user atau aktivitas..."
                 value={search || ""}
                 onChange={e => setSearch(e.target.value)}
               />
-           </div>
-           <button className="btn-export" onClick={() => setSearch("")}>
-             <Icon name="X" size={12} /> Reset Filter
-           </button>
-        </div>
+            </div>
+          }
+          right={search ? (
+            <button className="btn-ghost" onClick={() => setSearch("")}>
+              <Icon name="X" size={12} /> Reset
+            </button>
+          ) : undefined}
+        />
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
            <div className="overflow-auto max-h-[calc(100vh-380px)]">
@@ -790,25 +802,31 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Rincian Buku Besar" sub="Laporan mutasi transaksi mendalam per akun COA" />
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-           <div className="flex flex-wrap items-center gap-2">
-              <button className="btn-export" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
-                 <Icon name="Download" size={13} /> Excel
+        <SectionHeader
+          title="Rincian Buku Besar"
+          sub="Laporan mutasi transaksi mendalam per akun COA"
+          action={
+            <div className="btn-export-group">
+              <button className="text-green-brand" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+                <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="btn-export" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
-                 <Icon name="FileText" size={13} /> PDF
+              <button className="text-red-brand" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+                <Icon name="FileText" size={13} /> PDF
               </button>
-              <div className="sm:min-w-[280px]">
-                 <select className="input-field h-10 font-black text-[11px] uppercase tracking-widest bg-grey-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
-                    <option value="">— PILIH AKUN COA —</option>
-                    {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} — {c.nama.toUpperCase()}</option>)}
-                 </select>
-              </div>
-           </div>
-           <PeriodFilter period={period} setPeriod={setPeriod} hideSearch />
-        </div>
+            </div>
+          }
+        />
+        <ActionBar
+          left={
+            <div className="flex items-center gap-3">
+              <select className="input-field h-10 min-w-[280px] font-black text-[11px] uppercase tracking-widest bg-grey-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
+                <option value="">— PILIH AKUN COA —</option>
+                {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} — {c.nama.toUpperCase()}</option>)}
+              </select>
+              <PeriodFilter period={period} setPeriod={setPeriod} hideSearch />
+            </div>
+          }
+        />
 
         <KPIGrid cols={3}>
            <StatCardLocal label="Saldo Awal Periode" value={fmt(openingBalance)} color="var(--color-blue-brand)" icon="Database" variant="asset" />

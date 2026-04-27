@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { C } from "@/src/constants";
 import { fmt, filterByPeriod } from "@/src/utils";
-import { Card, SectionHeader, EmptyState, StatCard, PeriodFilter, Icon } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, StatCard, PeriodFilter, Icon, PageShell, ActionBar } from "@/src/components/SJMComponents";
 
 export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => {
   const [period, setPeriod] = useState({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
@@ -36,15 +36,11 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
 
   if (activeSub === "hutangvendor") {
       return (
-        <div className="fade-up space-y-4">
+        <PageShell>
             <SectionHeader title="Hutang Vendor" sub="Rincian tagihan dari supplier/vendor" />
-            <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-              <div className="flex-1 w-full lg:max-w-2xl">
-                <PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />
-              </div>
-            </div>
+            <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />} />
 
-            <Card className="p-0 overflow-hidden">
+            <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm">
                 <div className="overflow-auto max-h-[calc(100vh-340px)]">
                 <table className="w-full border-collapse">
                     <thead>
@@ -84,13 +80,13 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
                 </table>
                 </div>
             </Card>
-        </div>
+        </PageShell>
       );
   }
 
   if (activeSub === "cicilan") {
       return (
-        <div className="fade-up space-y-4">
+        <PageShell>
             <SectionHeader title="Cicilan & Pinjaman" sub="Monitoring kewajiban bank/leasing" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="p-5">
@@ -128,20 +124,20 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
                     </div>
                 </Card>
             </div>
-        </div>
+        </PageShell>
       );
   }
 
   if (activeSub === "rekapuj") {
       return (
-        <div className="fade-up space-y-4">
+        <PageShell>
             <SectionHeader title="Rekap Uang Jalan" sub="Monitoring pengeluaran operasional per unit" />
-            <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-               <div className="relative w-full max-w-sm">
-                 <Icon name="Search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
-                 <input className="input-field h-10 pl-11 text-[12px] font-bold" placeholder="Cari SO, unit, atau sopir..." value={search || ""} onChange={e => setSearch(e.target.value)} />
-               </div>
-            </div>
+            <ActionBar left={
+              <div className="relative">
+                <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
+                <input className="input-field h-10 pl-9 w-72 text-[12px]" placeholder="Cari SO, unit, atau sopir..." value={search || ""} onChange={e => setSearch(e.target.value)} />
+              </div>
+            } />
             
             <Card className="p-0 overflow-hidden">
                 <div className="overflow-auto max-h-[calc(100vh-340px)]">
@@ -174,7 +170,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
                 </table>
                 </div>
             </Card>
-        </div>
+        </PageShell>
       );
   }
 
