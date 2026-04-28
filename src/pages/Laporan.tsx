@@ -415,9 +415,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" variant="asset" />
-           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net Profit: ${fmt(netIncome)}`} variant="liability" />
-           <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} variant={balanced ? "balance-positive" : "balance-negative"} />
+           <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" subLabel={`Kumulatif s/d ${periodLabel}`} variant="asset" />
+           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Liab + Ekuitas + L/R Akumulatif`} variant="liability" />
+           <StatCardLocal
+             label="Net Laba/Rugi Periode"
+             value={fmt(calcLabaRugi.labaBersih)}
+             color={calcLabaRugi.labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"}
+             icon={calcLabaRugi.labaBersih >= 0 ? "TrendingUp" : "TrendingDown"}
+             subLabel={balanced ? `Neraca seimbang · Δ ${fmt(selisih)}` : `⚠ Selisih neraca: ${fmt(selisih)}`}
+             variant={calcLabaRugi.labaBersih >= 0 ? "balance-positive" : "balance-negative"}
+           />
         </KPIGrid>
         
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
