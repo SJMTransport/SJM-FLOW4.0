@@ -231,8 +231,10 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   }, [tbLabaRugi]);
 
   const tbProfit = useMemo(() => {
-    const map: any = {};
-    (jurnal || []).forEach((j: any) => {
+    const map: Record<string, { revenue: number; expense: number }> = {};
+
+    // Gunakan jurnal yang sudah difilter per periode agar KPI berubah sesuai filter
+    filterByPeriod(jurnal || [], period).forEach((j: any) => {
       const headerSOs = (j.no_so || "").split(",").map((s: string) => s.trim()).filter(Boolean);
       const soVals = j.so_values || {};
       const totalSoVals = Object.values(soVals).reduce((s: number, v: any) => s + Number(v || 0), 0);
@@ -244,19 +246,14 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         if (!targets.length) return;
 
         targets.forEach((orderId: string) => {
-          if (!map[orderId]) map[orderId] = {
-            pendapatan: 0, modal: 0, harga_pengiriman: 0, base_harga: 0, total_harga: 0,
-            revenue: 0, expense: 0 // ALIAS for report
-          };
+          if (!map[orderId]) map[orderId] = { revenue: 0, expense: 0 };
           const factor = d.no_so ? 1
             : nHeader === 1 ? 1
             : (soVals[orderId] && Number(totalSoVals) > 0)
               ? Number(soVals[orderId]) / Number(totalSoVals)
               : 1 / nHeader;
 
-          if (kode === "112" && Number(d.debit) > 0)
-            map[orderId].harga_pengiriman += Number(d.debit) * factor;
-
+          // Pendapatan: akun 4xx, ambil kredit bersih
           if (kode.startsWith("4") && Number(d.kredit) > 0) {
             const pendVal = (!d.no_so && soVals[orderId] && Number(totalSoVals) > 0)
               ? Number(soVals[orderId])
@@ -264,17 +261,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             map[orderId].revenue += pendVal;
           }
 
-          // Beban operasional (5xx, kecuali PPN 553)
+          // Beban operasional (5xx, kecuali PPN 553) — gunakan debit-kredit agar reversal benar
           if (kode.startsWith("5") && kode !== "553") {
-            const bVal = Math.max(Number(d.debit) || 0, Number(d.kredit) || 0);
-            if (bVal > 0) map[orderId].expense += bVal * factor;
+            const bVal = (Number(d.debit || 0) - Number(d.kredit || 0)) * factor;
+            map[orderId].expense += bVal;
           }
 
-          // BUG #3 fix: Beban asuransi (67x) ikut masuk expense per SO
-          // Sebelumnya 67x tidak ditangani → biaya asuransi hilang → profit overstated
+          // Beban asuransi (67x)
           if (kode.startsWith("67")) {
-            const aVal = Math.max(Number(d.debit) || 0, Number(d.kredit) || 0);
-            if (aVal > 0) map[orderId].expense += aVal * factor;
+            const bVal = (Number(d.debit || 0) - Number(d.kredit || 0)) * factor;
+            map[orderId].expense += bVal;
           }
         });
       });
@@ -284,7 +280,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     return periodSo.map((s: any) => {
       const fin = map[s.order_id];
       const revenue = fin ? fin.revenue : (Number(s.total_harga || 0) - Number(s.nilai_pajak || 0));
-      const expense = fin ? fin.expense : (Number(s.base_harga || 0));
+      const expense = fin ? fin.expense : Number(s.base_harga || 0);
       const profit = revenue - expense;
       const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
       return { order_id: s.order_id, tgl: s.tgl_muat, customer: s.customer, revenue, expense, profit, margin };
@@ -769,12 +765,18 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     
     // Sum all mutations before the current period start
     const openingBalance = (jurnal || []).reduce((acc: number, j: any) => {
-      const jDate = j.tanggal;
-      const isBefore = period.mode === "month" 
-        ? (new Date(jDate).getFullYear() < period.year || (new Date(jDate).getFullYear() === period.year && new Date(jDate).getMonth() < period.month))
-        : period.mode === "year" 
-          ? new Date(jDate).getFullYear() < period.year
-          : false;
+      const jDate = (j.tanggal || "").slice(0, 10);
+      const isBefore =
+        period.mode === "month"
+          ? (new Date(jDate).getFullYear() < period.year ||
+             (new Date(jDate).getFullYear() === period.year && new Date(jDate).getMonth() < period.month))
+          : period.mode === "year"
+            ? new Date(jDate).getFullYear() < period.year
+            : period.mode === "day"
+              ? jDate < (period.day || "")
+              : period.mode === "range"
+                ? jDate < (period.rangeFrom || "")
+                : false; // "all" — tidak ada periode sebelumnya
 
       if (!isBefore) return acc;
       
