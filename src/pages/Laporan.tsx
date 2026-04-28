@@ -410,15 +410,42 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         />
         <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
-        <KPIGrid cols={3}>
-           <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" subLabel={`Kumulatif s/d ${periodLabel}`} variant="asset" />
-           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Liab + Ekuitas + L/R Akumulatif`} variant="liability" />
+        {/* netIncome = totalPnd - totalBbn dari cumulativeJurnal:
+            berubah per filter karena menggunakan filterUpToPeriod, bukan filteredJurnal.
+            Berbeda dari calcLabaRugi.labaBersih yang hanya aktivitas dalam periode. */}
+        <KPIGrid cols={4}>
            <StatCardLocal
-             label="Net Laba/Rugi Periode"
+             label="Total Aset (Aktiva)"
+             value={fmt(totalAset)}
+             color="var(--color-blue-brand)"
+             icon="Briefcase"
+             subLabel={`Kumulatif s/d ${periodLabel}`}
+             variant="asset"
+           />
+           <StatCardLocal
+             label="Total Passiva"
+             value={fmt(totalPassiva)}
+             color="var(--color-red-brand)"
+             icon="Scale"
+             subLabel="Liabilitas + Ekuitas + L/R Kumulatif"
+             variant="liability"
+           />
+           <StatCardLocal
+             label="Selisih Neraca"
+             value={fmt(netIncome)}
+             color={netIncome >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"}
+             icon="Activity"
+             subLabel={balanced
+               ? `Neraca seimbang · Pendapatan - Beban kumulatif`
+               : `⚠ Cek jurnal: Aktiva ≠ Pasiva (${fmt(selisih)})`}
+             variant={netIncome >= 0 ? "balance-positive" : "balance-negative"}
+           />
+           <StatCardLocal
+             label="Net L/R Periode Ini"
              value={fmt(calcLabaRugi.labaBersih)}
              color={calcLabaRugi.labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"}
              icon={calcLabaRugi.labaBersih >= 0 ? "TrendingUp" : "TrendingDown"}
-             subLabel={balanced ? `Neraca seimbang · Δ ${fmt(selisih)}` : `⚠ Selisih neraca: ${fmt(selisih)}`}
+             subLabel={`Hanya aktivitas dalam ${periodLabel}`}
              variant={calcLabaRugi.labaBersih >= 0 ? "balance-positive" : "balance-negative"}
            />
         </KPIGrid>
