@@ -60,6 +60,7 @@ export const filterUpToPeriod = (items: any[], period: any, dateField = "tanggal
       return d.getFullYear() <= period.year;
     }
     if (period.mode === "range") {
+      if (period.rangeFrom && dateStr < period.rangeFrom) return false;
       if (period.rangeTo && dateStr > period.rangeTo) return false;
       return true;
     }
