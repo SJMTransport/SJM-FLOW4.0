@@ -144,13 +144,16 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       const t = form.tanggal;
       const nj = form.noJurnal || genJUNo(t, jurnal);
       
-      // Collect all SO numbers from entries to store in header as well for searching
-      const allSOList = [...new Set(form.entries.map((e: any) => e.no_so).filter(Boolean))];
+      // Derive SO list: header-level noSO takes precedence, supplemented by per-entry no_so
+      const entrySOList = [...new Set(form.entries.map((e: any) => e.no_so).filter(Boolean))];
+      const headerSOList = (form.noSO || []).filter(Boolean);
+      const allSOList = [...new Set([...headerSOList, ...entrySOList])];
       const allSO = allSOList.join(", ");
 
       const jurnalData = {
         no_jurnal: nj, tanggal: t, no_bukti: form.noBukti, keterangan: form.keterangan,
-        no_so: allSO, 
+        no_so: allSO,
+        // Preserve so_values when multiple SOs present in header — prevents JSONB data loss on re-save
         so_values: allSOList.length > 1 ? (form.soValues || {}) : {},
         total_debit: totalD, total_kredit: totalK, status: "Pending",
         created_by: currentUser?.nama || "—"

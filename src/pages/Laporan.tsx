@@ -9,6 +9,8 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
 export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, saldoAwal, onSOClick, onJurnalClick, logAction }: any) => {
   const [period, setPeriod] = useState({ mode: "year", year: new Date().getFullYear(), month: new Date().getMonth() });
   const [selectedCoa, setSelectedCoa] = useState("");
@@ -20,7 +22,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   const getPeriodText = () => {
     if (period.mode === "day") return `Tanggal ${period.day || ""}`;
     if (period.mode === "year") return `Tahun ${period.year}`;
-    return `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    if (period.mode === "all") return "Semua Periode";
+    if (period.mode === "range") return `${period.rangeFrom || "..."} s/d ${period.rangeTo || "..."}`;
+    return `Bulan ${MONTH_NAMES[period.month]} ${period.year}`;
   };
 
   const exportExcel = (title: string, data: any[], columns: string[]) => {
@@ -286,15 +290,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       });
     });
 
-    const periodSo = filterByPeriod(so || [], period, "tgl_muat");
-    return periodSo.map((s: any) => {
-      const fin = map[s.order_id];
-      const revenue = fin ? fin.revenue : (Number(s.total_harga || 0) - Number(s.nilai_pajak || 0));
-      const expense = fin ? fin.expense : (Number(s.base_harga || 0));
-      const profit = revenue - expense;
-      const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-      return { order_id: s.order_id, tgl: s.tgl_muat, customer: s.customer, revenue, expense, profit, margin };
-    });
+    // Build a lookup for SO metadata (tgl, customer) by order_id
+    const soLookup = Object.fromEntries((so || []).map((s: any) => [s.order_id, s]));
+
+    // Only show SOs that have actual journal activity in the selected period
+    return (Object.entries(map) as [string, { revenue: number; expense: number }][]).map(([orderId, fin]) => {
+      const s = soLookup[orderId];
+      const profit = fin.revenue - fin.expense;
+      const margin = fin.revenue > 0 ? (profit / fin.revenue) * 100 : 0;
+      return { order_id: orderId, tgl: s?.tgl_muat || "", customer: s?.customer || orderId, revenue: fin.revenue, expense: fin.expense, profit, margin };
+    }).sort((a, b) => (b.tgl || "").localeCompare(a.tgl || ""));
   }, [so, jurnal, period]);
 
   const tbPerUnit = useMemo(() => {
@@ -339,7 +344,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const selisih = totalAset - totalPassiva;
     const balanced = Math.abs(selisih) < 1;
 
-    const periodLabel = period.mode === "day" ? `Tanggal ${period.day || ""}` : period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    const periodLabel = getPeriodText();
 
     const handleExportNeraca = (mode: 'pdf' | 'xlsx') => {
         const rows: any[] = [];
@@ -493,7 +498,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
        </tr>
     );
 
-    const periodLabel = period.mode === "day" ? `Tanggal ${period.day || ""}` : period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    const periodLabel = getPeriodText();
 
     const handleExportLR = (mode: 'pdf' | 'xlsx') => {
         const rows: any[] = [];
