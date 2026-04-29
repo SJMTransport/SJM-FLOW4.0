@@ -17,6 +17,8 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   const getPeriodText = () => {
     if (period.mode === "day") return `Tanggal ${period.day || ""}`;
     if (period.mode === "year") return `Tahun ${period.year}`;
+    if (period.mode === "all") return "Semua Periode";
+    if (period.mode === "range") return `${period.rangeFrom || "..."} s/d ${period.rangeTo || "..."}`;
     return `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
   };
 
@@ -329,7 +331,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const selisih = totalAset - totalPassiva;
     const balanced = Math.abs(selisih) < 1;
 
-    const periodLabel = period.mode === "day" ? `Tanggal ${period.day || ""}` : period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    const periodLabel = getPeriodText();
 
     const handleExportNeraca = (mode: 'pdf' | 'xlsx') => {
         const rows: any[] = [];
@@ -520,7 +522,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
        </tr>
     );
 
-    const periodLabel = period.mode === "day" ? `Tanggal ${period.day || ""}` : period.mode === "year" ? `Tahun ${period.year}` : `${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    const periodLabel = getPeriodText();
 
     const handleExportLR = (mode: 'pdf' | 'xlsx') => {
         const rows: any[] = [];
