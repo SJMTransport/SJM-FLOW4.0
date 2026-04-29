@@ -228,8 +228,12 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     setSyncing(false);
   };
 
-  const grandD = filtered.reduce((s: number, j: any) => s + Number(j.total_debit || 0), 0);
-  const grandK = filtered.reduce((s: number, j: any) => s + Number(j.total_kredit || 0), 0);
+  const grandD = filtered.reduce((sum: number, j: any) => {
+    return sum + (j.jurnal_detail || []).reduce((s: number, d: any) => s + Number(d.debit || 0), 0);
+  }, 0);
+  const grandK = filtered.reduce((sum: number, j: any) => {
+    return sum + (j.jurnal_detail || []).reduce((s: number, d: any) => s + Number(d.kredit || 0), 0);
+  }, 0);
 
   const getPeriodText = () => {
     if (period.mode === "day") return `Tanggal ${period.day || ""}`;
