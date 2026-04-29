@@ -3,7 +3,7 @@ import { C, STATUS_SO } from "../constants";
 import { fmt, genJUNo, today } from "@/src/utils";
 import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Icon, useToast, ModalShell, FeedbackButton, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
-import { api, supabase } from "@/src/api";
+import { api } from "@/src/api";
 import { Loader2 } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
 
@@ -88,7 +88,6 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         msg: `Apakah Anda yakin ingin menghapus jurnal ${no}? Ini akan menghapus transaksi dan detailnya secara permanen.`,
         onConfirm: async () => {
             try {
-                await supabase.from("jurnal_detail").delete().eq("jurnal_id", id);
                 await api.deleteJurnal(id);
                 showToast("Jurnal berhasil dihapus");
                 logAction(`Hapus Jurnal Umum: ${no}`, buildMeta({
@@ -161,20 +160,16 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         total_debit: totalD, total_kredit: totalK, status: "Draft",
         created_by: currentUser?.nama || "—"
       };
-      let jurnalId;
-      if (editJurnalId) {
-        await api.updateJurnal(editJurnalId, jurnalData);
-        await supabase.from("jurnal_detail").delete().eq("jurnal_id", editJurnalId);
-        jurnalId = editJurnalId;
-      } else {
-        const res = await api.addJurnal(jurnalData);
-        jurnalId = res[0].id;
-      }
-      await api.addJurnalDetail(form.entries.map((e: any) => ({
-        jurnal_id: jurnalId, coa_kode: e.coa, nama_akun: e.akun,
+      const details = form.entries.map((e: any) => ({
+        coa_kode: e.coa, nama_akun: e.akun,
         debit: parseFloat(e.debit) || 0, kredit: parseFloat(e.kredit) || 0,
-        no_so: e.no_so || null
-      })));
+        no_so: e.no_so || null,
+      }));
+      if (editJurnalId) {
+        await api.updateJurnalWithDetails(editJurnalId, jurnalData, details);
+      } else {
+        await api.createJurnalWithDetails(jurnalData, details);
+      }
       const updated = await api.getJurnal();
       setJurnal(updated);
       const afterSnap = { no_jurnal: nj, tanggal: t, keterangan: form.keterangan, total_debit: totalD, entries: form.entries.length };
