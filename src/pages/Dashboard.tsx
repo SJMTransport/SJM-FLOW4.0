@@ -94,7 +94,7 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
       else if (diff < 30) list.push({ type: "warning", msg: `Dokumen akan habis: ${d.no_polisi} (${d.jenis_dokumen}) dlm ${Math.round(diff)} hari`, icon: "AlertCircle", action: () => onNavigate("armada", "dokumen") });
     });
     
-    const pendingJ = (jurnal || []).filter((j: any) => j.status === "Pending").length;
+    const pendingJ = (jurnal || []).filter((j: any) => j.status === "Draft").length;
     if (pendingJ > 0) list.push({ type: "info", msg: `${pendingJ} Jurnal Umum menunggu persetujuan (acc)`, icon: "Info", action: () => onNavigate("keuangan", "persetujuan") });
     
     const draftSO = (so || []).filter((s: any) => s.is_posted === false).length;

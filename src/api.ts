@@ -124,11 +124,11 @@ export const api = {
     if (error) { console.error("getJurnal", error); return []; }
     return (data || []).map((j: any) => ({
       ...j,
-      status: j.status || "Pending"
+      status: j.status || "Draft"
     }));
   },
   bulkApproveJurnal: async (ids: string[]) => {
-    const { error } = await supabaseManual.from("jurnal").update({ status: "Approved" }).in("id", ids);
+    const { error } = await supabaseManual.from("jurnal").update({ status: "Posted" }).in("id", ids);
     if (error) throw new Error(error.message || "Gagal approve jurnal");
     return [];
   },

@@ -158,7 +158,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         no_so: allSO,
         // Preserve so_values when multiple SOs present in header — prevents JSONB data loss on re-save
         so_values: allSOList.length > 1 ? (form.soValues || {}) : {},
-        total_debit: totalD, total_kredit: totalK, status: "Pending",
+        total_debit: totalD, total_kredit: totalK, status: "Draft",
         created_by: currentUser?.nama || "—"
       };
       let jurnalId;

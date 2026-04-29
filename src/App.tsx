@@ -1049,7 +1049,7 @@ export default function App() {
                  />
                  <NotificationBadge 
                     icon="CheckSquare" 
-                    count={(jurnal || []).filter((j:any) => j.status === "Pending").length} 
+                    count={(jurnal || []).filter((j:any) => j.status === "Draft").length}
                     onClick={() => handleNav("keuangan", "persetujuan")} 
                  />
               </div>
