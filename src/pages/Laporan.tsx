@@ -336,11 +336,21 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const totalAset   = aset.reduce((s, c) => s + c.saldo, 0);
     const totalLiab   = liab.reduce((s, c) => s + c.saldo, 0);
     const totalEku    = eku.reduce((s, c) => s + c.saldo, 0);
-    const totalPnd    = pnd.reduce((s, c) => s + c.saldo, 0);
-    const totalBbn    = bbn.reduce((s, c) => s + c.saldo, 0);
 
-    const netIncome = totalPnd - totalBbn;
-    const totalPassiva = totalLiab + totalEku + netIncome;
+    // Compute netLR directly from period journal details using coa_kode patterns.
+    // Avoids dependency on COA kelompok label matching — if kelompok labels don't
+    // exactly equal "Pendapatan"/"Beban", pnd/bbn from tbNeraca are empty →
+    // netIncome = 0 → selisih would incorrectly equal the actual net L/R.
+    const _periodDetails = filteredJurnal.flatMap((j: any) => j.jurnal_detail || []);
+    const netLR =
+      _periodDetails
+        .filter((d: any) => (d.coa_kode || "").startsWith("4"))
+        .reduce((s: number, d: any) => s + Number(d.kredit || 0), 0)
+      - _periodDetails
+        .filter((d: any) => { const k = d.coa_kode || ""; return k.startsWith("5") || k.startsWith("6"); })
+        .reduce((s: number, d: any) => s + Number(d.debit || 0), 0);
+
+    const totalPassiva = totalLiab + totalEku + netLR;
     const selisih = totalAset - totalPassiva;
     const balanced = Math.abs(selisih) < 1;
 
@@ -424,7 +434,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
         <KPIGrid cols={3}>
            <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" />
-           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net Profit: ${fmt(netIncome)}`} />
+           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net L/R: ${fmt(netLR)}`} />
            <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} />
         </KPIGrid>
         
