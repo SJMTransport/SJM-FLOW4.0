@@ -14,15 +14,18 @@ import autoTable from "jspdf-autotable";
 const filterByPeriod = (items: any[], period: any) => {
   if (period.mode === "all") return items;
   return items.filter(j => {
-    if (!j.tanggal) return true;
-    if (period.mode === "day") return j.tanggal.slice(0, 10) === (period.day || "");
+    const dateStr = (j.tanggal || "").slice(0, 10);
+    if (!dateStr) return true;
+    if (period.mode === "day") return dateStr === (period.day || "");
     if (period.mode === "month") {
       const d = new Date(j.tanggal);
       return d.getMonth() === period.month && d.getFullYear() === period.year;
     }
-    if (period.mode === "year") {
-      const d = new Date(j.tanggal);
-      return d.getFullYear() === period.year;
+    if (period.mode === "year") return new Date(j.tanggal).getFullYear() === period.year;
+    if (period.mode === "range") {
+      if (period.rangeFrom && dateStr < period.rangeFrom) return false;
+      if (period.rangeTo && dateStr > period.rangeTo) return false;
+      return true;
     }
     return true;
   });

@@ -329,6 +329,8 @@ export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, load
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  const isRange = period.mode === "range";
+
   return (
     <div className="flex flex-col lg:flex-row gap-2 mb-4 items-stretch lg:items-center w-full">
       {setSearch !== undefined && !hideSearch && (
@@ -347,36 +349,54 @@ export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, load
 
       <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center shrink-0">
         {!hidePeriod && (
-          <div className="flex items-center gap-0 bg-white border border-border-main rounded-xl h-[38px] px-1 shadow-sm overflow-hidden divide-x divide-border-main/50">
+          <div className={`flex items-center gap-0 bg-white border border-border-main rounded-xl h-[38px] px-1 shadow-sm overflow-hidden divide-x divide-border-main/50 ${isRange ? "h-auto py-1" : ""}`}>
             <select
-              className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none"
+              className="bg-transparent text-[11px] font-extrabold px-3 h-[30px] border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none"
               value={period.mode || "all"}
               onChange={e => {
                 const mode = e.target.value;
-                setPeriod(mode === "day"
-                  ? { ...period, mode, day: period.day || todayStr }
-                  : { ...period, mode }
-                );
+                if (mode === "day") setPeriod({ ...period, mode, day: period.day || todayStr });
+                else if (mode === "range") setPeriod({ ...period, mode, rangeFrom: period.rangeFrom || todayStr, rangeTo: period.rangeTo || todayStr });
+                else setPeriod({ ...period, mode });
               }}
             >
               <option value="all">Semua</option>
               <option value="day">Harian</option>
               <option value="month">Bulanan</option>
               <option value="year">Tahunan</option>
+              <option value="range">Rentang</option>
             </select>
 
             {period.mode === "day" && (
               <input
                 type="date"
-                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer accent-accent tabular-nums"
+                className="bg-transparent text-[11px] font-extrabold px-3 h-[30px] border-none outline-none cursor-pointer tabular-nums"
                 value={period.day || todayStr}
                 onChange={e => setPeriod({ ...period, day: e.target.value })}
               />
             )}
 
+            {period.mode === "range" && (
+              <>
+                <input
+                  type="date"
+                  className="bg-transparent text-[11px] font-extrabold px-2 h-[30px] border-none outline-none cursor-pointer tabular-nums"
+                  value={period.rangeFrom || ""}
+                  onChange={e => setPeriod({ ...period, rangeFrom: e.target.value })}
+                />
+                <span className="text-[10px] font-black text-text-light px-1 opacity-40">—</span>
+                <input
+                  type="date"
+                  className="bg-transparent text-[11px] font-extrabold px-2 h-[30px] border-none outline-none cursor-pointer tabular-nums"
+                  value={period.rangeTo || ""}
+                  onChange={e => setPeriod({ ...period, rangeTo: e.target.value })}
+                />
+              </>
+            )}
+
             {period.mode === "month" && (
               <select
-                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center"
+                className="bg-transparent text-[11px] font-extrabold px-3 h-[30px] border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center"
                 value={period.month ?? 0}
                 onChange={e => setPeriod({ ...period, month: parseInt(e.target.value) })}
               >
@@ -386,7 +406,7 @@ export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, load
 
             {(period.mode === "month" || period.mode === "year") && (
               <select
-                className="bg-transparent text-[11px] font-extrabold px-3 h-full border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center"
+                className="bg-transparent text-[11px] font-extrabold px-3 h-[30px] border-none outline-none cursor-pointer hover:text-accent transition-colors appearance-none text-center"
                 value={period.year ?? new Date().getFullYear()}
                 onChange={e => setPeriod({ ...period, year: parseInt(e.target.value) })}
               >
@@ -397,9 +417,9 @@ export const PeriodFilter = ({ period, setPeriod, search, setSearch, onAdd, load
         )}
 
         {onAdd && (
-          <button 
-            className="btn-primary flex items-center justify-center gap-2 min-w-[120px] h-[38px] px-4 rounded-xl shadow-lg shadow-accent/10" 
-            onClick={onAdd} 
+          <button
+            className="btn-primary flex items-center justify-center gap-2 min-w-[120px] h-[38px] px-4 rounded-xl shadow-lg shadow-accent/10"
+            onClick={onAdd}
             disabled={loading}
           >
             {loading ? <Lucide.Loader2 className="animate-spin" size={16} /> : <><Lucide.Plus size={16} strokeWidth={3} /> <span className="font-extrabold text-[10px] uppercase tracking-wider">Data Baru</span></>}
