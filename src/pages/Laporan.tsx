@@ -425,7 +425,8 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 {balanced ? "Balanced" : "Unbalanced"}
              </div>
           </div>
-        </div>
+          }
+        />
         <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
