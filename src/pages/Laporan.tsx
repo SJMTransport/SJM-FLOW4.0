@@ -335,16 +335,28 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     // totalAset = totalLiab + totalEku + netLR holds for balanced books → selisih ≈ 0.
     // Avoids dependency on COA kelompok label matching.
     const _cumDetails = cumulativeJurnal.flatMap((j: any) => j.jurnal_detail || []);
-    const netLR =
-      _cumDetails
-        .filter((d: any) => (d.coa_kode || "").startsWith("4"))
-        .reduce((s: number, d: any) => s + Number(d.kredit || 0), 0)
-      - _cumDetails
-        .filter((d: any) => { const k = d.coa_kode || ""; return k.startsWith("5") || k.startsWith("6"); })
-        .reduce((s: number, d: any) => s + Number(d.debit || 0), 0);
+    const totalPnd = _cumDetails
+      .filter((d: any) => (d.coa_kode || "").startsWith("4"))
+      .reduce((s: number, d: any) => s + Number(d.kredit || 0) - Number(d.debit || 0), 0);
+    const totalBbn = _cumDetails
+      .filter((d: any) => { const k = d.coa_kode || ""; return k.startsWith("5") || k.startsWith("6"); })
+      .reduce((s: number, d: any) => s + Number(d.debit || 0) - Number(d.kredit || 0), 0);
+    const netLR = totalPnd - totalBbn;
 
     const totalPassiva = totalLiab + totalEku + netLR;
     const selisih = totalAset - totalPassiva;
+
+    console.log('=== NERACA DEBUG ===');
+    console.log('totalAset:', totalAset);
+    console.log('totalLiab:', totalLiab);
+    console.log('totalEku:', totalEku);
+    console.log('totalPnd:', totalPnd);
+    console.log('totalBbn:', totalBbn);
+    console.log('netLR:', netLR);
+    console.log('totalPassiva:', totalPassiva);
+    console.log('selisih:', selisih);
+    console.log('aset items:', aset.length, '| liab items:', liab.length, '| eku items:', eku.length);
+    console.log('_cumDetails count:', _cumDetails.length);
     const balanced = Math.abs(selisih) < 1;
 
     const periodLabel = getPeriodText();
