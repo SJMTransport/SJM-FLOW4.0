@@ -425,8 +425,8 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 {balanced ? "Balanced" : "Unbalanced"}
              </div>
           </div>
-          <PeriodFilter period={period} setPeriod={setPeriod} />
         </div>
+        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
            <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" />
