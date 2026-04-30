@@ -337,16 +337,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const totalLiab   = liab.reduce((s, c) => s + c.saldo, 0);
     const totalEku    = eku.reduce((s, c) => s + c.saldo, 0);
 
-    // Compute netLR directly from period journal details using coa_kode patterns.
-    // Avoids dependency on COA kelompok label matching — if kelompok labels don't
-    // exactly equal "Pendapatan"/"Beban", pnd/bbn from tbNeraca are empty →
-    // netIncome = 0 → selisih would incorrectly equal the actual net L/R.
-    const _periodDetails = filteredJurnal.flatMap((j: any) => j.jurnal_detail || []);
+    // Compute netLR directly from cumulative journal details using coa_kode patterns.
+    // Uses cumulativeJurnal (same base as tbNeraca) so the accounting equation
+    // totalAset = totalLiab + totalEku + netLR holds for balanced books → selisih ≈ 0.
+    // Avoids dependency on COA kelompok label matching.
+    const _cumDetails = cumulativeJurnal.flatMap((j: any) => j.jurnal_detail || []);
     const netLR =
-      _periodDetails
+      _cumDetails
         .filter((d: any) => (d.coa_kode || "").startsWith("4"))
         .reduce((s: number, d: any) => s + Number(d.kredit || 0), 0)
-      - _periodDetails
+      - _cumDetails
         .filter((d: any) => { const k = d.coa_kode || ""; return k.startsWith("5") || k.startsWith("6"); })
         .reduce((s: number, d: any) => s + Number(d.debit || 0), 0);
 
