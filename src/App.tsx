@@ -6,7 +6,7 @@ import {
 import { 
     fmt, fmtShort, filterByPeriod, filterUpToPeriod 
 } from "@/src/utils";
-import { api, authActions } from "@/src/api";
+import { api, authActions, supabase } from "@/src/api";
 import { SectionHeader, Icon, statusBadge, NotificationBadge, Card, useConfirm, useToast, Spinner } from "@/src/components/SJMComponents";
 import { Dashboard } from "@/src/pages/Dashboard";
 import { JurnalUmum } from "@/src/pages/JurnalUmum";
@@ -736,11 +736,21 @@ export default function App() {
     }
   };
 
+  const loadJurnal = async () => {
+    try { setJurnal(await api.getJurnal()); } catch { /* silent — keep stale data */ }
+  };
+  const loadSalesOrder = async () => {
+    try { setSo(await api.getSO()); } catch { /* silent */ }
+  };
+  const loadCOA = async () => {
+    try { setCoa(await api.getCoa()); } catch { /* silent */ }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
       const [c, j, s, cu, p, arm, armD, armS, sop, usr, sa, logs] = await Promise.all([
-        api.getCoa(), api.getJurnal(), api.getSO(), api.getCustomer(), 
+        api.getCoa(), api.getJurnal(), api.getSO(), api.getCustomer(),
         api.getPiutang(), api.getArmada(), api.getArmadaDokumen(), api.getArmadaService(),
         api.getSopir(), authActions.getAllUsers(), api.getSaldoAwal(), api.getLogs()
       ]);
@@ -748,8 +758,8 @@ export default function App() {
       setArmada(arm); setArmadaDokumen(armD); setArmadaService(armS); setSopir(sop); setUsers(usr); setSaldoAwal(sa);
       setAuditLogs(logs || []);
       setConnected(true);
-    } catch (e: any) { 
-      console.error(e); 
+    } catch (e: any) {
+      console.error(e);
       setConnected(false);
       showToast("Gagal memuat data: " + e.message, "error");
     }
@@ -758,6 +768,51 @@ export default function App() {
 
   useEffect(() => {
     if (session) loadData();
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const jurnalChannel = supabase
+      .channel('sjm_jurnal')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jurnal' }, (payload: any) => {
+        loadJurnal();
+        const ev = payload.eventType;
+        if (ev === 'INSERT') showToast('Jurnal baru ditambahkan', 'info');
+        else if (ev === 'UPDATE') showToast('Jurnal diupdate', 'info');
+        else if (ev === 'DELETE') showToast('Jurnal dihapus', 'warning');
+      })
+      .subscribe();
+
+    const detailChannel = supabase
+      .channel('sjm_detail')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jurnal_detail' }, () => {
+        loadJurnal();
+      })
+      .subscribe();
+
+    const soChannel = supabase
+      .channel('sjm_so')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_order' }, () => {
+        loadSalesOrder();
+        showToast('Sales Order diupdate', 'info');
+      })
+      .subscribe();
+
+    const coaChannel = supabase
+      .channel('sjm_coa')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coa' }, () => {
+        loadCOA();
+        showToast('COA diupdate', 'info');
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(jurnalChannel);
+      supabase.removeChannel(detailChannel);
+      supabase.removeChannel(soChannel);
+      supabase.removeChannel(coaChannel);
+    };
   }, [session]);
 
   const handleSOClick = useCallback((id: string) => {
@@ -1055,7 +1110,13 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-3">
-                 <div 
+                 {connected && (
+                   <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 rounded-full">
+                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                     <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Live</span>
+                   </div>
+                 )}
+                 <div
                     className="w-8 h-8 rounded-md flex items-center justify-center font-black text-[12px] transition-transform hover:scale-105 cursor-pointer shadow-sm border border-black/[0.03]"
                     style={{ background: ROLE_BG[currentUser.role], color: ROLE_COLOR[currentUser.role] }}
                    >
