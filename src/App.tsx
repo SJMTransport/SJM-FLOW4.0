@@ -1049,7 +1049,7 @@ export default function App() {
                  />
                  <NotificationBadge 
                     icon="CheckSquare" 
-                    count={(jurnal || []).filter((j:any) => j.status === "Pending").length} 
+                    count={(jurnal || []).filter((j:any) => j.status === "Draft").length}
                     onClick={() => handleNav("keuangan", "persetujuan")} 
                  />
               </div>
@@ -1115,7 +1115,7 @@ export default function App() {
                 </>
               )}
 
-              {activeModule === "laporan" && <LaporanPage activeSub={activeSub} jurnal={jurnal} coa={coa} so={so} armada={armada} auditLogs={auditLogs} saldoAwal={saldoAwal} onSOClick={handleSOClick} onJurnalClick={handleJurnalClick} />}
+              {activeModule === "laporan" && <LaporanPage activeSub={activeSub} jurnal={jurnal} coa={coa} so={so} armada={armada} auditLogs={auditLogs} saldoAwal={saldoAwal} onSOClick={handleSOClick} onJurnalClick={handleJurnalClick} logAction={logAction} />}
               {activeModule === "armada" && <ArmadaPage activeSub={activeSub} armada={armada} setArmada={setArmada} dokumen={armadaDokumen} setDokumen={setArmadaDokumen} service={armadaService} setService={setArmadaService} sopir={sopir} setSopir={setSopir} onArmadaClick={handleArmadaClick} onSopirClick={handleSopirClick} jurnal={jurnal} coa={coa} logAction={logAction} so={so} />}
               
               {activeModule === "master" && (

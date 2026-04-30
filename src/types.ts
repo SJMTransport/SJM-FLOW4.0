@@ -32,7 +32,7 @@ export interface Jurnal {
   so_values?: Record<string, number>;
   total_debit: number;
   total_kredit: number;
-  status: "Pending" | "Approved" | "Rejected";
+  status: "Draft" | "Posted";
   created_by: string;
   jurnal_detail?: JurnalDetail[];
 }

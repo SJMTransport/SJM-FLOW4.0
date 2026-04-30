@@ -11,7 +11,7 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
   const [processing, setProcessing] = useState(false);
 
   const pending = useMemo(() => {
-    return jurnal.filter((j: any) => j.status === "Pending").sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal));
+    return jurnal.filter((j: any) => j.status === "Draft").sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal));
   }, [jurnal]);
 
   const toggleSelect = (id: string) => {
@@ -34,7 +34,7 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
         setProcessing(true);
         try {
           await api.bulkApproveJurnal(selected);
-          setJurnal((prev: any[]) => prev.map(j => selected.includes(j.id) ? { ...j, status: "Approved" } : j));
+          setJurnal((prev: any[]) => prev.map(j => selected.includes(j.id) ? { ...j, status: "Posted" } : j));
           logAction(`Approve Jurnal Masal: ${selected.length} jurnal`, { ids: selected });
           showToast(`${selected.length} Jurnal berhasil disetujui.`);
           setSelected([]);

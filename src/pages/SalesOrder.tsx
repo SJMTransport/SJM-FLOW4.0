@@ -6,6 +6,7 @@ import { Card, SectionHeader, StatCard, useConfirm, PeriodFilter, Icon, EmptySta
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
 import { Loader2 } from "lucide-react";
+import { buildMeta } from "@/src/lib/activityLogger";
 
 const SO_IMPORT_FIELDS = [
   { key: "order_id", label: "Order ID", required: true },
@@ -127,7 +128,7 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
     try {
       await api.addSOBulk(previewData);
       showToast(`${previewData.length} data SO berhasil diimport.`);
-      logAction(`Import Sales Order Masal: ${previewData.length} baris`, { count: previewData.length });
+      logAction(`Import Sales Order Masal: ${previewData.length} baris`, buildMeta({ module: 'so', action_type: 'IMPORT', after_data: { count: previewData.length } }));
       onComplete();
     } catch (e: any) {
       showToast("Gagal import: " + e.message, "error");
@@ -400,7 +401,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           const item = so.find((x: any) => x.id === id);
           await api.deleteSO(id);
           setSo((prev: any[]) => prev.filter(x => x.id !== id));
-          logAction(`Hapus Sales Order: ${item?.order_id || id}`, { id });
+          logAction(`Hapus Sales Order: ${item?.order_id || id}`, buildMeta({
+            module: 'so', action_type: 'DELETE', record_id: item?.order_id || id,
+            before_data: item ? { order_id: item.order_id, customer: item.customer, tgl_muat: item.tgl_muat, status_muatan: item.status_muatan, total_harga: item.total_harga } : { id },
+          }));
         } catch (e: any) { alert("Gagal hapus: " + e.message); }
       }
     });
@@ -423,14 +427,22 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       }
 
       const payload = { ...form, order_id: finalOrderId, is_posted: posted };
+      const afterSnap = { order_id: finalOrderId, customer: payload.customer, tgl_muat: payload.tgl_muat, status_muatan: payload.status_muatan, total_harga: payload.total_harga };
       if (editItem) {
         await api.updateSO(editItem.id, payload);
         setSo((s: any[]) => s.map(x => x.id === editItem.id ? { ...x, ...payload } : x));
-        logAction(`Update Sales Order: ${payload.order_id}`, { id: editItem.id });
+        logAction(`Update Sales Order: ${payload.order_id}`, buildMeta({
+          module: 'so', action_type: 'UPDATE', record_id: payload.order_id,
+          before_data: { order_id: editItem.order_id, customer: editItem.customer, tgl_muat: editItem.tgl_muat, status_muatan: editItem.status_muatan, total_harga: editItem.total_harga },
+          after_data: afterSnap,
+        }));
       } else {
         const res = await api.addSO(payload);
         setSo((s: any[]) => [res[0], ...s]);
-        logAction(`Create Sales Order: ${payload.order_id}`, { id: res[0].id });
+        logAction(`Buat Sales Order: ${payload.order_id}`, buildMeta({
+          module: 'so', action_type: 'CREATE', record_id: payload.order_id,
+          after_data: afterSnap,
+        }));
       }
       setSaveSuccess(true);
       setTimeout(() => {

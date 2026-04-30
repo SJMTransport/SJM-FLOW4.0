@@ -3,14 +3,33 @@ import { C, STATUS_SO } from "../constants";
 import { fmt, genJUNo, today, filterByPeriod as filterByPeriodUtil } from "@/src/utils";
 import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Icon, useToast, ModalShell, FeedbackButton, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
-import { api, supabase } from "@/src/api";
+import { api } from "@/src/api";
 import { Loader2 } from "lucide-react";
+import { buildMeta } from "@/src/lib/activityLogger";
 
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-const filterByPeriod = (items: any[], period: any) => filterByPeriodUtil(items, period);
+const filterByPeriod = (items: any[], period: any) => {
+  if (period.mode === "all") return items;
+  return items.filter(j => {
+    const dateStr = (j.tanggal || "").slice(0, 10);
+    if (!dateStr) return true;
+    if (period.mode === "day") return dateStr === (period.day || "");
+    if (period.mode === "month") {
+      const d = new Date(j.tanggal);
+      return d.getMonth() === period.month && d.getFullYear() === period.year;
+    }
+    if (period.mode === "year") return new Date(j.tanggal).getFullYear() === period.year;
+    if (period.mode === "range") {
+      if (period.rangeFrom && dateStr < period.rangeFrom) return false;
+      if (period.rangeTo && dateStr > period.rangeTo) return false;
+      return true;
+    }
+    return true;
+  });
+};
 
 export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser, prefill, onPrefillUsed, onSOClick, onJurnalClick, logAction }: any) => {
   const { confirm: askConfirmJurnal, Modal: ConfirmJurnalModal } = useConfirm();
@@ -23,6 +42,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const [saveError, setSaveError] = useState(false);
   const [err, setErr] = useState("");
   const [editJurnalId, setEditJurnalId] = useState<string | null>(null);
+  const [editJurnalSnap, setEditJurnalSnap] = useState<any>(null);
   const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
 
   React.useEffect(() => {
@@ -62,15 +82,18 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   };
 
   const handleDelete = async (id: string, no: string) => {
+    const beforeSnap = (jurnal || []).find((j: any) => j.id === id);
     askConfirmJurnal({
         title: "Hapus Jurnal",
         msg: `Apakah Anda yakin ingin menghapus jurnal ${no}? Ini akan menghapus transaksi dan detailnya secara permanen.`,
         onConfirm: async () => {
             try {
-                await supabase.from("jurnal_detail").delete().eq("jurnal_id", id);
                 await api.deleteJurnal(id);
                 showToast("Jurnal berhasil dihapus");
-                logAction(`Hapus Jurnal Umum: ${no}`, { id });
+                logAction(`Hapus Jurnal Umum: ${no}`, buildMeta({
+                  module: 'jurnal', action_type: 'DELETE', record_id: no,
+                  before_data: beforeSnap ? { no_jurnal: beforeSnap.no_jurnal, tanggal: beforeSnap.tanggal, keterangan: beforeSnap.keterangan, total_debit: beforeSnap.total_debit } : { id },
+                }));
                 const updated = await api.getJurnal();
                 setJurnal(updated);
             } catch (e: any) { alert("Gagal hapus: " + e.message); }
@@ -80,6 +103,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
 
   const openEdit = (j: any) => {
       setEditJurnalId(j.id);
+      setEditJurnalSnap({ no_jurnal: j.no_jurnal, tanggal: j.tanggal, keterangan: j.keterangan, total_debit: j.total_debit, entries: j.jurnal_detail?.length });
       setForm({
           tanggal: j.tanggal,
           noJurnal: j.no_jurnal,
@@ -122,37 +146,43 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       const t = form.tanggal;
       const nj = form.noJurnal || genJUNo(t, jurnal);
       
-      // Collect all SO numbers from entries to store in header as well for searching
-      const allSOList = [...new Set(form.entries.map((e: any) => e.no_so).filter(Boolean))];
+      // Derive SO list: header-level noSO takes precedence, supplemented by per-entry no_so
+      const entrySOList = [...new Set(form.entries.map((e: any) => e.no_so).filter(Boolean))];
+      const headerSOList = (form.noSO || []).filter(Boolean);
+      const allSOList = [...new Set([...headerSOList, ...entrySOList])];
       const allSO = allSOList.join(", ");
 
       const jurnalData = {
         no_jurnal: nj, tanggal: t, no_bukti: form.noBukti, keterangan: form.keterangan,
-        no_so: allSO, 
+        no_so: allSO,
+        // Preserve so_values when multiple SOs present in header — prevents JSONB data loss on re-save
         so_values: allSOList.length > 1 ? (form.soValues || {}) : {},
-        total_debit: totalD, total_kredit: totalK, status: "Pending",
+        total_debit: totalD, total_kredit: totalK, status: "Draft",
         created_by: currentUser?.nama || "—"
       };
-      let jurnalId;
-      if (editJurnalId) {
-        await api.updateJurnal(editJurnalId, jurnalData);
-        await supabase.from("jurnal_detail").delete().eq("jurnal_id", editJurnalId);
-        jurnalId = editJurnalId;
-      } else {
-        const res = await api.addJurnal(jurnalData);
-        jurnalId = res[0].id;
-      }
-      await api.addJurnalDetail(form.entries.map((e: any) => ({
-        jurnal_id: jurnalId, coa_kode: e.coa, nama_akun: e.akun,
+      const details = form.entries.map((e: any) => ({
+        coa_kode: e.coa, nama_akun: e.akun,
         debit: parseFloat(e.debit) || 0, kredit: parseFloat(e.kredit) || 0,
-        no_so: e.no_so || null
-      })));
+        no_so: e.no_so || null,
+      }));
+      if (editJurnalId) {
+        await api.updateJurnalWithDetails(editJurnalId, jurnalData, details);
+      } else {
+        await api.createJurnalWithDetails(jurnalData, details);
+      }
       const updated = await api.getJurnal();
       setJurnal(updated);
-      logAction(`Simpan Jurnal Umum: ${nj}`, { no_jurnal: nj });
+      const afterSnap = { no_jurnal: nj, tanggal: t, keterangan: form.keterangan, total_debit: totalD, entries: form.entries.length };
+      logAction(editJurnalId ? `Update Jurnal Umum: ${nj}` : `Buat Jurnal Umum: ${nj}`, buildMeta({
+        module: 'jurnal',
+        action_type: editJurnalId ? 'UPDATE' : 'CREATE',
+        record_id: nj,
+        before_data: editJurnalId ? editJurnalSnap : null,
+        after_data: afterSnap,
+      }));
       setSaveSuccess(true);
       setTimeout(() => {
-        setTab("list"); setEditJurnalId(null);
+        setTab("list"); setEditJurnalId(null); setEditJurnalSnap(null);
         setSaveSuccess(false);
       }, 1000);
       showToast("Jurnal berhasil disimpan!");
@@ -186,7 +216,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       
       if (linked > 0) {
           showToast(`${linked} jurnal berhasil dihubungkan kembali dengan SO.`);
-          logAction(`Sinkronisasi Jurnal ke SO: ${linked} jurnal dihubungkan`, { count: linked });
+          logAction(`Sinkronisasi Jurnal ke SO: ${linked} jurnal dihubungkan`, buildMeta({ module: 'jurnal', action_type: 'SYNC', after_data: { linked_count: linked } }));
           const updated = await api.getJurnal();
           setJurnal(updated);
       } else {
@@ -198,8 +228,12 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     setSyncing(false);
   };
 
-  const grandD = filtered.reduce((s: number, j: any) => s + Number(j.total_debit || 0), 0);
-  const grandK = filtered.reduce((s: number, j: any) => s + Number(j.total_kredit || 0), 0);
+  const grandD = filtered.reduce((sum: number, j: any) => {
+    return sum + (j.jurnal_detail || []).reduce((s: number, d: any) => s + Number(d.debit || 0), 0);
+  }, 0);
+  const grandK = filtered.reduce((sum: number, j: any) => {
+    return sum + (j.jurnal_detail || []).reduce((s: number, d: any) => s + Number(d.kredit || 0), 0);
+  }, 0);
 
   const getPeriodText = () => {
     if (period.mode === "day") return `Tanggal ${period.day || ""}`;

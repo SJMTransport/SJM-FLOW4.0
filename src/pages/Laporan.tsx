@@ -2,15 +2,20 @@ import React, { useMemo, useState } from "react";
 import { C } from "../constants";
 import { fmt, fmtShort, filterByPeriod, filterUpToPeriod } from "@/src/utils";
 import { Card, SectionHeader, EmptyState, PeriodFilter, Icon, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
+import { ACTION_COLORS, ACTION_LABELS, MODULE_LABELS, type ActionType, type ModuleKey } from "@/src/lib/activityLogger";
+import { buildMeta } from "@/src/lib/activityLogger";
 
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, saldoAwal, onSOClick, onJurnalClick }: any) => {
+const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, saldoAwal, onSOClick, onJurnalClick, logAction }: any) => {
   const [period, setPeriod] = useState({ mode: "year", year: new Date().getFullYear(), month: new Date().getMonth() });
   const [selectedCoa, setSelectedCoa] = useState("");
   const [search, setSearch] = useState("");
+  const [auditDetailLog, setAuditDetailLog] = useState<any>(null);
   const filteredJurnal = useMemo(() => filterByPeriod(jurnal || [], period), [jurnal, period]);
   const cumulativeJurnal = useMemo(() => filterUpToPeriod(jurnal || [], period), [jurnal, period]);
 
@@ -19,7 +24,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     if (period.mode === "year") return `Tahun ${period.year}`;
     if (period.mode === "all") return "Semua Periode";
     if (period.mode === "range") return `${period.rangeFrom || "..."} s/d ${period.rangeTo || "..."}`;
-    return `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
+    return `Bulan ${MONTH_NAMES[period.month]} ${period.year}`;
   };
 
   const exportExcel = (title: string, data: any[], columns: string[]) => {
@@ -278,15 +283,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       });
     });
 
-    const periodSo = filterByPeriod(so || [], period, "tgl_muat");
-    return periodSo.map((s: any) => {
-      const fin = map[s.order_id];
-      const revenue = fin ? fin.revenue : (Number(s.total_harga || 0) - Number(s.nilai_pajak || 0));
-      const expense = fin ? fin.expense : Number(s.base_harga || 0);
-      const profit = revenue - expense;
-      const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-      return { order_id: s.order_id, tgl: s.tgl_muat, customer: s.customer, revenue, expense, profit, margin };
-    });
+    // Build a lookup for SO metadata (tgl, customer) by order_id
+    const soLookup = Object.fromEntries((so || []).map((s: any) => [s.order_id, s]));
+
+    // Only show SOs that have actual journal activity in the selected period
+    return (Object.entries(map) as [string, { revenue: number; expense: number }][]).map(([orderId, fin]) => {
+      const s = soLookup[orderId];
+      const profit = fin.revenue - fin.expense;
+      const margin = fin.revenue > 0 ? (profit / fin.revenue) * 100 : 0;
+      return { order_id: orderId, tgl: s?.tgl_muat || "", customer: s?.customer || orderId, revenue: fin.revenue, expense: fin.expense, profit, margin };
+    }).sort((a, b) => (b.tgl || "").localeCompare(a.tgl || ""));
   }, [so, jurnal, period]);
 
   const tbPerUnit = useMemo(() => {
@@ -323,11 +329,21 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const totalAset   = aset.reduce((s, c) => s + c.saldo, 0);
     const totalLiab   = liab.reduce((s, c) => s + c.saldo, 0);
     const totalEku    = eku.reduce((s, c) => s + c.saldo, 0);
-    const totalPnd    = pnd.reduce((s, c) => s + c.saldo, 0);
-    const totalBbn    = bbn.reduce((s, c) => s + c.saldo, 0);
 
-    const netIncome = totalPnd - totalBbn;
-    const totalPassiva = totalLiab + totalEku + netIncome;
+    // Compute netLR directly from cumulative journal details using coa_kode patterns.
+    // Uses cumulativeJurnal (same base as tbNeraca) so the accounting equation
+    // totalAset = totalLiab + totalEku + netLR holds for balanced books → selisih ≈ 0.
+    // Avoids dependency on COA kelompok label matching.
+    const _cumDetails = cumulativeJurnal.flatMap((j: any) => j.jurnal_detail || []);
+    const netLR =
+      _cumDetails
+        .filter((d: any) => (d.coa_kode || "").startsWith("4"))
+        .reduce((s: number, d: any) => s + Number(d.kredit || 0), 0)
+      - _cumDetails
+        .filter((d: any) => { const k = d.coa_kode || ""; return k.startsWith("5") || k.startsWith("6"); })
+        .reduce((s: number, d: any) => s + Number(d.debit || 0), 0);
+
+    const totalPassiva = totalLiab + totalEku + netLR;
     const selisih = totalAset - totalPassiva;
     const balanced = Math.abs(selisih) < 1;
 
@@ -361,6 +377,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         rows.push({ kode: "", nama: balanced ? "SEIMBANG" : "SELISIH", kelompok: "", saldo: fmt(selisih) });
 
         mode === 'pdf' ? exportPDF("Neraca Saldo", rows, ["kode", "nama", "kelompok", "saldo"]) : exportExcel("Neraca Saldo", rows, ["kode", "nama", "kelompok", "saldo"]);
+        if (logAction) logAction(`Export Neraca Saldo: ${periodLabel} (${mode.toUpperCase()})`, buildMeta({ module: 'laporan', action_type: 'EXPORT', record_id: `neraca-${periodLabel}`, after_data: { format: mode, period: periodLabel } }));
     };
 
     const CategoryTable = ({ label, items, factor = 1 }: any) => {
@@ -406,50 +423,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               <div className={`status-badge ${balanced ? "balanced" : "unbalanced"}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${balanced ? "bg-green-brand" : "bg-red-brand"}`}></div>
                 {balanced ? "Balanced" : "Unbalanced"}
-              </div>
-            </div>
-          }
-        />
-        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
+             </div>
+          </div>
+          <PeriodFilter period={period} setPeriod={setPeriod} />
+        </div>
 
-        {/* netIncome = totalPnd - totalBbn dari cumulativeJurnal:
-            berubah per filter karena menggunakan filterUpToPeriod, bukan filteredJurnal.
-            Berbeda dari calcLabaRugi.labaBersih yang hanya aktivitas dalam periode. */}
-        <KPIGrid cols={4}>
-           <StatCardLocal
-             label="Total Aset (Aktiva)"
-             value={fmt(totalAset)}
-             color="var(--color-blue-brand)"
-             icon="Briefcase"
-             subLabel={`Kumulatif s/d ${periodLabel}`}
-             variant="asset"
-           />
-           <StatCardLocal
-             label="Total Passiva"
-             value={fmt(totalPassiva)}
-             color="var(--color-red-brand)"
-             icon="Scale"
-             subLabel="Liabilitas + Ekuitas + L/R Kumulatif"
-             variant="liability"
-           />
-           <StatCardLocal
-             label="Selisih Neraca"
-             value={fmt(netIncome)}
-             color={netIncome >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"}
-             icon="Activity"
-             subLabel={balanced
-               ? `Neraca seimbang · Pendapatan - Beban kumulatif`
-               : `⚠ Cek jurnal: Aktiva ≠ Pasiva (${fmt(selisih)})`}
-             variant={netIncome >= 0 ? "balance-positive" : "balance-negative"}
-           />
-           <StatCardLocal
-             label="Net L/R Periode Ini"
-             value={fmt(calcLabaRugi.labaBersih)}
-             color={calcLabaRugi.labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"}
-             icon={calcLabaRugi.labaBersih >= 0 ? "TrendingUp" : "TrendingDown"}
-             subLabel={`Hanya aktivitas dalam ${periodLabel}`}
-             variant={calcLabaRugi.labaBersih >= 0 ? "balance-positive" : "balance-negative"}
-           />
+        <KPIGrid cols={3}>
+           <StatCardLocal label="Total Aset (Aktiva)" value={fmt(totalAset)} color="var(--color-blue-brand)" icon="Briefcase" />
+           <StatCardLocal label="Total Passiva" value={fmt(totalPassiva)} color="var(--color-red-brand)" icon="Scale" subLabel={`Incl. Net L/R: ${fmt(netLR)}`} />
+           <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} />
         </KPIGrid>
         
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -557,6 +539,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         add("", "LABA BERSIH", fmt(labaBersih));
 
         mode === 'pdf' ? exportPDF("Laporan Laba Rugi", rows, ["kode", "nama", "jumlah"]) : exportExcel("Laba Rugi", rows, ["kode", "nama", "jumlah"]);
+        if (logAction) logAction(`Export Laba Rugi: ${periodLabel} (${mode.toUpperCase()})`, buildMeta({ module: 'laporan', action_type: 'EXPORT', record_id: `labarugi-${periodLabel}`, after_data: { format: mode, period: periodLabel } }));
     };
 
     return (
@@ -702,15 +685,75 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   }
 
   if (activeSub === "audit") {
-    const filteredLogs = (auditLogs || []).filter((l: any) => 
-      !search || 
-      l.user_name?.toLowerCase().includes(search.toLowerCase()) || 
-      l.user_email?.toLowerCase().includes(search.toLowerCase()) ||
-      l.action?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredLogs = (auditLogs || []).filter((l: any) => {
+      const meta = (() => { try { return typeof l.metadata === 'string' ? JSON.parse(l.metadata) : (l.metadata || {}); } catch { return {}; } })();
+      const q = search.toLowerCase();
+      return !search ||
+        l.user_name?.toLowerCase().includes(q) ||
+        l.user_email?.toLowerCase().includes(q) ||
+        l.action?.toLowerCase().includes(q) ||
+        meta.record_id?.toLowerCase().includes(q) ||
+        meta.module?.toLowerCase().includes(q);
+    });
+
+    const parseMeta = (raw: any) => {
+      try { return typeof raw === 'string' ? JSON.parse(raw) : (raw || {}); } catch { return {}; }
+    };
+
+    const detailMeta = auditDetailLog ? parseMeta(auditDetailLog.metadata) : null;
 
     return (
       <PageShell>
+        {/* Before/After detail modal */}
+        {auditDetailLog && detailMeta && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setAuditDetailLog(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="p-5 border-b border-border-main flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-text-main tracking-tight">Detail Perubahan Data</h3>
+                  <div className="text-[10px] font-bold text-accent tracking-widest mt-0.5">{auditDetailLog.action}</div>
+                </div>
+                <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors" onClick={() => setAuditDetailLog(null)}>
+                  <Icon name="X" size={16} className="text-text-med" />
+                </button>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-4 max-h-[60vh] overflow-auto">
+                <div>
+                  <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-brand inline-block" />
+                    SEBELUM
+                  </div>
+                  {detailMeta.before_data ? (
+                    <pre className="text-[10px] font-mono text-text-med bg-red-brand/5 border border-red-brand/20 rounded-xl p-3 overflow-auto leading-relaxed whitespace-pre-wrap break-all">
+                      {JSON.stringify(detailMeta.before_data, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="flex items-center justify-center h-20 rounded-xl bg-slate-50 border border-dashed border-border-main text-text-light text-[10px] italic opacity-50">Record baru — tidak ada data sebelumnya</div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-brand inline-block" />
+                    SESUDAH
+                  </div>
+                  {detailMeta.after_data ? (
+                    <pre className="text-[10px] font-mono text-text-med bg-green-brand/5 border border-green-brand/20 rounded-xl p-3 overflow-auto leading-relaxed whitespace-pre-wrap break-all">
+                      {JSON.stringify(detailMeta.after_data, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="flex items-center justify-center h-20 rounded-xl bg-slate-50 border border-dashed border-border-main text-text-light text-[10px] italic opacity-50">Record dihapus — tidak ada data sesudah</div>
+                  )}
+                </div>
+              </div>
+              <div className="p-4 border-t border-border-main bg-slate-50/50 flex justify-between items-center">
+                <div className="text-[9px] font-bold text-text-light opacity-50">
+                  {new Date(auditDetailLog.timestamp || auditDetailLog.created_at).toLocaleString("id-ID")} · {auditDetailLog.user_name}
+                </div>
+                <button className="btn-ghost text-[10px]" onClick={() => setAuditDetailLog(null)}>Tutup</button>
+              </div>
+            </div>
+          </div>
+        )}
         <SectionHeader title="Log Aktivitas User" sub="Catatan riwayat penggunaan dan mutasi data aplikasi" />
         <ActionBar
           left={
@@ -718,7 +761,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
               <input
                 className="input-field h-10 pl-9 w-72 text-[12px]"
-                placeholder="Cari user atau aktivitas..."
+                placeholder="Cari user, aktivitas, atau record ID..."
                 value={search || ""}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -732,48 +775,72 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         />
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-           <div className="overflow-auto max-h-[calc(100vh-380px)]">
+           <div className="overflow-auto max-h-[calc(100vh-340px)]">
            <table className="w-full border-collapse">
               <thead>
                  <tr>
-                    <th className="w-44">WAKTU SISTEM</th>
-                    <th className="w-64">PELAKSANA</th>
-                    <th>AKSI / AKTIVITAS</th>
-                    <th>METADATA</th>
+                    <th className="w-40">WAKTU</th>
+                    <th className="w-48">PELAKSANA</th>
+                    <th className="w-28">MODUL / TIPE</th>
+                    <th>DESKRIPSI</th>
+                    <th className="w-32">RECORD ID</th>
+                    <th className="w-16 text-center">DETAIL</th>
                  </tr>
               </thead>
               <tbody>
-                 {filteredLogs.length === 0 ? <EmptyState colSpan={4} /> : 
-                  filteredLogs.map((log: any, idx: number) => (
-                    <tr key={log.id || idx} className="transition-colors group">
-                       <td className="text-[10px] text-text-light tabular-nums font-medium opacity-60">
-                          {new Date(log.timestamp || log.created_at).toLocaleString("id-ID", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                       </td>
-                       <td>
-                          <div className="font-black text-text-main text-[11px] leading-tight uppercase">{log.user_name}</div>
-                          <div className="text-[9px] font-bold text-text-light tracking-widest uppercase mt-0.5 opacity-40">{log.user_email}</div>
-                       </td>
-                       <td>
-                          <div className="flex items-center gap-2">
-                             <span className={`shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase ${
-                               log.action?.includes("Hapus") ? "bg-red-brand/10 text-red-brand" :
-                               log.action?.includes("Simpan") || log.action?.includes("Create") ? "bg-green-brand/10 text-green-brand" :
-                               "bg-slate-100/80 text-text-light"
-                             }`}>
-                                {log.action?.includes("Hapus") ? "DELETE" : log.action?.includes("Simpan") || log.action?.includes("Create") || log.action?.includes("Add") ? "SAVE" : "INFO"}
-                             </span>
-                             <span className="font-bold text-text-med text-[11px] truncate max-w-xs">{log.action}</span>
-                          </div>
-                       </td>
-                       <td>
-                          {log.metadata ? (
-                            <div className="max-h-20 overflow-auto whitespace-pre-wrap text-[9px] font-medium text-text-light bg-slate-50/50 p-2.5 rounded-lg border border-border-main/20 leading-relaxed italic opacity-70 group-hover:opacity-100 transition-opacity">
-                               {log.metadata}
+                 {filteredLogs.length === 0 ? <EmptyState colSpan={6} /> :
+                  filteredLogs.map((log: any, idx: number) => {
+                    const meta = parseMeta(log.metadata);
+                    const actionType = (meta.action_type || "") as ActionType;
+                    const moduleKey = (meta.module || "") as ModuleKey;
+                    const hasDetail = meta.before_data || meta.after_data;
+                    return (
+                      <tr key={log.id || idx} className="group transition-colors">
+                         <td className="text-[10px] text-text-light tabular-nums font-medium opacity-60 whitespace-nowrap">
+                            {new Date(log.timestamp || log.created_at).toLocaleString("id-ID", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                         </td>
+                         <td>
+                            <div className="font-black text-text-main text-[11px] leading-tight uppercase">{log.user_name}</div>
+                            <div className="text-[9px] font-bold text-text-light tracking-widest uppercase mt-0.5 opacity-40">{log.user_email}</div>
+                         </td>
+                         <td>
+                            <div className="flex flex-col gap-1">
+                              {actionType ? (
+                                <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase w-fit ${ACTION_COLORS[actionType] || 'bg-slate-100/80 text-text-light'}`}>
+                                  {ACTION_LABELS[actionType] || actionType}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase w-fit bg-slate-100/80 text-text-light">
+                                  {log.action?.includes("Hapus") ? "DELETE" : log.action?.includes("Buat") || log.action?.includes("Create") ? "CREATE" : log.action?.includes("Update") ? "UPDATE" : "INFO"}
+                                </span>
+                              )}
+                              {moduleKey && (
+                                <span className="text-[8px] font-bold text-text-light opacity-50 uppercase tracking-widest">{MODULE_LABELS[moduleKey] || moduleKey}</span>
+                              )}
                             </div>
-                          ) : <span className="text-text-light text-[10px] italic opacity-30">—</span>}
-                       </td>
-                    </tr>
-                  ))
+                         </td>
+                         <td>
+                            <span className="font-bold text-text-med text-[11px] truncate max-w-xs block">{log.action}</span>
+                         </td>
+                         <td>
+                            {meta.record_id ? (
+                              <span className="text-[10px] font-black text-accent uppercase tracking-tight">{meta.record_id}</span>
+                            ) : <span className="text-text-light text-[10px] italic opacity-30">—</span>}
+                         </td>
+                         <td className="text-center">
+                            {hasDetail ? (
+                              <button
+                                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-accent hover:text-white flex items-center justify-center mx-auto transition-colors text-text-light"
+                                onClick={() => setAuditDetailLog(log)}
+                                title="Lihat Before/After"
+                              >
+                                <Icon name="Eye" size={12} />
+                              </button>
+                            ) : <span className="text-text-light text-[10px] italic opacity-30">—</span>}
+                         </td>
+                      </tr>
+                    );
+                  })
                  }
               </tbody>
            </table>

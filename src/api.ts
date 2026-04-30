@@ -124,13 +124,50 @@ export const api = {
     if (error) { console.error("getJurnal", error); return []; }
     return (data || []).map((j: any) => ({
       ...j,
-      status: j.status || "Pending"
+      status: j.status || "Draft"
     }));
   },
   bulkApproveJurnal: async (ids: string[]) => {
-    const { error } = await supabaseManual.from("jurnal").update({ status: "Approved" }).in("id", ids);
+    const { error } = await supabaseManual.from("jurnal").update({ status: "Posted" }).in("id", ids);
     if (error) throw new Error(error.message || "Gagal approve jurnal");
     return [];
+  },
+  createJurnalWithDetails: async (header: any, details: any[]) => {
+    const { data, error } = await supabase.rpc("create_jurnal_with_details", {
+      p_no_jurnal:   header.no_jurnal,
+      p_tanggal:     header.tanggal,
+      p_no_bukti:    header.no_bukti   || null,
+      p_keterangan:  header.keterangan || null,
+      p_no_so:       header.no_so      || null,
+      p_so_values:   header.so_values  || {},
+      p_total_debit: header.total_debit,
+      p_total_kredit: header.total_kredit,
+      p_status:      header.status,
+      p_created_by:  header.created_by,
+      p_details:     details,
+    });
+    if (error) throw new Error(error.message || "Gagal simpan jurnal");
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.success) throw new Error(row?.message || "Gagal simpan jurnal");
+    return row.jurnal_id as string;
+  },
+  updateJurnalWithDetails: async (id: string, header: any, details: any[]) => {
+    const { data, error } = await supabase.rpc("update_jurnal_with_details", {
+      p_id:          id,
+      p_no_jurnal:   header.no_jurnal,
+      p_tanggal:     header.tanggal,
+      p_no_bukti:    header.no_bukti   || null,
+      p_keterangan:  header.keterangan || null,
+      p_no_so:       header.no_so      || null,
+      p_so_values:   header.so_values  || {},
+      p_total_debit: header.total_debit,
+      p_total_kredit: header.total_kredit,
+      p_status:      header.status,
+      p_details:     details,
+    });
+    if (error) throw new Error(error.message || "Gagal update jurnal");
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.success) throw new Error(row?.message || "Gagal update jurnal");
   },
   addJurnal: async (data: any) => {
     const { data: res, error } = await supabaseManual.from("jurnal").insert([data]).select();
