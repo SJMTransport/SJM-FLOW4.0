@@ -118,17 +118,23 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
 
   return (
     <PageShell>
+      <PageHeader
+        title="Executive Overview"
+        sub="Logistics Performance Dashboard"
+        action={<PeriodFilter period={period} setPeriod={setPeriod} hideSearch />}
+      />
+
       {earlyWarnings.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 -mt-2 mb-6">
           {earlyWarnings.map((w, i) => (
-            <div 
-              key={i} 
-              onClick={w.action} 
+            <div
+              key={i}
+              onClick={w.action}
               className={`p-3 rounded-xl flex items-center gap-3 transition-all duration-300 group shadow-sm ${
-                w.type === "danger" 
-                  ? "bg-red-brand-light text-red-brand border border-red-brand/10 hover:border-red-brand/30" 
-                  : w.type === "warning" 
-                    ? "bg-yellow-brand-light text-yellow-brand border border-yellow-brand/10 hover:border-yellow-brand/30" 
+                w.type === "danger"
+                  ? "bg-red-brand-light text-red-brand border border-red-brand/10 hover:border-red-brand/30"
+                  : w.type === "warning"
+                    ? "bg-yellow-brand-light text-yellow-brand border border-yellow-brand/10 hover:border-yellow-brand/30"
                     : "bg-blue-brand-light text-blue-brand border border-blue-brand/10 hover:border-blue-brand/30"
               } ${w.action ? "cursor-pointer hover:bg-white" : "cursor-default"}`}
             >
@@ -144,13 +150,7 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
         </div>
       )}
 
-      <PageHeader
-        title="Executive Overview"
-        sub="Logistics Performance Dashboard"
-        action={<PeriodFilter period={period} setPeriod={setPeriod} hideSearch />}
-      />
-
-      <KPIGrid cols={4}>
+      <KPIGrid cols={4}>https://github.com/SJMTransport/SJM-FLOW4.0/pull/2/conflict?name=src%252Fpages%252FJurnalUmum.tsx&ancestor_oid=72d35cc56c7a502c5aee0e0a624d9a5c74e6df01&base_oid=6ac8a4ffab90dd905fd42ca21ffb520fd893a4d9&head_oid=fd7e7b068448ae687d5f50788c5fa448abd8a8af
         <StatCard 
           label={`Omzet ${period.mode === "day" ? "Hari Ini" : period.mode === "month" ? "Bulan Ini" : period.mode === "year" ? "Tahun Ini" : "Total"}`}
           value={fmtShort(totalPendapatan)} 
@@ -311,11 +311,11 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
           <div className="flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-border-main/40 shadow-sm">
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-left opacity-60">Tgl</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-left opacity-60">Nomor</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-left opacity-60">Ket</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-text-light italic text-right opacity-60">Nominal</th>
+                <tr>
+                  <th>Tgl</th>
+                  <th>Nomor</th>
+                  <th>Ket</th>
+                  <th className="text-right">Nominal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-main/20">
@@ -323,20 +323,20 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
                   <EmptyState colSpan={4} />
                 ) : (
                   recentTx.map((j: any) => (
-                    <tr key={j.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="py-3 px-4 text-[11px] font-bold text-text-med tabular-nums whitespace-nowrap">{j.tanggal}</td>
-                      <td className="py-3 px-4">
-                        <button 
-                         onClick={() => onJurnalClick && onJurnalClick(j.no_jurnal)} 
+                    <tr key={j.id} className="group transition-colors">
+                      <td className="text-[11px] font-bold text-text-med tabular-nums whitespace-nowrap">{j.tanggal}</td>
+                      <td>
+                        <button
+                         onClick={() => onJurnalClick && onJurnalClick(j.no_jurnal)}
                          className="text-[11px] font-black text-blue-brand hover:underline uppercase tracking-tight"
                         >
                           {j.no_jurnal}
                         </button>
                       </td>
-                      <td className="py-3 px-4 wrap max-w-[200px]">
+                      <td className="wrap max-w-[200px]">
                         <div className="text-[12px] font-bold text-text-main line-clamp-1 opacity-90 group-hover:text-blue-brand transition-colors" title={j.keterangan}>{j.keterangan}</div>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="text-right">
                         <span className={`text-[12px] font-black tracking-tight ${
                           (j.jurnal_detail || []).some((e: any) => String(e.coa_kode).startsWith("4")) ? "text-green-brand" : "text-text-main"
                         }`}>

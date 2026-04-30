@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { C } from "@/src/constants";
-import { Card, SectionHeader, EmptyState, useConfirm, Icon, PageShell } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, useConfirm, Icon, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
 
 export const KontakPage = ({ so, connected }: any) => {
@@ -64,7 +64,7 @@ export const KontakPage = ({ so, connected }: any) => {
         sub={`Kelola data ${tab} strategis PT SJM`} 
         action={
             <button 
-                className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest" 
+                className="btn-primary"
                 onClick={() => { setEditItem(null); setForm({nama:"", telepon:"", email:""}); setShowForm(true); }}
             >
                 <Icon name="Plus" size={14} /> Tambah {isCustomer ? "Customer" : "Vendor"}
@@ -72,30 +72,29 @@ export const KontakPage = ({ so, connected }: any) => {
         } 
       />
 
-      <div className="flex gap-4 border-b border-border-main pb-px">
+      <div className="tab-bar">
         {[["customer", "Customer"], ["vendor", "Vendor"]].map(([k, l]) => (
-          <button 
-            key={k} 
-            className={`px-4 py-2 text-[11px] font-black transition-all relative ${tab === k ? "text-accent" : "text-text-light hover:text-text-med"}`} 
+          <button
+            key={k}
+            className={`tab-btn uppercase tracking-widest ${tab === k ? "active" : ""}`}
             onClick={() => setTab(k)}
           >
             {l}
-            {tab === k && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
           </button>
         ))}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3 items-center">
-          <div className="w-full md:w-96 relative group">
-            <Icon name="Search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light group-focus-within:text-accent transition-all duration-300 opacity-50" />
-            <input 
-                className="input-field pl-11 bg-slate-50 border-transparent focus:bg-white focus:border-accent" 
-                placeholder={`Cari nama, email, atau telepon ${isCustomer ? "customer" : "vendor"}...`} 
-                value={search || ""} 
-                onChange={e => setSearch(e.target.value)} 
-            />
-          </div>
-      </div>
+      <ActionBar left={
+        <div className="relative">
+          <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50" />
+          <input
+            className="input-field h-10 pl-9 w-72 text-[12px]"
+            placeholder={`Cari nama, email, atau telepon ${isCustomer ? "customer" : "vendor"}...`}
+            value={search || ""}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+      } />
 
       {showForm && (
         <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
@@ -141,15 +140,15 @@ export const KontakPage = ({ so, connected }: any) => {
         </div>
       )}
 
-      <Card className="p-0 overflow-hidden border-border-main/40">
-        <div className="overflow-x-auto">
+      <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm">
+        <div className="overflow-auto max-h-[calc(100vh-360px)]">
             <table className="w-full border-collapse">
             <thead>
-                <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm">
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Nama / Entitas</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Kontak Telepon</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Email</th>
-                    <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Aksi</th>
+                <tr>
+                    <th>Nama / Entitas</th>
+                    <th>Kontak Telepon</th>
+                    <th>Email</th>
+                    <th className="text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody className="divide-y divide-border-main/20">
@@ -164,8 +163,8 @@ export const KontakPage = ({ so, connected }: any) => {
                     </tr>
                 ) : filtered.length === 0 ? <EmptyState colSpan={4} msg={`Tidak ada ${tab} yang ditemukan`} /> :
                     filtered.map(x => (
-                        <tr key={x.id} className="hover:bg-slate-50/50 transition-colors group">
-                            <td className="py-3 px-4">
+                        <tr key={x.id} className="group transition-colors">
+                            <td>
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-border-main/20 text-accent font-bold text-[10px] shadow-sm italic">
                                         {x.nama?.[0] || "?"}
@@ -173,23 +172,23 @@ export const KontakPage = ({ so, connected }: any) => {
                                     <div className="font-bold text-text-main group-hover:text-accent transition-colors leading-tight tracking-tight text-[12px]">{x.nama}</div>
                                 </div>
                             </td>
-                            <td className="py-3 px-4">
+                            <td>
                                 {x.telepon ? (
                                     <a href={`tel:${x.telepon}`} className="text-[11px] font-bold text-text-med hover:text-accent transition-colors flex items-center gap-2 tabular-nums">
                                         <Icon name="Phone" size={12} className="opacity-30" /> {x.telepon}
                                     </a>
                                 ) : <span className="text-[11px] font-black text-text-light opacity-20 tracking-widest uppercase">—</span>}
                             </td>
-                            <td className="py-3 px-4">
+                            <td>
                                 {x.email ? (
                                     <a href={`mailto:${x.email}`} className="text-[11px] font-bold text-text-med hover:text-accent transition-colors flex items-center gap-2">
                                         <Icon name="Mail" size={12} className="opacity-30" /> {x.email}
                                     </a>
                                 ) : <span className="text-[11px] font-black text-text-light opacity-20 tracking-widest uppercase">—</span>}
                             </td>
-                            <td className="py-3 px-4 text-right">
-                                <button 
-                                    onClick={() => { setEditItem(x); setForm({nama:x.nama, telepon:x.telepon, email:x.email}); setShowForm(true); }} 
+                            <td className="text-right">
+                                <button
+                                    onClick={() => { setEditItem(x); setForm({nama:x.nama, telepon:x.telepon, email:x.email}); setShowForm(true); }}
                                     className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors opacity-40 group-hover:opacity-100"
                                     title="Edit Kontak"
                                 >

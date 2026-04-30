@@ -53,7 +53,7 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
       <SectionHeader title="Persetujuan Jurnal" sub="Validasi dan setujui entri jurnal secara massal untuk posting final"
         action={
           <button 
-            className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-widest shadow-xl shadow-accent/10" 
+            className="btn-primary"
             onClick={approveBulk} 
             disabled={selected.length === 0 || processing}
           >
@@ -62,19 +62,19 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
           </button>
         } />
 
-      <Card className="p-0 border-border-main/40 overflow-hidden">
-        <div className="overflow-x-auto max-h-[calc(100vh-250px)]">
+      <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto max-h-[calc(100vh-360px)]">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-border-main/40 shadow-sm sticky top-0 z-10">
-                <th className="py-3 px-4 text-left w-10">
+              <tr>
+                <th className="w-10">
                   <input type="checkbox" checked={selected.length > 0 && selected.length === pending.length} onChange={toggleAll} className="w-4 h-4 rounded border-border-main/60 accent-accent cursor-pointer" />
                 </th>
-                <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Tgl Jurnal</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">No Jurnal</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-text-light text-left opacity-60">Keterangan Jurnal</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Debit (Rp)</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-text-light text-right opacity-60">Kredit (Rp)</th>
+                <th>Tgl Jurnal</th>
+                <th>No Jurnal</th>
+                <th>Keterangan Jurnal</th>
+                <th className="text-right">Debit (Rp)</th>
+                <th className="text-right">Kredit (Rp)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-main/20">
@@ -91,19 +91,19 @@ export const ApprovalPage = ({ jurnal, setJurnal, currentUser, onJurnalClick, lo
                 </tr>
               ) : (
                 pending.map((j: any) => (
-                  <tr key={j.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="py-3 px-4">
+                  <tr key={j.id} className="group transition-colors">
+                    <td>
                       <input type="checkbox" checked={selected.includes(j.id)} onChange={() => toggleSelect(j.id)} className="w-4 h-4 rounded border-border-main/60 accent-accent cursor-pointer" />
                     </td>
-                    <td className="py-3 px-4 text-[11px] font-bold text-text-med tabular-nums">{j.tanggal}</td>
-                    <td className="py-3 px-4">
+                    <td className="text-[11px] font-bold text-text-med tabular-nums">{j.tanggal}</td>
+                    <td>
                       <button className="text-[11px] font-bold text-accent hover:underline tracking-tighter italic" onClick={() => onJurnalClick(j.no_jurnal)}>
                          {j.no_jurnal}
                       </button>
                     </td>
-                    <td className="py-3 px-4 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors truncate max-w-xs">{j.keterangan || "—"}</td>
-                    <td className="py-3 px-4 text-right text-[11px] font-black text-text-med tabular-nums">{fmt(j.total_debit || 0)}</td>
-                    <td className="py-3 px-4 text-right text-[11px] font-black text-text-med tabular-nums">{fmt(j.total_kredit || 0)}</td>
+                    <td className="text-[11px] font-bold text-text-main group-hover:text-accent transition-colors truncate max-w-xs">{j.keterangan || "—"}</td>
+                    <td className="text-right text-[11px] font-black text-text-med tabular-nums">{fmt(j.total_debit || 0)}</td>
+                    <td className="text-right text-[11px] font-black text-text-med tabular-nums">{fmt(j.total_kredit || 0)}</td>
                   </tr>
                 ))
               )}

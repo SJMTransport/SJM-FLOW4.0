@@ -122,15 +122,20 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     );
   };
 
-  const StatCardLocal = ({ label, value, color, icon, subLabel }: any) => (
-    <Card className="flex flex-col justify-center p-4 border-l-4 shadow-sm" style={{ borderLeftColor: color }}>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold text-text-light opacity-60 italic">{label}</span>
-        {icon && <Icon name={icon} size={14} style={{ color }} className="opacity-30" />}
+  const StatCardLocal = ({ label, value, color, icon, subLabel, variant = "" }: any) => (
+    <div className={`kpi-card ${variant} fade-up`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="kpi-card-label">{label}</div>
+        {icon && (
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${color}18`, color }}>
+            <Icon name={icon} size={16} />
+          </div>
+        )}
       </div>
-      <div className="text-xl font-black tabular-nums tracking-tight text-text-main">{value}</div>
-      {subLabel && <div className="text-[9px] font-bold text-text-light mt-1.5 flex items-center gap-1.5 opacity-60 underline decoration-border-main">{subLabel}</div>}
-    </Card>
+      <div className="kpi-card-value">{value}</div>
+      {subLabel && <div className="kpi-card-sub">{subLabel}</div>}
+    </div>
   );
 
   const tbNeraca = useMemo(() => {
@@ -233,8 +238,10 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   }, [tbLabaRugi]);
 
   const tbProfit = useMemo(() => {
-    const map: any = {};
-    (jurnal || []).forEach((j: any) => {
+    const map: Record<string, { revenue: number; expense: number }> = {};
+
+    // Gunakan jurnal yang sudah difilter per periode agar KPI berubah sesuai filter
+    filterByPeriod(jurnal || [], period).forEach((j: any) => {
       const headerSOs = (j.no_so || "").split(",").map((s: string) => s.trim()).filter(Boolean);
       const soVals = j.so_values || {};
       const totalSoVals = Object.values(soVals).reduce((s: number, v: any) => s + Number(v || 0), 0);
@@ -246,45 +253,31 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         if (!targets.length) return;
 
         targets.forEach((orderId: string) => {
-          if (!map[orderId]) map[orderId] = {
-            pendapatan: 0, modal: 0, harga_pengiriman: 0, base_harga: 0, total_harga: 0,
-            revenue: 0, expense: 0 // ALIAS for report
-          };
+          if (!map[orderId]) map[orderId] = { revenue: 0, expense: 0 };
           const factor = d.no_so ? 1
             : nHeader === 1 ? 1
             : (soVals[orderId] && Number(totalSoVals) > 0)
               ? Number(soVals[orderId]) / Number(totalSoVals)
               : 1 / nHeader;
 
-          if (kode === "112" && Number(d.debit) > 0)
-            map[orderId].harga_pengiriman += Number(d.debit) * factor;
-
+          // Pendapatan: akun 4xx, ambil kredit bersih
           if (kode.startsWith("4") && Number(d.kredit) > 0) {
-            let pendVal: number;
-            if (d.no_so) {
-              pendVal = Number(d.kredit);
-            } else if (soVals[orderId] && Number(totalSoVals) > 0) {
-              pendVal = Number(soVals[orderId]);
-            } else {
-              // Sisa revenue setelah dikurangi soVals yang terdeklarasi dibagi rata ke SO tanpa nilai
-              const sosWithoutVals = targets.filter((id: string) => !soVals[id]);
-              const remaining = Math.max(0, Number(d.kredit) - Number(totalSoVals));
-              pendVal = sosWithoutVals.length > 0 ? remaining / sosWithoutVals.length : Number(d.kredit) / nHeader;
-            }
+            const pendVal = (!d.no_so && soVals[orderId] && Number(totalSoVals) > 0)
+              ? Number(soVals[orderId])
+              : Number(d.kredit) * factor;
             map[orderId].revenue += pendVal;
           }
 
-          // Beban operasional (5xx, kecuali PPN 553)
+          // Beban operasional (5xx, kecuali PPN 553) — gunakan debit-kredit agar reversal benar
           if (kode.startsWith("5") && kode !== "553") {
-            const bVal = Math.max(Number(d.debit) || 0, Number(d.kredit) || 0);
-            if (bVal > 0) map[orderId].expense += bVal * factor;
+            const bVal = (Number(d.debit || 0) - Number(d.kredit || 0)) * factor;
+            map[orderId].expense += bVal;
           }
 
-          // BUG #3 fix: Beban asuransi (67x) ikut masuk expense per SO
-          // Sebelumnya 67x tidak ditangani → biaya asuransi hilang → profit overstated
+          // Beban asuransi (67x)
           if (kode.startsWith("67")) {
-            const aVal = Math.max(Number(d.debit) || 0, Number(d.kredit) || 0);
-            if (aVal > 0) map[orderId].expense += aVal * factor;
+            const bVal = (Number(d.debit || 0) - Number(d.kredit || 0)) * factor;
+            map[orderId].expense += bVal;
           }
         });
       });
@@ -392,39 +385,42 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         const subtotal = items.reduce((s: number, c: any) => s + (c.saldo * factor), 0);
         return (
             <>
-                <tr className="bg-slate-50/30">
-                    <td colSpan={4} className="px-4 py-2 font-bold text-text-light text-[10px] opacity-60 italic">{label}</td>
+                <tr className="bg-grey-100">
+                    <td colSpan={4} className="px-4 py-2 font-black text-text-med text-[10px] uppercase tracking-widest">{label}</td>
                 </tr>
                 {items.map((r: any) => (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors border-b border-border-main/10 group">
-                        <td className="px-4 py-2 text-[11px] tabular-nums font-bold text-text-light opacity-50">{r.kode}</td>
-                        <td className="px-4 py-2 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight">{r.nama}</td>
-                        <td className="px-4 py-2 text-[10px] text-text-light font-medium italic opacity-40">{r.kelompok}</td>
-                        <td className="px-4 py-2 text-right text-[12px] tabular-nums font-bold text-text-main whitespace-nowrap">{fmt(r.saldo * factor)}</td>
+                    <tr key={r.id} className="hover:bg-grey-50 transition-colors group">
+                        <td className="text-[11px] tabular-nums font-bold text-text-light opacity-50">{r.kode}</td>
+                        <td className="text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight">{r.nama}</td>
+                        <td className="text-[10px] text-text-light font-medium italic opacity-40">{r.kelompok}</td>
+                        <td className="text-right text-[12px] tabular-nums font-bold text-text-main whitespace-nowrap">{fmt(r.saldo * factor)}</td>
                     </tr>
                 ))}
-                <tr className="bg-white border-b border-border-main/20">
-                    <td colSpan={3} className="px-4 py-2 text-right text-[10px] font-bold text-text-light italic opacity-60">Total {label}</td>
-                    <td className="px-4 py-2 text-right text-[13px] font-black text-accent tabular-nums whitespace-nowrap">{fmt(subtotal)}</td>
+                <tr>
+                    <td colSpan={3} className="text-right text-[10px] font-bold text-text-light italic opacity-60">Total {label}</td>
+                    <td className="text-right text-[13px] font-black text-accent tabular-nums whitespace-nowrap">{fmt(subtotal)}</td>
                 </tr>
-                <tr className="h-2"></tr>
+                <tr className="h-2"><td colSpan={4} className="border-b-0 bg-transparent p-0"></td></tr>
             </>
         );
     };
 
     return (
       <PageShell>
-        <SectionHeader title="Posisi Keuangan" sub={`Trial Balance / Neraca Saldo per ${periodLabel}`} />
-        
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-          <div className="flex items-center gap-2">
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => handleExportNeraca('xlsx')}>
-                <Icon name="Download" size={14} /> Excel
-             </button>
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => handleExportNeraca('pdf')}>
-                <Icon name="FileText" size={14} /> PDF
-             </button>
-             <div className={`ml-2 flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 font-bold text-[10px] ${balanced ? "bg-green-brand/5 border-green-brand/20 text-green-brand shadow-sm shadow-green-brand/10" : "bg-red-brand/5 border-red-brand/20 text-red-brand shadow-sm shadow-red-brand/10"}`}>
+        <SectionHeader
+          title="Posisi Keuangan"
+          sub={`Trial Balance / Neraca Saldo per ${periodLabel}`}
+          action={
+            <div className="flex items-center gap-2">
+              <div className="btn-export-group">
+                <button className="text-green-brand" onClick={() => handleExportNeraca('xlsx')}>
+                  <Icon name="Download" size={13} /> Excel
+                </button>
+                <button className="text-red-brand" onClick={() => handleExportNeraca('pdf')}>
+                  <Icon name="FileText" size={13} /> PDF
+                </button>
+              </div>
+              <div className={`status-badge ${balanced ? "balanced" : "unbalanced"}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${balanced ? "bg-green-brand" : "bg-red-brand"}`}></div>
                 {balanced ? "Balanced" : "Unbalanced"}
              </div>
@@ -443,10 +439,10 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="py-3 px-4 w-24">Kode</th>
-                <th className="py-3 px-4">Akun COA</th>
-                <th className="py-3 px-4 w-32">Kategori</th>
-                <th className="py-3 px-4 text-right w-44">Saldo (Rp)</th>
+                <th className="w-24">Kode</th>
+                <th>Akun COA</th>
+                <th className="w-32">Kategori</th>
+                <th className="text-right w-44">Saldo (Rp)</th>
               </tr>
             </thead>
             <tbody>
@@ -457,7 +453,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 <CategoryTable label="Beban" items={bbn} factor={1} />
             </tbody>
             <tfoot>
-              <tr className="bg-slate-50/80 border-t border-border-main/40">
+              <tr className="bg-grey-100 border-t border-border-main/50">
                 <td className="px-4 py-4" colSpan={3}>
                    <div className="flex items-center gap-2 text-[10px] font-bold text-text-light italic">
                      <Icon name="Info" size={14} className="text-accent opacity-50" />
@@ -486,25 +482,25 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     } = calcLabaRugi;
 
     const SectionHeaderRow = ({ label }: any) => (
-       <tr className="bg-slate-50/50">
+       <tr className="bg-grey-100">
           <td />
-          <td colSpan={2} className="py-2 px-4 text-[10px] font-bold text-text-light italic opacity-60">{label}</td>
+          <td colSpan={2} className="py-2 font-black text-text-med text-[10px] uppercase tracking-widest">{label}</td>
        </tr>
     );
 
     const ItemRow = ({ kode, nama, val, indent = false }: any) => (
-       <tr className="hover:bg-slate-50/50 transition-colors border-b border-border-main/10 group">
-          <td className="py-2 px-4 text-[10px] text-text-light tabular-nums font-bold opacity-50 w-24">{kode}</td>
-          <td className={`py-2 px-4 text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight ${indent ? "pl-8" : "pl-4"}`}>{nama}</td>
-          <td className="py-2 px-4 text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(val)}</td>
+       <tr className="hover:bg-grey-50 transition-colors group">
+          <td className="text-[10px] text-text-light tabular-nums font-bold opacity-50 w-24">{kode}</td>
+          <td className={`text-[11px] font-bold text-text-main group-hover:text-accent transition-colors italic tracking-tight ${indent ? "pl-8" : ""}`}>{nama}</td>
+          <td className="text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(val)}</td>
        </tr>
     );
 
     const SummaryRow = ({ label, val, highlight = false }: any) => (
-       <tr className={highlight ? "bg-accent/5 border-b border-accent/20" : "border-b border-border-main/10"}>
+       <tr className={highlight ? "bg-accent/5" : ""}>
           <td />
-          <td className={`py-2 px-4 font-bold text-text-main ${highlight ? "text-[11px] bg-accent/5" : "text-[10px] text-text-light opacity-60 italic"}`}>{label}</td>
-          <td className={`py-2 px-4 text-right tabular-nums font-bold whitespace-nowrap ${highlight ? "text-[14px] text-accent" : "text-[12px] text-text-med"}`}>{fmt(val)}</td>
+          <td className={`font-bold text-text-main ${highlight ? "text-[11px]" : "text-[10px] text-text-light opacity-60 italic"}`}>{label}</td>
+          <td className={`text-right tabular-nums font-bold whitespace-nowrap ${highlight ? "text-[14px] text-accent" : "text-[12px] text-text-med"}`}>{fmt(val)}</td>
        </tr>
     );
 
@@ -548,24 +544,26 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Kinerja Operasional" sub={`Laporan Laba Rugi periode ${periodLabel}`} />
-
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-          <div className="flex items-center gap-2">
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => handleExportLR('xlsx')}>
-                <Icon name="Download" size={14} /> Excel
-             </button>
-             <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => handleExportLR('pdf')}>
-                <Icon name="FileText" size={14} /> PDF
-             </button>
-          </div>
-          <PeriodFilter period={period} setPeriod={setPeriod} />
-        </div>
+        <SectionHeader
+          title="Kinerja Operasional"
+          sub={`Laporan Laba Rugi periode ${periodLabel}`}
+          action={
+            <div className="btn-export-group">
+              <button className="text-green-brand" onClick={() => handleExportLR('xlsx')}>
+                <Icon name="Download" size={13} /> Excel
+              </button>
+              <button className="text-red-brand" onClick={() => handleExportLR('pdf')}>
+                <Icon name="FileText" size={13} /> PDF
+              </button>
+            </div>
+          }
+        />
+        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Total Pendapatan" value={fmt(totPnd)} color="var(--color-blue-brand)" icon="TrendingUp" />
-           <StatCardLocal label="Total Seluruh Beban" value={fmt(totBpp + totKend + totOpr + totFin + totTax)} color="var(--color-red-brand)" icon="TrendingDown" />
-           <StatCardLocal label="Laba Rugi Bersih" value={fmt(labaBersih)} color={labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="CheckCircle" />
+           <StatCardLocal label="Total Pendapatan" value={fmt(totPnd)} color="var(--color-blue-brand)" icon="TrendingUp" variant="asset" />
+           <StatCardLocal label="Total Seluruh Beban" value={fmt(totBpp + totKend + totOpr + totFin + totTax)} color="var(--color-red-brand)" icon="TrendingDown" variant="liability" />
+           <StatCardLocal label="Laba Rugi Bersih" value={fmt(labaBersih)} color={labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="CheckCircle" variant={labaBersih >= 0 ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -573,9 +571,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="py-3 px-4 w-24">KODE</th>
-                <th className="py-3 px-4">RINCIAN POS KEUANGAN</th>
-                <th className="py-3 px-4 text-right w-56">JUMLAH (RP)</th>
+                <th className="w-24">KODE</th>
+                <th>RINCIAN POS KEUANGAN</th>
+                <th className="text-right w-56">JUMLAH (RP)</th>
               </tr>
             </thead>
             <tbody>
@@ -627,23 +625,26 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Analisis Profit Muatan" sub="Pemantauan margin keuntungan real-time per order" />
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-           <div className="flex items-center gap-2">
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
-                 <Icon name="Download" size={14} /> Excel
+        <SectionHeader
+          title="Analisis Profit Muatan"
+          sub="Pemantauan margin keuntungan real-time per order"
+          action={
+            <div className="btn-export-group">
+              <button className="text-green-brand" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
+                <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
-                 <Icon name="FileText" size={14} /> PDF
+              <button className="text-red-brand" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
+                <Icon name="FileText" size={13} /> PDF
               </button>
-           </div>
-           <PeriodFilter period={period} setPeriod={setPeriod} />
-        </div>
+            </div>
+          }
+        />
+        <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} />} />
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Nilai Muatan (Revenue)" value={fmt(totalRevenue)} color="var(--color-blue-brand)" icon="TrendingUp" />
-           <StatCardLocal label="Beban Muatan (Expense)" value={fmt(totalExpense)} color="var(--color-red-brand)" icon="TrendingDown" />
-           <StatCardLocal label="Profit Bruto" value={fmt(totalProfit)} color={totalProfit >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="PieChart" subLabel={`Berdasarkan analisis ${tbProfit.length} order muatan`} />
+           <StatCardLocal label="Nilai Muatan (Revenue)" value={fmt(totalRevenue)} color="var(--color-blue-brand)" icon="TrendingUp" variant="asset" />
+           <StatCardLocal label="Beban Muatan (Expense)" value={fmt(totalExpense)} color="var(--color-red-brand)" icon="TrendingDown" variant="liability" />
+           <StatCardLocal label="Profit Bruto" value={fmt(totalProfit)} color={totalProfit >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="PieChart" subLabel={`Berdasarkan analisis ${tbProfit.length} order muatan`} variant={totalProfit >= 0 ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
 
         <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
@@ -651,24 +652,24 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="py-3 px-4">ORDER ID</th>
-                  <th className="py-3 px-4">MITRA CUSTOMER</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">REVENUE</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">EXPENSE</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">PROFIT</th>
-                  <th className="py-3 px-4 text-right w-32">MARGIN</th>
+                  <th>ORDER ID</th>
+                  <th>MITRA CUSTOMER</th>
+                  <th className="text-right min-w-[160px]">REVENUE</th>
+                  <th className="text-right min-w-[160px]">EXPENSE</th>
+                  <th className="text-right min-w-[160px]">PROFIT</th>
+                  <th className="text-right w-32">MARGIN</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-main/10">
+              <tbody>
                 {tbProfit.length === 0 ? <EmptyState colSpan={6} /> :
                  tbProfit.map((p: any, i:number) => (
-                   <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
-                      <td className="py-3 px-4 text-[11px] font-black text-accent group-hover:underline underline-offset-4 decoration-accent/30">{p.order_id}</td>
-                      <td className="py-3 px-4 text-[11px] font-bold text-text-main uppercase tracking-tight">{p.customer}</td>
-                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium whitespace-nowrap">{fmt(p.revenue)}</td>
-                      <td className="py-3 px-4 text-right tabular-nums text-[11px] font-medium text-red-brand/70 whitespace-nowrap">{fmt(p.expense)}</td>
-                      <td className={`py-3 px-4 text-right tabular-nums text-[12px] font-black whitespace-nowrap ${p.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>{fmt(p.profit)}</td>
-                      <td className="py-3 px-4 text-right">
+                   <tr key={i} className="transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
+                      <td className="text-[11px] font-black text-accent group-hover:underline underline-offset-4 decoration-accent/30">{p.order_id}</td>
+                      <td className="text-[11px] font-bold text-text-main uppercase tracking-tight">{p.customer}</td>
+                      <td className="text-right tabular-nums text-[11px] font-medium whitespace-nowrap">{fmt(p.revenue)}</td>
+                      <td className="text-right tabular-nums text-[11px] font-medium text-red-brand/70 whitespace-nowrap">{fmt(p.expense)}</td>
+                      <td className={`text-right tabular-nums text-[12px] font-black whitespace-nowrap ${p.profit >= 0 ? "text-green-brand" : "text-red-brand"}`}>{fmt(p.profit)}</td>
+                      <td className="text-right">
                         <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-[9px] font-black tracking-widest uppercase border ${p.margin >= 0 ? "bg-green-brand/5 text-green-brand border-green-brand/10" : "bg-red-brand/5 text-red-brand border-red-brand/10"}`}>
                            {Math.round(p.margin)}%
                         </span>
@@ -860,12 +861,18 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     
     // Sum all mutations before the current period start
     const openingBalance = (jurnal || []).reduce((acc: number, j: any) => {
-      const jDate = j.tanggal;
-      const isBefore = period.mode === "month" 
-        ? (new Date(jDate).getFullYear() < period.year || (new Date(jDate).getFullYear() === period.year && new Date(jDate).getMonth() < period.month))
-        : period.mode === "year" 
-          ? new Date(jDate).getFullYear() < period.year
-          : false;
+      const jDate = (j.tanggal || "").slice(0, 10);
+      const isBefore =
+        period.mode === "month"
+          ? (new Date(jDate).getFullYear() < period.year ||
+             (new Date(jDate).getFullYear() === period.year && new Date(jDate).getMonth() < period.month))
+          : period.mode === "year"
+            ? new Date(jDate).getFullYear() < period.year
+            : period.mode === "day"
+              ? jDate < (period.day || "")
+              : period.mode === "range"
+                ? jDate < (period.rangeFrom || "")
+                : false; // "all" — tidak ada periode sebelumnya
 
       if (!isBefore) return acc;
       
@@ -902,31 +909,36 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
 
     return (
       <PageShell>
-        <SectionHeader title="Rincian Buku Besar" sub="Laporan mutasi transaksi mendalam per akun COA" />
-        
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-green-brand shadow-xl shadow-green-brand/10 border-none" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
-                 <Icon name="Download" size={14} /> Excel
+        <SectionHeader
+          title="Rincian Buku Besar"
+          sub="Laporan mutasi transaksi mendalam per akun COA"
+          action={
+            <div className="btn-export-group">
+              <button className="text-green-brand" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+                <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="btn-primary flex items-center gap-2 px-6 py-1.5 text-[10px] uppercase tracking-widest bg-red-brand shadow-xl shadow-red-brand/10 border-none" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
-                 <Icon name="FileText" size={14} /> PDF
+              <button className="text-red-brand" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+                <Icon name="FileText" size={13} /> PDF
               </button>
-              
-              <div className="w-full sm:min-w-[320px] sm:w-[320px]">
-                 <select className="input-field h-10 font-black text-[11px] uppercase tracking-widest bg-slate-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
-                    <option value="">— PILIH AKUN COA —</option>
-                    {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} — {c.nama.toUpperCase()}</option>)}
-                 </select>
-              </div>
-           </div>
-           <PeriodFilter period={period} setPeriod={setPeriod} hideSearch />
-        </div>
+            </div>
+          }
+        />
+        <ActionBar
+          left={
+            <div className="flex items-center gap-3">
+              <select className="input-field h-10 min-w-[280px] font-black text-[11px] uppercase tracking-widest bg-grey-50 border-border-main/40" value={selectedCoa || ""} onChange={e => setSelectedCoa(e.target.value)}>
+                <option value="">— PILIH AKUN COA —</option>
+                {coa.map((c: any) => <option key={c.kode} value={c.kode}>{c.kode} — {c.nama.toUpperCase()}</option>)}
+              </select>
+              <PeriodFilter period={period} setPeriod={setPeriod} hideSearch />
+            </div>
+          }
+        />
 
         <KPIGrid cols={3}>
-           <StatCardLocal label="Saldo Awal Periode" value={fmt(openingBalance)} color="var(--color-blue-brand)" icon="Database" />
+           <StatCardLocal label="Saldo Awal Periode" value={fmt(openingBalance)} color="var(--color-blue-brand)" icon="Database" variant="asset" />
            <StatCardLocal label="Mutasi Berjalan" value={fmt(currentBalance - openingBalance)} color="var(--color-accent)" icon="Activity" subLabel={`Analisis mutasi pada ${rowsWithBalance.length} transaksi`} />
-           <StatCardLocal label="Saldo Akhir Buku" value={fmt(currentBalance)} color="var(--color-green-brand)" icon="CheckCircle" />
+           <StatCardLocal label="Saldo Akhir Buku" value={fmt(currentBalance)} color="var(--color-green-brand)" icon="CheckCircle" variant="balance-positive" />
         </KPIGrid>
 
         {activeCoa && (
@@ -941,15 +953,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="py-3 px-4 w-28">TANGGAL</th>
-                      <th className="py-3 px-4 w-32">NO. JURNAL</th>
-                      <th className="py-3 px-4">KETERANGAN TRANSAKSI</th>
-                      <th className="py-3 px-4 text-right w-36">DEBIT</th>
-                      <th className="py-3 px-4 text-right w-36">KREDIT</th>
-                      <th className="py-3 px-4 text-right w-44 font-black">SALDO</th>
+                      <th className="w-28">TANGGAL</th>
+                      <th className="w-32">NO. JURNAL</th>
+                      <th>KETERANGAN TRANSAKSI</th>
+                      <th className="text-right w-36">DEBIT</th>
+                      <th className="text-right w-36">KREDIT</th>
+                      <th className="text-right w-44 font-black">SALDO</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border-main/10 text-[11px]">
+                  <tbody className="text-[11px]">
                     <tr className="bg-amber-50/20 italic group border-b border-border-main/10">
                       <td className="py-2 px-4 text-text-light opacity-50 font-bold">—</td>
                       <td className="py-2 px-4">
@@ -971,7 +983,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                       </tr>
                     ) : (
                       rowsWithBalance.map((m: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                        <tr key={i} className="transition-colors group">
                           <td className="py-2 px-4 text-text-light tabular-nums font-medium opacity-60">{m.tanggal}</td>
                           <td className="py-2 px-4">
                              <button 
@@ -995,7 +1007,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                       ))
                     )}
                   </tbody>
-                  <tfoot className="bg-slate-50/50 border-t border-border-main/40">
+                  <tfoot className="bg-grey-100 border-t border-border-main/50">
                      <tr>
                         <td colSpan={5} className="py-3 px-4 text-right text-[9px] font-black text-text-light uppercase tracking-widest opacity-60">Saldo Akhir Kumulatif</td>
                         <td className="py-3 px-4 text-right text-[13px] font-black text-accent tabular-nums bg-accent/5 shadow-[inset_0_0_10px_rgba(0,0,0,0.02)]">{fmt(currentBalance)}</td>

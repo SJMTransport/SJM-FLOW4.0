@@ -6,6 +6,9 @@ dist/
 dist-ssr/
 
 # Environment files
+build/
+
+# Environment variables
 .env
 .env.local
 .env.*.local
@@ -25,7 +28,22 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+vite.config.ts.timestamp-*
