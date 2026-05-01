@@ -466,7 +466,8 @@
   .kpi-card:hover { box-shadow: var(--shadow-sm-hover); }
 
   .kpi-card-label {
-    @apply text-[12px] font-bold text-text-light uppercase tracking-[0.06em] leading-none opacity-70;
+    @apply text-[12px] font-bold text-text-light uppercase tracking-[0.06em] leading-none opacity-70
+           truncate;
   }
   .kpi-card-value {
     @apply text-[20px] font-black text-text-main tracking-tight leading-none tabular-nums
