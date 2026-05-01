@@ -150,7 +150,7 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
         </div>
       )}
 
-      <KPIGrid cols={4}>https://github.com/SJMTransport/SJM-FLOW4.0/pull/2/conflict?name=src%252Fpages%252FJurnalUmum.tsx&ancestor_oid=72d35cc56c7a502c5aee0e0a624d9a5c74e6df01&base_oid=6ac8a4ffab90dd905fd42ca21ffb520fd893a4d9&head_oid=fd7e7b068448ae687d5f50788c5fa448abd8a8af
+      <KPIGrid cols={4}>
         <StatCard 
           label={`Omzet ${period.mode === "day" ? "Hari Ini" : period.mode === "month" ? "Bulan Ini" : period.mode === "year" ? "Tahun Ini" : "Total"}`}
           value={fmtShort(totalPendapatan)} 
