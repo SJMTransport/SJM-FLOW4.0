@@ -434,10 +434,12 @@ export const api = {
       const { data, error } = await supabaseManual.from("sales_order")
         .select("order_id")
         .neq("order_id", "")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("order_id", { ascending: false })
+        .limit(20);
       if (error) throw error;
-      return data?.length ? data : [];
+      // Only consider correctly formatted SOs: SJM.ID-XXXX.YY (4-digit number)
+      const valid = (data || []).filter((r: any) => /^SJM\.ID-\d{4,}\.\d{2}$/.test(r.order_id || ""));
+      return valid.length ? [valid[0]] : (data?.length ? [data[0]] : []);
     } catch (e) { console.error('getLastSONo', e); return []; }
   },
 
