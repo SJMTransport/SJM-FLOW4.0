@@ -4,6 +4,7 @@ import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, Ico
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { fmt } from "@/src/utils";
 import { api, authActions } from "@/src/api";
+import { buildMeta } from "@/src/lib/activityLogger";
 
 export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal, setSaldoAwal, logAction }: any) => {
   const { showToast, ToastUI } = useToast();
@@ -15,6 +16,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
   const { confirm, Modal: ModalUI } = useConfirm();
 
   const deleteCoa = async (id: string, name: string) => {
+    const oldCoa = (coa || []).find((c: any) => c.id === id);
     confirm({
       title: "Hapus Akun COA",
       msg: `Apakah Anda yakin ingin menghapus akun ${name}?`,
@@ -22,16 +24,17 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
         try {
           await api.deleteCoa(id);
           setCoa((prev: any[]) => prev.filter(x => x.id !== id));
-          logAction(`Hapus COA: ${name}`, { id });
+          logAction(`Hapus COA: ${name}`, buildMeta({ module: 'coa', action_type: 'DELETE', record_id: name, before_data: oldCoa || { id } }));
           showToast("COA berhasil dihapus");
-        } catch (e: any) { 
-            showToast(e.message, "error"); 
+        } catch (e: any) {
+            showToast(e.message, "error");
         }
       }
     });
   };
 
   const deleteUser = async (id: string, name: string) => {
+    const oldUser = (users || []).find((u: any) => u.id === id);
     confirm({
       title: "Hapus User",
       msg: `Apakah Anda yakin ingin menghapus user ${name}?`,
@@ -39,10 +42,10 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
         try {
           await authActions.deleteUser(id);
           setUsers((prev: any[]) => prev.filter(x => x.id !== id));
-          logAction(`Hapus User: ${name}`, { id });
+          logAction(`Hapus User: ${name}`, buildMeta({ module: 'auth', action_type: 'DELETE', record_id: name, before_data: oldUser || { id } }));
           showToast("User berhasil dihapus");
-        } catch (e: any) { 
-            showToast(e.message, "error"); 
+        } catch (e: any) {
+            showToast(e.message, "error");
         }
       }
     });
@@ -60,7 +63,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
       await api.upsertSaldoAwal(rows);
       const updated = await api.getSaldoAwal();
       setSaldoAwal(updated);
-      logAction(`Update Saldo Awal`, { count: rows.length });
+      logAction(`Update Saldo Awal`, buildMeta({ module: 'coa', action_type: 'UPDATE', record_id: 'saldo_awal', after_data: { count: rows.length } }));
       setSaChanges({});
       showToast("Saldo awal berhasil diperbarui");
     } catch (e: any) { 
@@ -73,13 +76,14 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
     setLoading(true);
     try {
       if (form.id) {
+        const oldCoa = (coa || []).find((c: any) => c.id === form.id);
         await api.updateCoa(form.id, form);
         setCoa((prev: any[]) => prev.map(x => x.id === form.id ? form : x));
-        logAction(`Update COA: ${form.kode} - ${form.nama}`, { id: form.id });
+        logAction(`Update COA: ${form.kode} - ${form.nama}`, buildMeta({ module: 'coa', action_type: 'UPDATE', record_id: `${form.kode} - ${form.nama}`, before_data: oldCoa || null, after_data: form }));
       } else {
         const res = await api.addCoa({ ...form, status: "Aktif" });
         setCoa((prev: any[]) => [...prev, res[0]]);
-        logAction(`Add COA: ${form.kode} - ${form.nama}`, { id: res[0].id });
+        logAction(`Add COA: ${form.kode} - ${form.nama}`, buildMeta({ module: 'coa', action_type: 'CREATE', record_id: `${form.kode} - ${form.nama}`, after_data: res[0] }));
       }
       setShowModal(null);
       showToast("Data COA disimpan");
@@ -94,7 +98,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
     try {
       const res = await authActions.inviteUser(form.username, form.nama, form.role, form.password);
       setUsers((prev: any[]) => [...prev, res]);
-      logAction(`Invite User: ${form.username}`, { role: form.role });
+      logAction(`Invite User: ${form.username}`, buildMeta({ module: 'auth', action_type: 'CREATE', record_id: form.username, after_data: { role: form.role, nama: form.nama } }));
       setShowModal(null);
       showToast("User berhasil diundang");
     } catch (e: any) { 
@@ -108,7 +112,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
     setLoading(true);
     try {
       await new Promise(r => setTimeout(r, 1000));
-      logAction(`Update Password`, { timestamp: new Date().toISOString() });
+      logAction(`Update Password`, buildMeta({ module: 'auth', action_type: 'UPDATE', record_id: 'password' }));
       showToast("Password berhasil diperbarui!");
       setForm({});
     } catch (e: any) { 
