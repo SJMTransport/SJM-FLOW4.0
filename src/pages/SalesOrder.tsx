@@ -266,8 +266,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [saveError, setSaveError] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [err, setErr] = useState("");
-  const [showNewCustomer, setShowNewCustomer] = useState(false);
-  const [newCustomerName, setNewCustomerName] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [localCustomers, setLocalCustomers] = useState<string[]>([]);
   
   const emptyForm = {
     order_id: "", no_invoice: "", kode_invoice: "", laporan_keuangan: "",
@@ -378,19 +379,19 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
   };
 
-  const resetCustomerInput = () => { setShowNewCustomer(false); setNewCustomerName(""); };
+  const resetCustomerCombo = (name = "") => { setCustomerQuery(name); setCustomerOpen(false); };
 
   const openNew = () => {
     setForm(emptyForm);
     setEditItem(null); setErr(""); setTab("form");
-    resetCustomerInput();
+    resetCustomerCombo();
   };
 
   const openDuplicate = (s: any) => {
     const { id: _id, order_id: _oid, created_at: _ca, is_posted: _ip, ...rest } = s;
     setForm({ ...rest, order_id: "", is_posted: false, tgl_order: today(), tgl_muat: today() });
     setEditItem(null); setErr(""); setTab("form");
-    resetCustomerInput();
+    resetCustomerCombo(s.customer || "");
     showToast("Data disalin (Order ID dikosongkan untuk pendaftaran baru)", "info");
   };
 
@@ -399,7 +400,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       setForm(s);
       setErr("");
       setTab("form");
-      resetCustomerInput();
+      resetCustomerCombo(s.customer || "");
   };
 
   useEffect(() => {
@@ -717,42 +718,63 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer & Tanggal</label>
                 <div className="flex gap-2">
-                  {showNewCustomer ? (
-                    <div className="flex gap-1.5 flex-1">
-                      <input
-                        autoFocus
-                        className="input-field h-9 flex-1 text-[11px] font-bold"
-                        placeholder="Nama customer baru..."
-                        value={newCustomerName}
-                        onChange={e => setNewCustomerName(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && newCustomerName.trim()) {
-                            setForm((f: any) => ({ ...f, customer: newCustomerName.trim() }));
-                            resetCustomerInput();
-                          }
-                          if (e.key === 'Escape') resetCustomerInput();
-                        }}
-                      />
-                      <button type="button" className="h-9 px-3 rounded-lg bg-green-brand text-white text-[11px] font-black hover:bg-green-brand/90 transition-colors"
-                        onClick={() => { if (newCustomerName.trim()) { setForm((f: any) => ({ ...f, customer: newCustomerName.trim() })); resetCustomerInput(); } }}>
-                        <Icon name="Check" size={13} />
-                      </button>
-                      <button type="button" className="h-9 px-3 rounded-lg border border-border-main text-text-med text-[11px] font-black hover:bg-slate-100 transition-colors"
-                        onClick={resetCustomerInput}>
-                        <Icon name="X" size={13} />
-                      </button>
-                    </div>
-                  ) : (
-                    <select className="input-field h-9 flex-1 text-[11px] font-bold" value={form.customer || ""}
-                      onChange={e => {
-                        if (e.target.value === '__new__') { setShowNewCustomer(true); setNewCustomerName(""); }
-                        else setForm((f: any) => ({ ...f, customer: e.target.value }));
-                      }}>
-                      <option value="">Pilih Customer</option>
-                      <option value="__new__">+ Customer Baru</option>
-                      {customer.map((c: any) => <option key={c.id} value={c.nama}>{c.nama}</option>)}
-                    </select>
-                  )}
+                  {(() => {
+                    const allNames: string[] = [
+                      ...customer.map((c: any) => c.nama as string),
+                      ...localCustomers.filter((n: string) => !customer.some((c: any) => c.nama === n)),
+                    ];
+                    const q = customerQuery.toLowerCase().trim();
+                    const matches = q ? allNames.filter(n => n.toLowerCase().includes(q)) : allNames;
+                    const isNew = customerQuery.trim() && !allNames.some(n => n.toLowerCase() === customerQuery.toLowerCase().trim());
+                    const confirmNew = () => {
+                      const name = customerQuery.trim();
+                      if (!name) return;
+                      setLocalCustomers(prev => prev.includes(name) ? prev : [...prev, name]);
+                      setForm((f: any) => ({ ...f, customer: name }));
+                      setCustomerOpen(false);
+                    };
+                    return (
+                      <div className="relative flex-1">
+                        <input
+                          className="input-field h-9 w-full text-[11px] font-bold"
+                          placeholder="Cari atau ketik nama customer..."
+                          value={customerQuery}
+                          onChange={e => { setCustomerQuery(e.target.value); setForm((f: any) => ({ ...f, customer: e.target.value })); setCustomerOpen(true); }}
+                          onFocus={() => setCustomerOpen(true)}
+                          onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
+                          onKeyDown={e => {
+                            if (e.key === 'Escape') setCustomerOpen(false);
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (matches.length > 0) { setCustomerQuery(matches[0]); setForm((f: any) => ({ ...f, customer: matches[0] })); setCustomerOpen(false); }
+                              else confirmNew();
+                            }
+                          }}
+                        />
+                        {customerOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto">
+                            {matches.map((name, i) => (
+                              <button key={i} type="button"
+                                className="w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                                onMouseDown={e => { e.preventDefault(); setCustomerQuery(name); setForm((f: any) => ({ ...f, customer: name })); setCustomerOpen(false); }}>
+                                {name}
+                              </button>
+                            ))}
+                            {isNew && (
+                              <button type="button"
+                                className="w-full text-left px-3 py-2 text-[11px] font-black text-accent hover:bg-accent/5 transition-colors flex items-center gap-2 border-t border-border-main/30"
+                                onMouseDown={e => { e.preventDefault(); confirmNew(); }}>
+                                <Icon name="Plus" size={11} /> Tambah &ldquo;{customerQuery.trim()}&rdquo;
+                              </button>
+                            )}
+                            {matches.length === 0 && !isNew && (
+                              <div className="px-3 py-2 text-[11px] text-text-light italic opacity-50">Tidak ada hasil</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <input type="date" className="input-field h-9 w-36 text-[11px] font-bold" value={form.tgl_order || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_order: e.target.value }))} />
                 </div>
               </div>
