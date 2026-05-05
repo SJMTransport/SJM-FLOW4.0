@@ -493,7 +493,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   <th className="text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-main/10 bg-white/40">
+              <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/10 bg-white/40">
                   {filtered.length === 0 ? <EmptyState colSpan={7} msg="Belum ada jurnal" /> :
                     filtered.flatMap((j: any) => {
                       const details = j.jurnal_detail || [];
