@@ -7,6 +7,7 @@ import {
     fmt, fmtShort, filterByPeriod, filterUpToPeriod 
 } from "@/src/utils";
 import { api, authActions, supabase } from "@/src/api";
+import { buildMeta } from "@/src/lib/activityLogger";
 import { SectionHeader, Icon, statusBadge, NotificationBadge, Card, useConfirm, useToast, Spinner } from "@/src/components/SJMComponents";
 import { Dashboard } from "@/src/pages/Dashboard";
 import { JurnalUmum } from "@/src/pages/JurnalUmum";
@@ -710,25 +711,24 @@ export default function App() {
 
   const handleLogin = ({ session, profile }: any) => {
     setSession(session); setCurrentUser(profile);
-    const log = {
-        timestamp: new Date().toISOString(),
-        user_name: profile.nama,
-        user_email: profile.email,
-        action: "User Login",
-        metadata: JSON.stringify({ system: navigator.userAgent })
-    };
-    api.addLog(log);
+    api.addLog({
+      timestamp: new Date().toISOString(),
+      user_name: profile.nama,
+      user_email: profile.email,
+      action: "User Login",
+      metadata: JSON.stringify(buildMeta({ module: 'auth', action_type: 'LOGIN', record_id: profile.email, after_data: { role: profile.role } })),
+    });
   };
 
   const handleLogout = () => {
     if (confirm("Keluar dari aplikasi?")) {
-        const log = {
-            timestamp: new Date().toISOString(),
-            user_name: currentUser.nama,
-            user_email: currentUser.email,
-            action: "User Logout"
-        };
-        api.addLog(log);
+        api.addLog({
+          timestamp: new Date().toISOString(),
+          user_name: currentUser.nama,
+          user_email: currentUser.email,
+          action: "User Logout",
+          metadata: JSON.stringify(buildMeta({ module: 'auth', action_type: 'LOGOUT', record_id: currentUser.email })),
+        });
         setSession(null);
         setCurrentUser(null);
         setActiveModule("dashboard");
@@ -744,6 +744,9 @@ export default function App() {
   };
   const loadCOA = async () => {
     try { setCoa(await api.getCoa()); } catch { /* silent */ }
+  };
+  const loadAuditLogs = async () => {
+    try { setAuditLogs(await api.getLogs()); } catch { /* silent */ }
   };
 
   const loadData = async () => {
@@ -807,11 +810,19 @@ export default function App() {
       })
       .subscribe();
 
+    const auditChannel = supabase
+      .channel('sjm_audit')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => {
+        loadAuditLogs();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(jurnalChannel);
       supabase.removeChannel(detailChannel);
       supabase.removeChannel(soChannel);
       supabase.removeChannel(coaChannel);
+      supabase.removeChannel(auditChannel);
     };
   }, [session]);
 
