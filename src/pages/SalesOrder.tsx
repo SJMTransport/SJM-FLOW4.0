@@ -5,7 +5,7 @@ import { fmt, fmtShort, filterByPeriod, today } from "@/src/utils";
 import { Card, SectionHeader, StatCard, useConfirm, PeriodFilter, Icon, EmptyState, useToast, statusBadge, Stepper, ModalShell, FeedbackButton, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
 
 const SO_IMPORT_FIELDS = [
@@ -304,6 +304,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
   const [selected, setSelected] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [sortKey, setSortKey] = useState<'order_id' | 'tgl_muat'>('order_id');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (key: 'order_id' | 'tgl_muat') => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
   
   const handleTabChange = (t: string) => { 
     setTab(t); setErr(""); 
@@ -458,12 +465,18 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   };
 
   const filtered = useMemo(() => {
-    return filterByPeriod(so, period, "tgl_muat").filter((s: any) =>
+    const base = filterByPeriod(so, period, "tgl_muat").filter((s: any) =>
       !search ||
       s.order_id?.toLowerCase().includes(search.toLowerCase()) ||
       s.customer?.toLowerCase().includes(search.toLowerCase())
-    ).sort((a: any, b: any) => (b.order_id || "").localeCompare(a.order_id || ""));
-  }, [so, period, search]);
+    );
+    return [...base].sort((a: any, b: any) => {
+      const aVal = sortKey === 'tgl_muat' ? (a.tgl_muat || '') : (a.order_id || '');
+      const bVal = sortKey === 'tgl_muat' ? (b.tgl_muat || '') : (b.order_id || '');
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [so, period, search, sortKey, sortDir]);
 
   const statusCount: any = { "Order Confirmed": 0, Loading: 0, "On Going": 0, Arrived: 0, Completed: 0, Cancelled: 0 };
   filtered.forEach((x: any) => { if (statusCount[x.status_muatan] !== undefined) statusCount[x.status_muatan]++; });
@@ -541,8 +554,30 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         />
                       </th>
                     )}
-                    <th>Order ID</th>
-                    <th>Tgl Muat</th>
+                    <th
+                      className="cursor-pointer select-none transition-colors"
+                      style={{ background: sortKey === 'order_id' ? '#e2e8f0' : undefined }}
+                      onClick={() => toggleSort('order_id')}
+                    >
+                      <span className="flex items-center gap-1 pointer-events-none">
+                        Order ID
+                        {sortKey !== 'order_id' && <ArrowUpDown size={10} className="opacity-30" />}
+                        {sortKey === 'order_id' && sortDir === 'asc' && <ArrowUp size={10} className="text-accent" />}
+                        {sortKey === 'order_id' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
+                      </span>
+                    </th>
+                    <th
+                      className="cursor-pointer select-none transition-colors"
+                      style={{ background: sortKey === 'tgl_muat' ? '#e2e8f0' : undefined }}
+                      onClick={() => toggleSort('tgl_muat')}
+                    >
+                      <span className="flex items-center gap-1 pointer-events-none">
+                        Tgl Muat
+                        {sortKey !== 'tgl_muat' && <ArrowUpDown size={10} className="opacity-30" />}
+                        {sortKey === 'tgl_muat' && sortDir === 'asc' && <ArrowUp size={10} className="text-accent" />}
+                        {sortKey === 'tgl_muat' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
+                      </span>
+                    </th>
                     <th>Rute</th>
                     <th>Customer</th>
                     <th>Unit / Sopir</th>
@@ -550,7 +585,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                     <th className="text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-main/20">
+                <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/20">
                   {filtered.length === 0 ? <EmptyState colSpan={8} /> : 
                     filtered.map((s: any) => (
                       <tr key={s.id} className="cursor-pointer transition-colors group" onClick={(e) => {
