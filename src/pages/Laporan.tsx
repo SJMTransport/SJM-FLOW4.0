@@ -541,8 +541,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         add("", "BEBAN OPERASIONAL", "");
         opr.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
         add("", "Total Beban Operasional", fmt(totOpr));
-        add("", "LABA USAHA", fmt(labaUsaha));
-        
+        add("", "LABA USAHA (EBIT)", fmt(labaUsaha));
+
+        if (fin.length > 0) {
+            add("", "BEBAN KEUANGAN", "");
+            fin.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
+            add("", "Total Beban Keuangan", fmt(totFin));
+        }
+        add("", "LABA SEBELUM PAJAK", fmt(labaSebPajak));
+
         if (tax.length > 0) {
             add("", "PAJAK", "");
             tax.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
@@ -613,7 +620,8 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               {fin.length > 0 && <SectionHeaderRow label="BEBAN KEUANGAN & BUNGA" />}
               {fin.map(c => <ItemRow key={c.id} kode={c.kode} nama={c.nama} val={Math.abs(c.saldo)} />)}
               {fin.length > 0 && <SummaryRow label="Total Beban Keuangan" val={totFin} />}
-              
+              <SummaryRow label="LABA SEBELUM PAJAK" val={labaSebPajak} highlight />
+
               {tax.length > 0 && <SectionHeaderRow label="ESTIMASI PAJAK" />}
               {tax.map(c => <ItemRow key={c.id} kode={c.kode} nama={c.nama} val={Math.abs(c.saldo)} />)}
               {tax.length > 0 && <SummaryRow label="Total Beban Pajak" val={totTax} />}
