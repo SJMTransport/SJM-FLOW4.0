@@ -4,7 +4,7 @@ import { fmt, genJUNo, today, filterByPeriod as filterByPeriodUtil } from "@/src
 import { Card, SectionHeader, Spinner, EmptyState, useConfirm, PeriodFilter, Icon, useToast, ModalShell, FeedbackButton, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
 
 import * as XLSX from "xlsx";
@@ -44,6 +44,8 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const [editJurnalId, setEditJurnalId] = useState<string | null>(null);
   const [editJurnalSnap, setEditJurnalSnap] = useState<any>(null);
   const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
+  const [sortKey, setSortKey] = useState<'no_jurnal' | 'tanggal'>('no_jurnal');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   React.useEffect(() => {
     if (prefill) {
@@ -59,12 +61,18 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   }, [prefill]);
 
   const filtered = useMemo(() => {
-    return filterByPeriod(jurnal, period).filter((j: any) =>
+    const base = filterByPeriod(jurnal, period).filter((j: any) =>
       j.keterangan?.toLowerCase().includes(search.toLowerCase()) ||
       j.no_jurnal?.toLowerCase().includes(search.toLowerCase()) ||
       (j.no_so || "").toLowerCase().includes(search.toLowerCase())
-    ).sort((a: any, b: any) => (b.no_jurnal || "").localeCompare(a.no_jurnal || ""));
-  }, [jurnal, period, search]);
+    );
+    return [...base].sort((a: any, b: any) => {
+      const aVal = sortKey === 'tanggal' ? (a.tanggal || '') : (a.no_jurnal || '');
+      const bVal = sortKey === 'tanggal' ? (b.tanggal || '') : (b.no_jurnal || '');
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [jurnal, period, search, sortKey, sortDir]);
 
   const totalD = form.entries.reduce((s: number, e: any) => s + (parseFloat(e.debit) || 0), 0);
   const totalK = form.entries.reduce((s: number, e: any) => s + (parseFloat(e.kredit) || 0), 0);
@@ -196,6 +204,11 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
 
   const [syncing, setSyncing] = useState(false);
 
+  const toggleSort = (key: 'no_jurnal' | 'tanggal') => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
   const syncSO = async () => {
     setSyncing(true);
     try {
@@ -243,37 +256,71 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
 
   const exportExcel = () => {
     try {
-      const data = filtered.flatMap((j: any) => 
-        (j.jurnal_detail || []).map((e: any) => ({
-          "Tanggal": j.tanggal || "—",
-          "No Jurnal": j.no_jurnal || "—",
-          "No SO": j.no_so || "—",
-          "Keterangan": j.keterangan || "—",
-          "Kode Akun": e.coa_kode || "—",
-          "Nama Akun": e.nama_akun || "—",
-          "Debit": Number(e.debit || 0),
-          "Kredit": Number(e.kredit || 0)
-        }))
-      );
+      const periodText = getPeriodText();
+      const now = new Date();
+      const tsStr = `Dicetak: ${now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} pukul ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
-      if (data.length === 0) {
+      const wsRows: any[][] = [
+        ['PT Sugiarto Jaya Mandiri — Laporan Jurnal Umum', '', '', '', '', '', '', ''],
+        [`Periode: ${periodText}`, '', '', '', '', '', '', ''],
+        [''],
+        ['Tanggal', 'No Jurnal', 'No SO', 'Keterangan', 'Kode Akun', 'Nama Akun', 'Debit', 'Kredit'],
+      ];
+      const dataStartRow = wsRows.length;
+
+      filtered.forEach((j: any) => {
+        (j.jurnal_detail || []).forEach((e: any, i: number) => {
+          wsRows.push([
+            i === 0 ? (j.tanggal || '') : '',
+            i === 0 ? (j.no_jurnal || '') : '',
+            i === 0 ? (j.no_so || '') : '',
+            i === 0 ? (j.keterangan || '') : '',
+            e.coa_kode || '',
+            e.nama_akun || '',
+            Number(e.debit || 0),
+            Number(e.kredit || 0),
+          ]);
+        });
+      });
+
+      if (wsRows.length === dataStartRow) {
         showToast("Tidak ada data untuk di-export", "info");
         return;
       }
 
-      const periodText = getPeriodText();
-      const ws = XLSX.utils.json_to_sheet([]);
-      // Add custom header
-      XLSX.utils.sheet_add_aoa(ws, [
-        [`Laporan Jurnal Umum PT Sugiarto Jaya Mandiri`],
-        [`Periode ${periodText}`],
-        []
-      ]);
-      XLSX.utils.sheet_add_json(ws, data, { origin: "A4" });
+      wsRows.push(['']);
+      wsRows.push([tsStr, '', '', '', '', '', '', '']);
+      const footerRowIdx = wsRows.length - 1;
+
+      const ws = XLSX.utils.aoa_to_sheet(wsRows);
+
+      ws['!cols'] = [
+        { wch: 14 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 40 },
+        { wch: 12 },
+        { wch: 30 },
+        { wch: 18 },
+        { wch: 18 },
+      ];
+
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+        { s: { r: footerRowIdx, c: 0 }, e: { r: footerRowIdx, c: 7 } },
+      ];
+
+      for (let i = dataStartRow; i < footerRowIdx - 1; i++) {
+        const dr = XLSX.utils.encode_cell({ r: i, c: 6 });
+        const kr = XLSX.utils.encode_cell({ r: i, c: 7 });
+        if (ws[dr]) ws[dr].z = '#,##0.00';
+        if (ws[kr]) ws[kr].z = '#,##0.00';
+      }
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Jurnal");
-      
+
       const fileName = `Jurnal_Umum_${period.mode === 'day' ? period.day : period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.xlsx`;
       XLSX.writeFile(wb, fileName);
       showToast("Download Excel dimulai...");
@@ -286,14 +333,37 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const exportPDF = () => {
     try {
       const doc = new jsPDF("p", "mm", "a4");
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
       const periodText = getPeriodText();
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
 
-      doc.setFontSize(14);
-      doc.text("Laporan Jurnal Umum PT Sugiarto Jaya Mandiri", 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Periode ${periodText}`, 14, 22);
-      
-      const data = filtered.flatMap((j: any) => 
+      // Navy header
+      doc.setFillColor(30, 58, 95);
+      doc.rect(0, 0, pageW, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('PT Sugiarto Jaya Mandiri', 14, 10);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Laporan Jurnal Umum', 14, 17);
+      doc.setFontSize(7.5);
+      doc.text('SJM Flow · Sistem Manajemen Keuangan & Logistik', pageW - 14, 10, { align: 'right' });
+
+      // Orange period bar
+      doc.setFillColor(249, 172, 61);
+      doc.rect(0, 26, pageW, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(30, 58, 95);
+      doc.text(`Periode: ${periodText}`, 14, 31.5);
+      doc.setTextColor(0, 0, 0);
+
+      const data = filtered.flatMap((j: any) =>
         (j.jurnal_detail || []).map((e: any, i: number) => [
           i === 0 ? j.tanggal : "",
           i === 0 ? j.no_jurnal : "",
@@ -312,17 +382,26 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       autoTable(doc, {
         head: [["TANGGAL", "NO JURNAL", "NO SO", "AKUN", "DEBIT", "KREDIT"]],
         body: data,
-        startY: 30,
-        margin: { left: 10, right: 10, top: 10, bottom: 10 },
-        styles: { fontSize: 7, cellPadding: 1 },
-        headStyles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold', lineWidth: 0.1, lineColor: [226, 232, 240] },
-        bodyStyles: { lineWidth: 0.1, lineColor: [241, 245, 249] },
+        startY: 38,
+        margin: { left: 10, right: 10, top: 10, bottom: 14 },
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        bodyStyles: { lineWidth: 0.1, lineColor: [226, 232, 240] },
         columnStyles: {
-            4: { halign: 'right' },
-            5: { halign: 'right' }
-        }
+          4: { halign: 'right' },
+          5: { halign: 'right' }
+        },
+        didDrawPage: () => {
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(150, 150, 150);
+          doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 6);
+          doc.text(footerTS, pageW - 14, pageH - 6, { align: 'right' });
+          doc.setTextColor(0, 0, 0);
+        },
       });
-      
+
       const fileName = `Jurnal_Umum_${period.mode === 'day' ? period.day : period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.pdf`;
       doc.save(fileName);
       showToast("Download PDF dimulai...");
@@ -383,8 +462,30 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th>Tanggal</th>
-                  <th>No Jurnal</th>
+                  <th
+                    className="cursor-pointer select-none transition-colors"
+                    style={{ background: sortKey === 'tanggal' ? '#e2e8f0' : undefined }}
+                    onClick={() => toggleSort('tanggal')}
+                  >
+                    <span className="flex items-center gap-1 pointer-events-none">
+                      Tanggal
+                      {sortKey !== 'tanggal' && <ArrowUpDown size={10} className="opacity-30" />}
+                      {sortKey === 'tanggal' && sortDir === 'asc' && <ArrowUp size={10} className="text-accent" />}
+                      {sortKey === 'tanggal' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
+                    </span>
+                  </th>
+                  <th
+                    className="cursor-pointer select-none transition-colors"
+                    style={{ background: sortKey === 'no_jurnal' ? '#e2e8f0' : undefined }}
+                    onClick={() => toggleSort('no_jurnal')}
+                  >
+                    <span className="flex items-center gap-1 pointer-events-none">
+                      No Jurnal
+                      {sortKey !== 'no_jurnal' && <ArrowUpDown size={10} className="opacity-30" />}
+                      {sortKey === 'no_jurnal' && sortDir === 'asc' && <ArrowUp size={10} className="text-accent" />}
+                      {sortKey === 'no_jurnal' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
+                    </span>
+                  </th>
                   <th>No SO</th>
                   <th>Keterangan / Akun</th>
                   <th className="text-right min-w-[160px]">Debit</th>
@@ -392,7 +493,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   <th className="text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-main/10 bg-white/40">
+              <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/10 bg-white/40">
                   {filtered.length === 0 ? <EmptyState colSpan={7} msg="Belum ada jurnal" /> :
                     filtered.flatMap((j: any) => {
                       const details = j.jurnal_detail || [];

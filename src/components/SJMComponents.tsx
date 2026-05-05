@@ -74,7 +74,7 @@ export const KPIGrid = ({ children, cols = 3, className = "" }: any) => (
 export const StatCard = ({ label, value, sub, color, delay = 0, sparkData, sparkColor, icon }: any) => (
   <div className="kpi-card fade-up" style={{ animationDelay: `${delay}ms` }}>
     <div className="flex items-start justify-between gap-2">
-      <div className="kpi-card-label">{label}</div>
+      <div className="kpi-card-label flex-1 min-w-0">{label}</div>
       {icon && (
         <div
           className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
