@@ -242,10 +242,14 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
 
 const genSONo = (last: string | undefined) => {
   const yr = new Date().getFullYear().toString().slice(-2);
-  if (!last) return `SJM.ID-0.001.${yr}`;
-  const m = last.match(/SJM\.ID-0\.(\d+)\./);
-  const num = m ? parseInt(m[1]) + 1 : 1;
-  return `SJM.ID-0.${String(num).padStart(3, "0")}.${yr}`;
+  if (!last) return `SJM.ID-0001.${yr}`;
+  // Format: SJM.ID-0292.26 → capture number and year suffix
+  const m = last.match(/SJM\.ID-(\d+)\.(\d{2})$/);
+  if (!m) return `SJM.ID-0001.${yr}`;
+  // Reset counter on year rollover
+  if (m[2] !== yr) return `SJM.ID-0001.${yr}`;
+  const num = parseInt(m[1], 10) + 1;
+  return `SJM.ID-${String(num).padStart(4, "0")}.${yr}`;
 };
 
 export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, currentUser, onSOClick, onArmadaClick, armada, sopir, logAction, pendingEditSO, setPendingEditSO }: any) => {
