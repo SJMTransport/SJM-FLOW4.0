@@ -209,13 +209,6 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     else { setSortKey(key); setSortDir('desc'); }
   };
 
-  const SortIcon = ({ col }: { col: 'no_jurnal' | 'tanggal' }) => {
-    if (sortKey !== col) return <ArrowUpDown size={10} className="ml-1 opacity-30 inline" />;
-    return sortDir === 'asc'
-      ? <ArrowUp size={10} className="ml-1 text-accent inline" />
-      : <ArrowDown size={10} className="ml-1 text-accent inline" />;
-  };
-
   const syncSO = async () => {
     setSyncing(true);
     try {
@@ -469,11 +462,29 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="cursor-pointer select-none hover:bg-slate-100 transition-colors" onClick={() => toggleSort('tanggal')}>
-                    Tanggal <SortIcon col="tanggal" />
+                  <th
+                    className="cursor-pointer select-none transition-colors"
+                    style={{ background: sortKey === 'tanggal' ? '#e2e8f0' : undefined }}
+                    onClick={() => toggleSort('tanggal')}
+                  >
+                    <span className="flex items-center gap-1 pointer-events-none">
+                      Tanggal
+                      {sortKey !== 'tanggal' && <ArrowUpDown size={10} className="opacity-30" />}
+                      {sortKey === 'tanggal' && sortDir === 'asc' && <ArrowUp size={10} className="text-accent" />}
+                      {sortKey === 'tanggal' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
+                    </span>
                   </th>
-                  <th className="cursor-pointer select-none hover:bg-slate-100 transition-colors" onClick={() => toggleSort('no_jurnal')}>
-                    No Jurnal <SortIcon col="no_jurnal" />
+                  <th
+                    className="cursor-pointer select-none transition-colors"
+                    style={{ background: sortKey === 'no_jurnal' ? '#e2e8f0' : undefined }}
+                    onClick={() => toggleSort('no_jurnal')}
+                  >
+                    <span className="flex items-center gap-1 pointer-events-none">
+                      No Jurnal
+                      {sortKey !== 'no_jurnal' && <ArrowUpDown size={10} className="opacity-30" />}
+                      {sortKey === 'no_jurnal' && sortDir === 'asc' && <ArrowUp size={10} className="text-accent" />}
+                      {sortKey === 'no_jurnal' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
+                    </span>
                   </th>
                   <th>No SO</th>
                   <th>Keterangan / Akun</th>
