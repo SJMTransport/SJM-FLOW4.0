@@ -414,6 +414,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             doc.text(`Periode: ${periodLabel}`, pageW / 2, 31.5, { align: 'center' });
             doc.setTextColor(0, 0, 0);
 
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
+
             autoTable(doc, {
                 startY: 38,
                 head: [['KODE', 'NAMA AKUN', 'KELOMPOK', 'SALDO (RP)']],
@@ -427,6 +432,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                     3: { cellWidth: 45, halign: 'right' },
                 },
                 styles: { fontSize: 8.5, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 }, lineWidth: 0 },
+                margin: { bottom: 14 },
+                didDrawPage: () => {
+                    doc.setFontSize(7.5);
+                    doc.setFont('helvetica', 'italic');
+                    doc.setTextColor(150, 150, 150);
+                    doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 6);
+                    doc.text(footerTS, pageW - 14, pageH - 6, { align: 'right' });
+                    doc.setTextColor(0, 0, 0);
+                },
                 didParseCell: (data) => {
                     const type = rowMeta[data.row.index];
                     if (!type) return;
@@ -450,15 +464,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 },
             });
 
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            doc.setFontSize(7);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(150, 150, 150);
-            doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 7);
-            doc.text(`Dicetak: ${dateStr} pukul ${timeStr}`, pageW - 14, pageH - 7, { align: 'right' });
-
             doc.save(`NeracaSaldo_${periodLabel.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
         }
 
@@ -474,14 +479,18 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 ['KODE', 'NAMA AKUN', 'KELOMPOK', 'SALDO (RP)'],
             ];
             tableRows.forEach(r => wsRows.push([r[0], r[1], r[2], r[3]]));
+            wsRows.push(['', '', '', '']);
+            wsRows.push([`Dicetak: ${now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} pukul ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, '', '', '']);
 
             const ws = XLSX.utils.aoa_to_sheet(wsRows);
             ws['!cols'] = [{ wch: 10 }, { wch: 40 }, { wch: 16 }, { wch: 22 }];
+            const footerRow = wsRows.length - 1;
             ws['!merges'] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
                 { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
                 { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
+                { s: { r: footerRow, c: 0 }, e: { r: footerRow, c: 3 } },
             ];
             const dataStart = 6;
             tableRows.forEach(([, , , val], i) => {
@@ -706,6 +715,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             doc.text(`Periode: ${periodLabel}`, pageW / 2, 31.5, { align: 'center' });
             doc.setTextColor(0, 0, 0);
 
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
+
             autoTable(doc, {
                 startY: 38,
                 head: [['KODE', 'NAMA AKUN / POS KEUANGAN', 'JUMLAH (RP)']],
@@ -725,6 +739,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                     2: { cellWidth: 42, halign: 'right' },
                 },
                 styles: { fontSize: 8.5, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 }, lineWidth: 0 },
+                margin: { bottom: 14 },
+                didDrawPage: () => {
+                    doc.setFontSize(7.5);
+                    doc.setFont('helvetica', 'italic');
+                    doc.setTextColor(150, 150, 150);
+                    doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 6);
+                    doc.text(footerTS, pageW - 14, pageH - 6, { align: 'right' });
+                    doc.setTextColor(0, 0, 0);
+                },
                 didParseCell: (data) => {
                     const type = rowMeta[data.row.index];
                     if (!type) return;
@@ -755,16 +778,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 },
             });
 
-            // Timestamp footer
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            doc.setFontSize(7);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(150, 150, 150);
-            doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 7);
-            doc.text(`Dicetak: ${dateStr} pukul ${timeStr}`, pageW - 14, pageH - 7, { align: 'right' });
-
             doc.save(`LabaRugi_${periodLabel.replace(/\s/g, '_')}_${now.toISOString().slice(0, 10)}.pdf`);
         }
 
@@ -785,20 +798,20 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             });
 
             wsRows.push(['', '', '']);
-            wsRows.push(['', '', `Total Pendapatan: ${fmt(totPnd)}`]);
-            wsRows.push(['', '', `Laba Bersih: ${fmt(labaBersih)}`]);
+            wsRows.push([`Dicetak: ${now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} pukul ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, '', '']);
 
             const ws = XLSX.utils.aoa_to_sheet(wsRows);
 
             // Column widths
             ws['!cols'] = [{ wch: 10 }, { wch: 48 }, { wch: 22 }];
 
-            // Merge header rows across 3 columns
+            const lrFooterRow = wsRows.length - 1;
             ws['!merges'] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
                 { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
                 { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } },
+                { s: { r: lrFooterRow, c: 0 }, e: { r: lrFooterRow, c: 2 } },
             ];
 
             // Apply number format to numeric cells in data rows (row 7 onward = index 6+)
