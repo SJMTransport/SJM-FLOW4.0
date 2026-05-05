@@ -240,16 +240,18 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
   );
 };
 
-const genSONo = (last: string | undefined) => {
+const genSONo = (allSOs: any[]): string => {
   const yr = new Date().getFullYear().toString().slice(-2);
-  if (!last) return `SJM.ID-0001.${yr}`;
-  // Handles both formats: SJM.ID-0292.26 (new) and SJM.ID-0.292.26 (old)
-  // (?:\d+\.)* skips any leading "digit." segments (old format prefix like "0.")
-  const m = last.match(/SJM\.ID-(?:\d+\.)*(\d+)\.(\d{2})$/);
-  if (!m) return `SJM.ID-0001.${yr}`;
-  if (m[2] !== yr) return `SJM.ID-0001.${yr}`;
-  const num = parseInt(m[1], 10) + 1;
-  return `SJM.ID-${String(num).padStart(4, "0")}.${yr}`;
+  const re = /SJM\.ID-(?:\d+\.)*(\d+)\.(\d{2})$/;
+  let maxNum = 0;
+  (allSOs || []).forEach((s: any) => {
+    const m = (s.order_id || "").match(re);
+    if (m && m[2] === yr) {
+      const n = parseInt(m[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  });
+  return `SJM.ID-${String(maxNum + 1).padStart(4, "0")}.${yr}`;
 };
 
 export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, currentUser, onSOClick, onArmadaClick, armada, sopir, logAction, pendingEditSO, setPendingEditSO }: any) => {
@@ -264,6 +266,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [saveError, setSaveError] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [err, setErr] = useState("");
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
   
   const emptyForm = {
     order_id: "", no_invoice: "", kode_invoice: "", laporan_keuangan: "",
@@ -374,15 +378,19 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
   };
 
+  const resetCustomerInput = () => { setShowNewCustomer(false); setNewCustomerName(""); };
+
   const openNew = () => {
     setForm(emptyForm);
     setEditItem(null); setErr(""); setTab("form");
+    resetCustomerInput();
   };
 
   const openDuplicate = (s: any) => {
     const { id: _id, order_id: _oid, created_at: _ca, is_posted: _ip, ...rest } = s;
     setForm({ ...rest, order_id: "", is_posted: false, tgl_order: today(), tgl_muat: today() });
     setEditItem(null); setErr(""); setTab("form");
+    resetCustomerInput();
     showToast("Data disalin (Order ID dikosongkan untuk pendaftaran baru)", "info");
   };
 
@@ -391,6 +399,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       setForm(s);
       setErr("");
       setTab("form");
+      resetCustomerInput();
   };
 
   useEffect(() => {
@@ -433,8 +442,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     try {
       let finalOrderId = form.order_id?.trim() || "";
       if (posted && !finalOrderId) {
-        const last = await api.getLastSONo();
-        finalOrderId = genSONo(last[0]?.order_id);
+        finalOrderId = genSONo(so);
       }
 
       const payload = { ...form, order_id: finalOrderId, is_posted: posted };
@@ -709,10 +717,42 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer & Tanggal</label>
                 <div className="flex gap-2">
-                  <select className="input-field h-9 flex-1 text-[11px] font-bold" value={form.customer || ""} onChange={e => setForm((f: any) => ({ ...f, customer: e.target.value }))}>
-                    <option value="">Pilih Customer</option>
-                    {customer.map((c: any) => <option key={c.id} value={c.nama}>{c.nama}</option>)}
-                  </select>
+                  {showNewCustomer ? (
+                    <div className="flex gap-1.5 flex-1">
+                      <input
+                        autoFocus
+                        className="input-field h-9 flex-1 text-[11px] font-bold"
+                        placeholder="Nama customer baru..."
+                        value={newCustomerName}
+                        onChange={e => setNewCustomerName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && newCustomerName.trim()) {
+                            setForm((f: any) => ({ ...f, customer: newCustomerName.trim() }));
+                            resetCustomerInput();
+                          }
+                          if (e.key === 'Escape') resetCustomerInput();
+                        }}
+                      />
+                      <button type="button" className="h-9 px-3 rounded-lg bg-green-brand text-white text-[11px] font-black hover:bg-green-brand/90 transition-colors"
+                        onClick={() => { if (newCustomerName.trim()) { setForm((f: any) => ({ ...f, customer: newCustomerName.trim() })); resetCustomerInput(); } }}>
+                        <Icon name="Check" size={13} />
+                      </button>
+                      <button type="button" className="h-9 px-3 rounded-lg border border-border-main text-text-med text-[11px] font-black hover:bg-slate-100 transition-colors"
+                        onClick={resetCustomerInput}>
+                        <Icon name="X" size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <select className="input-field h-9 flex-1 text-[11px] font-bold" value={form.customer || ""}
+                      onChange={e => {
+                        if (e.target.value === '__new__') { setShowNewCustomer(true); setNewCustomerName(""); }
+                        else setForm((f: any) => ({ ...f, customer: e.target.value }));
+                      }}>
+                      <option value="">Pilih Customer</option>
+                      <option value="__new__">+ Customer Baru</option>
+                      {customer.map((c: any) => <option key={c.id} value={c.nama}>{c.nama}</option>)}
+                    </select>
+                  )}
                   <input type="date" className="input-field h-9 w-36 text-[11px] font-bold" value={form.tgl_order || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_order: e.target.value }))} />
                 </div>
               </div>
