@@ -362,33 +362,140 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const periodLabel = getPeriodText();
 
     const handleExportNeraca = (mode: 'pdf' | 'xlsx') => {
-        const rows: any[] = [];
-        const addSection = (label: string, items: any[], factor = 1) => {
+        type NRowType = 'section' | 'item' | 'subtotal' | 'summary' | 'balance' | 'blank';
+        const tableRows: [string, string, string, number | string][] = [];
+        const rowMeta: NRowType[] = [];
+
+        const addSec  = (label: string)                                       => { tableRows.push(['', label, '', '']);                                rowMeta.push('section'); };
+        const addItem = (kode: string, nama: string, kelompok: string, v: number) => { tableRows.push([kode, `  ${nama}`, kelompok, v]);              rowMeta.push('item'); };
+        const addSub  = (label: string, v: number)                            => { tableRows.push(['', label, '', v]);                                rowMeta.push('subtotal'); };
+        const addBlank= ()                                                     => { tableRows.push(['', '', '', '']);                                   rowMeta.push('blank'); };
+        const addBal  = (label: string, v: number | string)                   => { tableRows.push(['', label, '', typeof v === 'number' ? v : 0]);    rowMeta.push('balance'); };
+
+        const buildSection = (label: string, items: any[], factor = 1) => {
             if (items.length === 0) return;
-            rows.push({ kode: "", nama: label, kelompok: "", saldo: "" });
-            items.forEach(c => rows.push({ 
-                kode: c.kode, 
-                nama: c.nama, 
-                kelompok: c.kelompok, 
-                saldo: fmt(c.saldo * factor) 
-            }));
-            const total = items.reduce((s, c) => s + (c.saldo * factor), 0);
-            rows.push({ kode: "", nama: `Total ${label}`, kelompok: "", saldo: fmt(total) });
-            rows.push({ kode: "", nama: "", kelompok: "", saldo: "" });
+            addSec(label);
+            items.forEach(c => addItem(c.kode, c.nama, c.kelompok, c.saldo * factor));
+            addSub(`Total ${label}`, items.reduce((s: number, c: any) => s + c.saldo * factor, 0));
+            addBlank();
         };
 
-        addSection("Aset", aset, 1);
-        addSection("Liabilitas", liab, 1);
-        addSection("Ekuitas", eku, 1);
-        addSection("Pendapatan", pnd, 1);
-        addSection("Beban", bbn, 1);
-        
-        rows.push({ kode: "", nama: "RINGKASAN", kelompok: "", saldo: "" });
-        rows.push({ kode: "", nama: "Total Aset", kelompok: "", saldo: fmt(totalAset) });
-        rows.push({ kode: "", nama: "Total Liab + Eku + L/R", kelompok: "", saldo: fmt(totalPassiva) });
-        rows.push({ kode: "", nama: balanced ? "SEIMBANG" : "SELISIH", kelompok: "", saldo: fmt(selisih) });
+        buildSection("ASET", aset);
+        buildSection("LIABILITAS", liab);
+        buildSection("EKUITAS", eku);
+        buildSection("PENDAPATAN", pnd);
+        buildSection("BEBAN", bbn);
 
-        mode === 'pdf' ? exportPDF("Neraca Saldo", rows, ["kode", "nama", "kelompok", "saldo"]) : exportExcel("Neraca Saldo", rows, ["kode", "nama", "kelompok", "saldo"]);
+        addSec("RINGKASAN");
+        addBal("Total Aset", totalAset);
+        addBal("Total Liab + Eku + Laba Rugi", totalPassiva);
+        addBal(balanced ? "✓ SEIMBANG" : "SELISIH", selisih);
+
+        // ── PDF ───────────────────────────────────────────────────────────
+        if (mode === 'pdf') {
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+
+            doc.setFillColor(30, 58, 95);
+            doc.rect(0, 0, pageW, 26, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(15);
+            doc.text('PT SUGIARTO JAYA MANDIRI', pageW / 2, 11, { align: 'center' });
+            doc.setFontSize(11);
+            doc.text('NERACA SALDO', pageW / 2, 20, { align: 'center' });
+
+            doc.setFillColor(249, 172, 61);
+            doc.rect(0, 26, pageW, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.text(`Periode: ${periodLabel}`, pageW / 2, 31.5, { align: 'center' });
+            doc.setTextColor(0, 0, 0);
+
+            autoTable(doc, {
+                startY: 38,
+                head: [['KODE', 'NAMA AKUN', 'KELOMPOK', 'SALDO (RP)']],
+                body: tableRows.map(r => [r[0], r[1], r[2], typeof r[3] === 'number' ? fmt(r[3]) : r[3]]),
+                theme: 'plain',
+                headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9, cellPadding: 3 },
+                columnStyles: {
+                    0: { cellWidth: 18, fontSize: 8, textColor: [120, 120, 120] },
+                    1: { cellWidth: 80 },
+                    2: { cellWidth: 34, fontSize: 8 },
+                    3: { cellWidth: 45, halign: 'right' },
+                },
+                styles: { fontSize: 8.5, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 }, lineWidth: 0 },
+                didParseCell: (data) => {
+                    const type = rowMeta[data.row.index];
+                    if (!type) return;
+                    if (type === 'section') {
+                        data.cell.styles.fillColor = [225, 235, 250];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fontSize = 9;
+                        data.cell.styles.textColor = [30, 58, 95];
+                    } else if (type === 'subtotal') {
+                        data.cell.styles.fillColor = [245, 245, 245];
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (type === 'balance') {
+                        data.cell.styles.fillColor = [30, 58, 95];
+                        data.cell.styles.textColor = [255, 255, 255];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fontSize = 9;
+                        data.cell.styles.cellPadding = 4;
+                    } else if (type === 'blank') {
+                        data.cell.styles.minCellHeight = 2;
+                    }
+                },
+            });
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(150, 150, 150);
+            doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 7);
+            doc.text(`Dicetak: ${dateStr} pukul ${timeStr}`, pageW - 14, pageH - 7, { align: 'right' });
+
+            doc.save(`NeracaSaldo_${periodLabel.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        // ── Excel ─────────────────────────────────────────────────────────
+        if (mode === 'xlsx') {
+            const now = new Date();
+            const wsRows: any[][] = [
+                ['PT SUGIARTO JAYA MANDIRI', '', '', ''],
+                ['NERACA SALDO', '', '', ''],
+                [`Periode: ${periodLabel}`, '', '', ''],
+                [`Dicetak: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`, '', '', ''],
+                ['', '', '', ''],
+                ['KODE', 'NAMA AKUN', 'KELOMPOK', 'SALDO (RP)'],
+            ];
+            tableRows.forEach(r => wsRows.push([r[0], r[1], r[2], r[3]]));
+
+            const ws = XLSX.utils.aoa_to_sheet(wsRows);
+            ws['!cols'] = [{ wch: 10 }, { wch: 40 }, { wch: 16 }, { wch: 22 }];
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+                { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
+            ];
+            const dataStart = 6;
+            tableRows.forEach(([, , , val], i) => {
+                if (typeof val === 'number') {
+                    const ref = XLSX.utils.encode_cell({ r: dataStart + i, c: 3 });
+                    if (ws[ref]) ws[ref].z = '#,##0.00';
+                }
+            });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Neraca Saldo');
+            XLSX.writeFile(wb, `NeracaSaldo_${periodLabel.replace(/\s/g, '_')}_${now.toISOString().slice(0, 10)}.xlsx`);
+        }
+
         if (logAction) logAction(`Export Neraca Saldo: ${periodLabel} (${mode.toUpperCase()})`, buildMeta({ module: 'laporan', action_type: 'EXPORT', record_id: `neraca-${periodLabel}`, after_data: { format: mode, period: periodLabel } }));
     };
 
@@ -520,45 +627,194 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const periodLabel = getPeriodText();
 
     const handleExportLR = (mode: 'pdf' | 'xlsx') => {
-        const rows: any[] = [];
-        const add = (k:string, n:string, s:string) => rows.push({ kode: k, nama: n, jumlah: s });
-        
-        add("", "PENDAPATAN", "");
-        pndJasa.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-        pndLain.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-        add("", "Total Pendapatan", fmt(totPnd));
-        
-        add("", "BEBAN POKOK PENDAPATAN", "");
-        bpp.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-        add("", "Total BPP", fmt(totBpp));
-        add("", "LABA KOTOR", fmt(labaKotor));
-        
-        add("", "BEBAN OPERASIONAL KENDARAAN", "");
-        kend.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-        add("", "Total Biaya Kendaraan", fmt(totKend));
-        add("", "LABA SETELAH BIAYA KENDARAAN", fmt(labaSetKend));
-        
-        add("", "BEBAN OPERASIONAL", "");
-        opr.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-        add("", "Total Beban Operasional", fmt(totOpr));
-        add("", "LABA USAHA (EBIT)", fmt(labaUsaha));
+        // ── shared data builder ───────────────────────────────────────────
+        type RowType = 'section' | 'item' | 'subtotal' | 'highlight' | 'total' | 'blank';
+        const tableRows: [string, string, number | string][] = [];
+        const rowMeta:   RowType[] = [];
+
+        const addSection  = (label: string)                    => { tableRows.push(['', label, '']);                      rowMeta.push('section'); };
+        const addItem     = (kode: string, nama: string, v: number) => { tableRows.push([kode, `  ${nama}`, v]);          rowMeta.push('item'); };
+        const addSubtotal = (label: string, v: number)         => { tableRows.push(['', label, v]);                       rowMeta.push('subtotal'); };
+        const addHighlight= (label: string, v: number)         => { tableRows.push(['', label, v]);                       rowMeta.push('highlight'); };
+        const addBlank    = ()                                  => { tableRows.push(['', '', '']);                         rowMeta.push('blank'); };
+        const addTotal    = (label: string, v: number)         => { tableRows.push(['', label, v]);                       rowMeta.push('total'); };
+
+        addSection('PENDAPATAN OPERASIONAL');
+        pndJasa.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+        pndLain.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+        addSubtotal('Total Pendapatan Operasional', totPnd);
+        addBlank();
+
+        addSection('BEBAN POKOK PENDAPATAN (BPP)');
+        bpp.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+        addSubtotal('Total Beban Pokok', totBpp);
+        addHighlight('LABA KOTOR (GROSS PROFIT)', labaKotor);
+        addBlank();
+
+        addSection('BIAYA OPERASIONAL KENDARAAN');
+        kend.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+        addSubtotal('Total Biaya Armada', totKend);
+        addHighlight('LABA SETELAH BIAYA KENDARAAN', labaSetKend);
+        addBlank();
+
+        addSection('BEBAN UMUM & ADMINISTRASI');
+        opr.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+        addSubtotal('Total Beban Umum', totOpr);
+        addHighlight('LABA USAHA (EBIT)', labaUsaha);
+        addBlank();
 
         if (fin.length > 0) {
-            add("", "BEBAN KEUANGAN", "");
-            fin.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-            add("", "Total Beban Keuangan", fmt(totFin));
+            addSection('BEBAN KEUANGAN & BUNGA');
+            fin.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+            addSubtotal('Total Beban Keuangan', totFin);
+            addBlank();
         }
-        add("", "LABA SEBELUM PAJAK", fmt(labaSebPajak));
+        addSubtotal('LABA SEBELUM PAJAK', labaSebPajak);
 
         if (tax.length > 0) {
-            add("", "PAJAK", "");
-            tax.forEach(c => add(c.kode, c.nama, fmt(Math.abs(c.saldo))));
-            add("", "Total Pajak", fmt(totTax));
+            addBlank();
+            addSection('ESTIMASI PAJAK');
+            tax.forEach(c => addItem(c.kode, c.nama, Math.abs(c.saldo)));
+            addSubtotal('Total Beban Pajak', totTax);
         }
 
-        add("", "LABA BERSIH", fmt(labaBersih));
+        addBlank();
+        addTotal('LABA BERSIH PERIODE BERJALAN', labaBersih);
 
-        mode === 'pdf' ? exportPDF("Laporan Laba Rugi", rows, ["kode", "nama", "jumlah"]) : exportExcel("Laba Rugi", rows, ["kode", "nama", "jumlah"]);
+        // ── PDF ───────────────────────────────────────────────────────────
+        if (mode === 'pdf') {
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+
+            // Navy header banner
+            doc.setFillColor(30, 58, 95);
+            doc.rect(0, 0, pageW, 26, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(15);
+            doc.text('PT SUGIARTO JAYA MANDIRI', pageW / 2, 11, { align: 'center' });
+            doc.setFontSize(11);
+            doc.text('LAPORAN LABA RUGI', pageW / 2, 20, { align: 'center' });
+
+            // Orange period bar
+            doc.setFillColor(249, 172, 61);
+            doc.rect(0, 26, pageW, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.text(`Periode: ${periodLabel}`, pageW / 2, 31.5, { align: 'center' });
+            doc.setTextColor(0, 0, 0);
+
+            autoTable(doc, {
+                startY: 38,
+                head: [['KODE', 'NAMA AKUN / POS KEUANGAN', 'JUMLAH (RP)']],
+                body: tableRows.map(r => [r[0], r[1], typeof r[2] === 'number' ? fmt(r[2]) : r[2]]),
+                theme: 'plain',
+                headStyles: {
+                    fillColor: [30, 58, 95],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 9,
+                    cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+                    halign: 'left',
+                },
+                columnStyles: {
+                    0: { cellWidth: 20, fontSize: 8, textColor: [120, 120, 120] },
+                    1: { cellWidth: 120 },
+                    2: { cellWidth: 42, halign: 'right' },
+                },
+                styles: { fontSize: 8.5, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 }, lineWidth: 0 },
+                didParseCell: (data) => {
+                    const type = rowMeta[data.row.index];
+                    if (!type) return;
+                    if (type === 'section') {
+                        data.cell.styles.fillColor = [225, 235, 250];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fontSize = 9;
+                        data.cell.styles.textColor = [30, 58, 95];
+                    } else if (type === 'subtotal') {
+                        data.cell.styles.fillColor = [245, 245, 245];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.textColor = [60, 60, 60];
+                    } else if (type === 'highlight') {
+                        data.cell.styles.fillColor = [232, 245, 233];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.textColor = [27, 94, 32];
+                        data.cell.styles.fontSize = 9;
+                    } else if (type === 'total') {
+                        data.cell.styles.fillColor = [30, 58, 95];
+                        data.cell.styles.textColor = [255, 255, 255];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fontSize = 11;
+                        data.cell.styles.cellPadding = 5;
+                    } else if (type === 'blank') {
+                        data.cell.styles.fillColor = [255, 255, 255];
+                        data.cell.styles.minCellHeight = 2;
+                    }
+                },
+            });
+
+            // Timestamp footer
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(150, 150, 150);
+            doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 7);
+            doc.text(`Dicetak: ${dateStr} pukul ${timeStr}`, pageW - 14, pageH - 7, { align: 'right' });
+
+            doc.save(`LabaRugi_${periodLabel.replace(/\s/g, '_')}_${now.toISOString().slice(0, 10)}.pdf`);
+        }
+
+        // ── Excel ─────────────────────────────────────────────────────────
+        if (mode === 'xlsx') {
+            const now = new Date();
+            const wsRows: any[][] = [
+                ['PT SUGIARTO JAYA MANDIRI', '', ''],
+                ['LAPORAN LABA RUGI', '', ''],
+                [`Periode: ${periodLabel}`, '', ''],
+                [`Dicetak: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`, '', ''],
+                ['', '', ''],
+                ['KODE', 'NAMA AKUN / POS KEUANGAN', 'JUMLAH (RP)'],
+            ];
+
+            tableRows.forEach(([kode, nama, val]) => {
+                wsRows.push([kode, nama, val]);
+            });
+
+            wsRows.push(['', '', '']);
+            wsRows.push(['', '', `Total Pendapatan: ${fmt(totPnd)}`]);
+            wsRows.push(['', '', `Laba Bersih: ${fmt(labaBersih)}`]);
+
+            const ws = XLSX.utils.aoa_to_sheet(wsRows);
+
+            // Column widths
+            ws['!cols'] = [{ wch: 10 }, { wch: 48 }, { wch: 22 }];
+
+            // Merge header rows across 3 columns
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
+                { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } },
+            ];
+
+            // Apply number format to numeric cells in data rows (row 7 onward = index 6+)
+            const dataStartRow = 6; // 0-indexed (row 7 in Excel = index 6)
+            tableRows.forEach(([, , val], i) => {
+                if (typeof val === 'number') {
+                    const cellRef = XLSX.utils.encode_cell({ r: dataStartRow + i, c: 2 });
+                    if (ws[cellRef]) ws[cellRef].z = '#,##0.00';
+                }
+            });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Laba Rugi');
+            XLSX.writeFile(wb, `LabaRugi_${periodLabel.replace(/\s/g, '_')}_${now.toISOString().slice(0, 10)}.xlsx`);
+        }
+
         if (logAction) logAction(`Export Laba Rugi: ${periodLabel} (${mode.toUpperCase()})`, buildMeta({ module: 'laporan', action_type: 'EXPORT', record_id: `labarugi-${periodLabel}`, after_data: { format: mode, period: periodLabel } }));
     };
 
