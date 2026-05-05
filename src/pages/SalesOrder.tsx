@@ -444,8 +444,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           after_data: afterSnap,
         }));
       } else {
-        const res = await api.addSO(payload);
-        setSo((s: any[]) => [res[0], ...s]);
+        await api.addSO(payload);
+        const updated = await api.getSO();
+        setSo(updated);
         logAction(`Buat Sales Order: ${payload.order_id}`, buildMeta({
           module: 'so', action_type: 'CREATE', record_id: payload.order_id,
           after_data: afterSnap,
