@@ -433,13 +433,21 @@ export const api = {
     try {
       const { data, error } = await supabaseManual.from("sales_order")
         .select("order_id")
-        .neq("order_id", "")
-        .order("order_id", { ascending: false })
-        .limit(20);
+        .neq("order_id", "");
       if (error) throw error;
-      // Only consider correctly formatted SOs: SJM.ID-XXXX.YY (4-digit number)
-      const valid = (data || []).filter((r: any) => /^SJM\.ID-\d{4,}\.\d{2}$/.test(r.order_id || ""));
-      return valid.length ? [valid[0]] : (data?.length ? [data[0]] : []);
+      // Parse all order_ids (handles both old SJM.ID-0.292.26 and new SJM.ID-0293.26 formats)
+      // Regex: last numeric segment before the 2-digit year suffix
+      const re = /SJM\.ID-(?:\d+\.)*(\d+)\.(\d{2})$/;
+      let maxNum = 0;
+      let maxId = "";
+      (data || []).forEach((r: any) => {
+        const m = (r.order_id || "").match(re);
+        if (m) {
+          const num = parseInt(m[1], 10);
+          if (num > maxNum) { maxNum = num; maxId = r.order_id; }
+        }
+      });
+      return maxId ? [{ order_id: maxId }] : [];
     } catch (e) { console.error('getLastSONo', e); return []; }
   },
 
