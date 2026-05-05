@@ -243,10 +243,10 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
 const genSONo = (last: string | undefined) => {
   const yr = new Date().getFullYear().toString().slice(-2);
   if (!last) return `SJM.ID-0001.${yr}`;
-  // Format: SJM.ID-0292.26 → capture number and year suffix
-  const m = last.match(/SJM\.ID-(\d+)\.(\d{2})$/);
+  // Handles both formats: SJM.ID-0292.26 (new) and SJM.ID-0.292.26 (old)
+  // (?:\d+\.)* skips any leading "digit." segments (old format prefix like "0.")
+  const m = last.match(/SJM\.ID-(?:\d+\.)*(\d+)\.(\d{2})$/);
   if (!m) return `SJM.ID-0001.${yr}`;
-  // Reset counter on year rollover
   if (m[2] !== yr) return `SJM.ID-0001.${yr}`;
   const num = parseInt(m[1], 10) + 1;
   return `SJM.ID-${String(num).padStart(4, "0")}.${yr}`;
