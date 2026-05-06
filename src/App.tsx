@@ -783,7 +783,7 @@ export default function App() {
         const ev = payload.eventType;
         if (ev === 'INSERT') showToast('Jurnal baru ditambahkan', 'info');
         else if (ev === 'UPDATE') showToast('Jurnal diupdate', 'info');
-        else if (ev === 'DELETE') showToast('Jurnal dihapus', 'warning');
+        else if (ev === 'DELETE') showToast('Jurnal dihapus', 'info');
       })
       .subscribe();
 

@@ -235,15 +235,17 @@ export const useConfirm = () => {
     return { confirm, Modal };
 };
 
-export const Toast = ({ msg, type = "success" }: { msg: string, type?: "success" | "error" | "info" }) => {
+export const Toast = ({ msg, type = "success" }: { msg: string, type?: string }) => {
     const config: any = {
         success: { bg: "var(--color-green-brand)", icon: "CheckCircle" },
         error: { bg: "var(--color-red-brand)", icon: "XCircle" },
-        info: { bg: "var(--color-blue-brand)", icon: "Info" }
+        info: { bg: "var(--color-blue-brand)", icon: "Info" },
+        warning: { bg: "var(--color-accent)", icon: "AlertTriangle" },
     };
+    const c = config[type] || config.info;
     return (
-        <div className="fade-up fixed bottom-10 right-6 sm:right-10 text-white py-4 px-6 rounded-2xl shadow-xl flex items-center gap-3 z-[10000] font-bold text-[13px]" style={{ background: config[type].bg }}>
-            <Icon name={config[type].icon} size={20} />
+        <div className="fade-up fixed bottom-10 right-6 sm:right-10 text-white py-4 px-6 rounded-2xl shadow-xl flex items-center gap-3 z-[10000] font-bold text-[13px]" style={{ background: c.bg }}>
+            <Icon name={c.icon} size={20} />
             {msg}
         </div>
     );
