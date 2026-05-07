@@ -949,7 +949,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <CurrencyInput value={form.harga_asuransi} onChange={(v: any) => handleNumChange("harga_asuransi", v)} className="h-11 text-[13px] font-black bg-white shadow-sm border-slate-200" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">PPN (1,1%)</label>
+                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">PPN (11%)</label>
                 <CurrencyInput value={form.nilai_pajak} readOnly className="h-11 text-[13px] font-black bg-slate-100/50 border-slate-200" />
               </div>
 
@@ -961,7 +961,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </div>
                 <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
                    <Icon name={isPajakApply(form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
-                   {isPajakApply(form.tgl_order) ? "Taxable (1.1%)" : "Non-Taxable"}
+                   {isPajakApply(form.tgl_order) ? "Taxable (11%)" : "Non-Taxable"}
                 </div>
               </div>
             </div>
