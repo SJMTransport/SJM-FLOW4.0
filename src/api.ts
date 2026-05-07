@@ -532,7 +532,27 @@ export const api = {
     const { data, error } = await supabaseManual.from("audit_logs").insert([log]).select();
     if (error) console.error("addLog", error);
     return data ? data[0] : null;
-  }
+  },
+  getLastInvoiceNo: async (): Promise<number> => {
+    const { data } = await supabaseManual.from("invoices").select("no_invoice");
+    let max = 0;
+    (data || []).forEach((r: any) => {
+      const m = (r.no_invoice || "").match(/^(\d+)\//);
+      if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
+    });
+    return max;
+  },
+  addInvoice: async (data: any) => {
+    const { data: res, error } = await supabaseManual.from("invoices").insert([data]).select();
+    if (error) throw new Error(error.message || "Gagal simpan invoice");
+    return res?.[0];
+  },
+  updateSOInvoiceNo: async (ids: string[], no_invoice: string) => {
+    for (const id of ids) {
+      const { error } = await supabaseManual.from("sales_order").update({ no_invoice }).eq("id", id);
+      if (error) throw new Error(error.message || "Gagal update no_invoice SO");
+    }
+  },
 };
 
 export const authActions = {
