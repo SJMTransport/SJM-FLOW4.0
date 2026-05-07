@@ -403,7 +403,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     }
     const notCompleted = items.filter((x: any) => x.status_muatan !== 'Completed');
     if (notCompleted.length > 0) {
-      showToast(`Hanya SO berstatus "Completed" yang bisa di-invoice. Belum selesai: ${notCompleted.map((x: any) => x.order_id).join(", ")}`, "error");
+      alert(
+        `❌ Tidak bisa generate invoice!\n\n` +
+        `${notCompleted.length} SO belum berstatus "Completed":\n\n` +
+        notCompleted.map((x: any) => `• ${x.order_id} → ${x.status_muatan}`).join('\n') +
+        `\n\nUbah status SO ke "Completed" terlebih dahulu.`
+      );
       return;
     }
     setShowInvoiceModal(true);
@@ -413,10 +418,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     if (selected.length === 0) return;
     const items = so.filter((x: any) => selected.includes(x.id));
     const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
+    console.log('📄 handleGenerateInvoice', { count: items.length, customers });
     setGeneratingInvoice(true);
     try {
       const date = new Date(invoiceDate || today());
       const invoiceNo = await generateInvoiceNo(date);
+      console.log('🔢 Invoice number:', invoiceNo);
       const customer = customers[0] || '';
       const picCust = items[0]?.pic_cust || '';
       const noPic = items[0]?.no_pic || '';
@@ -424,21 +431,33 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       const totalDPP = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
       const totalPPN = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
       const grandTotal = items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
+      console.log('💰 Totals:', { totalDPP, totalPPN, grandTotal });
 
-      await api.addInvoice({
-        no_invoice: invoiceNo,
-        tgl_invoice: invoiceDate || today(),
-        customer,
-        so_ids: selected,
-        total_sebelum_pajak: totalDPP,
-        ppn: totalPPN,
-        total_setelah_pajak: grandTotal,
-      });
-
-      await api.updateSOInvoiceNo(selected, invoiceNo);
-      setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: invoiceNo } : s));
-
+      // ── PDF first — download must not depend on DB success ────────────────
+      console.log('🖨️ Generating PDF...');
       generateInvoicePDF(invoiceNo, date, customer, picCust, noPic, items);
+      console.log('✅ PDF download triggered');
+
+      // ── DB operations ─────────────────────────────────────────────────────
+      try {
+        await api.addInvoice({
+          no_invoice: invoiceNo,
+          tgl_invoice: invoiceDate || today(),
+          customer,
+          so_ids: selected,
+          total_sebelum_pajak: totalDPP,
+          ppn: totalPPN,
+          total_setelah_pajak: grandTotal,
+        });
+        console.log('✅ Invoice saved to DB');
+
+        await api.updateSOInvoiceNo(selected, invoiceNo);
+        console.log('✅ SOs stamped with invoice number');
+        setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: invoiceNo } : s));
+      } catch (dbErr: any) {
+        console.error('⚠️ DB save failed (PDF already downloaded):', dbErr);
+        showToast(`PDF berhasil diunduh. Catatan: gagal simpan ke database — ${dbErr.message}`, "info");
+      }
 
       logAction(`Generate Invoice: ${invoiceNo}`, buildMeta({
         module: 'so', action_type: 'CREATE',
