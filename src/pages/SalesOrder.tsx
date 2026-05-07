@@ -300,9 +300,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     const pengiriman = parseFloat(f.harga_pengiriman) || 0;
     // base_harga adalah modal internal, tidak masuk total customer
     const total = ins + pengiriman;
-    // Pajak 1,1% hanya berlaku mulai Feb 2026
+    // Pajak 11% hanya berlaku mulai Feb 2026
     const pajakApply = isPajakApply(f.tgl_order);
-    const tax = pajakApply ? Math.round((pengiriman + ins) * 0.011) : 0;
+    const tax = pajakApply ? Math.round((pengiriman + ins) * 0.11) : 0;
     const totalPajak = total + tax;
     return { total_harga: total, total_harga_pajak: totalPajak, nilai_pajak: tax };
   };
@@ -318,6 +318,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceDate, setInvoiceDate] = useState(today());
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'uninvoiced' | 'invoiced'>('all');
   const [sortKey, setSortKey] = useState<'order_id' | 'tgl_muat'>('order_id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -384,14 +385,34 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
   };
 
+  const handleOpenInvoiceModal = () => {
+    if (selected.length === 0) {
+      showToast("Pilih minimal 1 Sales Order!", "error");
+      return;
+    }
+    const items = so.filter((x: any) => selected.includes(x.id));
+    const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
+    if (customers.length > 1) {
+      showToast(`SO harus dari customer yang sama. Dipilih: ${customers.join(", ")}`, "error");
+      return;
+    }
+    const alreadyInvoiced = items.filter((x: any) => x.no_invoice);
+    if (alreadyInvoiced.length > 0) {
+      showToast(`${alreadyInvoiced.length} SO sudah punya invoice: ${alreadyInvoiced.map((x: any) => x.order_id).join(", ")}`, "error");
+      return;
+    }
+    const notCompleted = items.filter((x: any) => x.status_muatan !== 'Completed');
+    if (notCompleted.length > 0) {
+      showToast(`Hanya SO berstatus "Completed" yang bisa di-invoice. Belum selesai: ${notCompleted.map((x: any) => x.order_id).join(", ")}`, "error");
+      return;
+    }
+    setShowInvoiceModal(true);
+  };
+
   const handleGenerateInvoice = async () => {
     if (selected.length === 0) return;
     const items = so.filter((x: any) => selected.includes(x.id));
     const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
-    if (customers.length > 1) {
-      showToast("Semua SO yang dipilih harus dari customer yang sama.", "error");
-      return;
-    }
     setGeneratingInvoice(true);
     try {
       const date = new Date(invoiceDate || today());
@@ -534,18 +555,24 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   };
 
   const filtered = useMemo(() => {
-    const base = filterByPeriod(so, period, "tgl_muat").filter((s: any) =>
-      !search ||
-      s.order_id?.toLowerCase().includes(search.toLowerCase()) ||
-      s.customer?.toLowerCase().includes(search.toLowerCase())
-    );
+    const base = filterByPeriod(so, period, "tgl_muat")
+      .filter((s: any) => {
+        if (invoiceFilter === 'uninvoiced') return !s.no_invoice;
+        if (invoiceFilter === 'invoiced') return !!s.no_invoice;
+        return true;
+      })
+      .filter((s: any) =>
+        !search ||
+        s.order_id?.toLowerCase().includes(search.toLowerCase()) ||
+        s.customer?.toLowerCase().includes(search.toLowerCase())
+      );
     return [...base].sort((a: any, b: any) => {
       const aVal = sortKey === 'tgl_muat' ? (a.tgl_muat || '') : (a.order_id || '');
       const bVal = sortKey === 'tgl_muat' ? (b.tgl_muat || '') : (b.order_id || '');
       const cmp = aVal.localeCompare(bVal);
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [so, period, search, sortKey, sortDir]);
+  }, [so, period, search, sortKey, sortDir, invoiceFilter]);
 
   const statusCount: any = { "Order Confirmed": 0, Loading: 0, "On Going": 0, Arrived: 0, Completed: 0, Cancelled: 0 };
   filtered.forEach((x: any) => { if (statusCount[x.status_muatan] !== undefined) statusCount[x.status_muatan]++; });
@@ -599,7 +626,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <button className="btn-primary !px-3" onClick={approveBulk} disabled={processing}>
                   <Icon name="Send" size={12} /> Posting
                 </button>
-                <button className="btn-primary !px-3 !bg-emerald-600 hover:!bg-emerald-700" onClick={() => setShowInvoiceModal(true)} disabled={processing}>
+                <button className="btn-primary !px-3 !bg-emerald-600 hover:!bg-emerald-700" onClick={handleOpenInvoiceModal} disabled={processing}>
                   <Icon name="FileText" size={12} /> Invoice
                 </button>
               </div>
@@ -612,7 +639,28 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             <StatCard label="Cancelled" value={statusCount.Cancelled || 0} color="var(--color-red-brand)" icon="XCircle" />
           </KPIGrid>
 
-          <div className="table-container max-h-[calc(100vh-340px)]">
+          <div className="flex items-center gap-2 px-1 pb-2">
+            {([
+              { key: 'all', label: 'Semua SO', count: so.length },
+              { key: 'uninvoiced', label: 'Belum Invoice', count: so.filter((s: any) => !s.no_invoice).length },
+              { key: 'invoiced', label: 'Sudah Invoice', count: so.filter((s: any) => !!s.no_invoice).length },
+            ] as const).map(({ key, label, count }) => (
+              <button
+                key={key}
+                onClick={() => setInvoiceFilter(key)}
+                className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold border transition-colors ${
+                  invoiceFilter === key
+                    ? key === 'uninvoiced' ? 'bg-emerald-600 text-white border-emerald-600' : key === 'invoiced' ? 'bg-blue-brand text-white border-blue-brand' : 'bg-accent text-white border-accent'
+                    : 'bg-white text-text-med border-border-main hover:border-accent'
+                }`}
+              >
+                {label}
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${invoiceFilter === key ? 'bg-white/20' : 'bg-slate-100'}`}>{count}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="table-container max-h-[calc(100vh-380px)]">
             <table className="w-full border-collapse">
               <thead>
                   <tr>
@@ -654,11 +702,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                     <th>Customer</th>
                     <th>Unit / Sopir</th>
                     <th>Status</th>
+                    <th>Invoice</th>
                     <th className="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/20">
-                  {filtered.length === 0 ? <EmptyState colSpan={8} /> : 
+                  {filtered.length === 0 ? <EmptyState colSpan={9} /> :
                     filtered.map((s: any) => (
                       <tr key={s.id} className="cursor-pointer transition-colors group" onClick={(e) => {
                         if ((e.target as HTMLElement).tagName === "BUTTON" || (e.target as HTMLElement).tagName === "INPUT") return;
@@ -713,6 +762,15 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         </td>
                         <td>{statusBadge(s.status_muatan)}</td>
                         <td>
+                          {s.no_invoice ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-lg whitespace-nowrap">
+                              <Icon name="CheckCircle" size={9} /> {s.no_invoice}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-text-light italic opacity-50">—</span>
+                          )}
+                        </td>
+                        <td>
                           {canEdit && (
                             <div className="flex gap-0.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
                               <button className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors" onClick={(e) => { e.stopPropagation(); openEdit(s); }} title="Edit">
@@ -733,7 +791,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
-                    <td colSpan={canEdit ? 6 : 5} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Muatan Terfilter</td>
+                    <td colSpan={canEdit ? 7 : 6} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Muatan Terfilter</td>
                     <td colSpan={2} className="py-3 px-4 text-center text-[12px] font-black text-accent">{filtered.length} Records</td>
                   </tr>
                 </tfoot>
@@ -960,70 +1018,104 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       </ModalShell>
 
       <ModalShell isOpen={showInvoiceModal} onClose={() => setShowInvoiceModal(false)}>
-        <div className="p-6 border-b border-border-main">
-          <h2 className="text-[13px] font-black text-text-dark uppercase tracking-widest">Generate Invoice PDF</h2>
-          <p className="text-[10px] text-text-light mt-1">{selected.length} Sales Order terpilih</p>
-        </div>
-        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tanggal Invoice</label>
-            <input
-              type="date"
-              className="input-field h-9 text-[11px] font-bold"
-              value={invoiceDate}
-              onChange={e => setInvoiceDate(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Daftar SO</label>
-            <div className="rounded-xl border border-border-main overflow-hidden">
-              <table className="w-full text-[10px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-border-main">
-                    <th className="text-left px-3 py-2 font-bold text-text-light">Order ID</th>
-                    <th className="text-left px-3 py-2 font-bold text-text-light">Customer</th>
-                    <th className="text-left px-3 py-2 font-bold text-text-light">Rute</th>
-                    <th className="text-right px-3 py-2 font-bold text-text-light">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {so.filter((x: any) => selected.includes(x.id)).map((s: any) => (
-                    <tr key={s.id} className="border-b border-border-main/30 last:border-0">
-                      <td className="px-3 py-1.5 font-bold text-text-dark">{s.order_id || '-'}</td>
-                      <td className="px-3 py-1.5 text-text-med">{s.customer || '-'}</td>
-                      <td className="px-3 py-1.5 text-text-light">{[s.lokasi_muat, s.lokasi_bongkar].filter(Boolean).join(' → ') || '-'}</td>
-                      <td className="px-3 py-1.5 text-right font-bold text-text-dark">
-                        {(s.total_harga_pajak || s.total_harga || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-slate-50 border-t border-border-main">
-                    <td colSpan={3} className="px-3 py-2 font-black text-text-dark text-right uppercase tracking-widest text-[9px]">Grand Total</td>
-                    <td className="px-3 py-2 text-right font-black text-accent">
-                      {so.filter((x: any) => selected.includes(x.id))
-                        .reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0)
-                        .toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div className="p-6 border-t border-border-main bg-slate-50/50 flex gap-3 justify-end">
-          <button className="h-10 px-6 rounded-xl text-text-light font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors" onClick={() => setShowInvoiceModal(false)}>
-            Batal
-          </button>
-          <button
-            className="btn-primary h-10 !px-6 !bg-emerald-600 hover:!bg-emerald-700 flex items-center gap-2"
-            onClick={handleGenerateInvoice}
-            disabled={generatingInvoice}
-          >
-            {generatingInvoice ? <><Icon name="Loader2" size={14} className="animate-spin" /> Memproses...</> : <><Icon name="Download" size={14} /> Download Invoice</>}
-          </button>
-        </div>
+        {(() => {
+          const invoiceItems = so.filter((x: any) => selected.includes(x.id));
+          const invoiceCustomer = invoiceItems[0]?.customer || '-';
+          const invoicePic = invoiceItems[0]?.pic_cust || '';
+          const totalDPP = invoiceItems.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
+          const totalPPN = invoiceItems.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
+          const grandTotal = invoiceItems.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
+          return (
+            <>
+              <div className="p-5 border-b border-border-main flex items-start gap-4 bg-white sticky top-0 z-10">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Icon name="FileText" size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-[13px] font-black text-text-dark uppercase tracking-widest">Generate Invoice PDF</h2>
+                  <p className="text-[11px] font-bold text-emerald-600 mt-0.5">{invoiceCustomer}{invoicePic ? <span className="text-text-light font-medium"> · {invoicePic}</span> : null}</p>
+                  <p className="text-[10px] text-text-light mt-0.5">{selected.length} Sales Order akan digabung dalam 1 invoice</p>
+                </div>
+              </div>
+
+              <div className="p-5 space-y-4 max-h-[55vh] overflow-y-auto">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tanggal Invoice</label>
+                  <input
+                    type="date"
+                    className="input-field h-9 text-[11px] font-bold"
+                    value={invoiceDate}
+                    onChange={e => setInvoiceDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border-main overflow-hidden">
+                  <div className="bg-slate-50 px-3 py-2 border-b border-border-main">
+                    <span className="text-[10px] font-bold text-text-light uppercase tracking-widest">Daftar SO</span>
+                  </div>
+                  <table className="w-full text-[10px]">
+                    <thead>
+                      <tr className="border-b border-border-main/40">
+                        <th className="text-left px-3 py-2 font-bold text-text-light">Order ID</th>
+                        <th className="text-left px-3 py-2 font-bold text-text-light">Tgl Muat</th>
+                        <th className="text-left px-3 py-2 font-bold text-text-light">Rute</th>
+                        <th className="text-left px-3 py-2 font-bold text-text-light">Muatan</th>
+                        <th className="text-right px-3 py-2 font-bold text-text-light">DPP</th>
+                        <th className="text-right px-3 py-2 font-bold text-text-light">PPN</th>
+                        <th className="text-right px-3 py-2 font-bold text-text-light">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoiceItems.map((s: any, i: number) => (
+                        <tr key={s.id} className={`border-b border-border-main/20 last:border-0 ${i % 2 === 1 ? 'bg-slate-50/50' : ''}`}>
+                          <td className="px-3 py-2 font-bold text-accent">{s.order_id || '-'}</td>
+                          <td className="px-3 py-2 text-text-med tabular-nums">{s.tgl_muat || '-'}</td>
+                          <td className="px-3 py-2 text-text-light max-w-[150px] truncate" title={[s.lokasi_muat, s.lokasi_bongkar].join(' → ')}>{[s.lokasi_muat, s.lokasi_bongkar].filter(Boolean).join(' → ') || '-'}</td>
+                          <td className="px-3 py-2 text-text-light">{s.muatan || '-'}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-bold text-text-dark">{(s.total_harga || 0).toLocaleString('id-ID')}</td>
+                          <td className="px-3 py-2 text-right tabular-nums text-text-med">{(s.nilai_pajak || 0).toLocaleString('id-ID')}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-black text-text-dark">{(s.total_harga_pajak || s.total_harga || 0).toLocaleString('id-ID')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="rounded-xl border border-border-main overflow-hidden">
+                  <div className="flex justify-between px-4 py-2.5 border-b border-border-main/30">
+                    <span className="text-[10px] text-text-light font-bold">DPP (Dasar Pengenaan Pajak)</span>
+                    <span className="text-[11px] font-bold text-text-dark tabular-nums">Rp {totalDPP.toLocaleString('id-ID')}</span>
+                  </div>
+                  {totalPPN > 0 && (
+                    <div className="flex justify-between px-4 py-2.5 border-b border-border-main/30">
+                      <span className="text-[10px] text-text-light font-bold">PPN (11%)</span>
+                      <span className="text-[11px] font-bold text-text-dark tabular-nums">Rp {totalPPN.toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between px-4 py-3 bg-emerald-50">
+                    <span className="text-[11px] font-black text-emerald-700 uppercase tracking-widest">Total Tagihan</span>
+                    <span className="text-[14px] font-black text-emerald-700 tabular-nums">Rp {grandTotal.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 border-t border-border-main bg-slate-50/50 flex gap-3 justify-end">
+                <button className="h-10 px-6 rounded-xl text-text-light font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors" onClick={() => setShowInvoiceModal(false)}>
+                  Batal
+                </button>
+                <button
+                  className="btn-primary h-10 !px-6 !bg-emerald-600 hover:!bg-emerald-700 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                  onClick={handleGenerateInvoice}
+                  disabled={generatingInvoice}
+                >
+                  {generatingInvoice
+                    ? <><Icon name="Loader2" size={14} className="animate-spin" /> Memproses...</>
+                    : <><Icon name="Download" size={14} /> Generate PDF Invoice</>}
+                </button>
+              </div>
+            </>
+          );
+        })()}
       </ModalShell>
     </PageShell>
   );
