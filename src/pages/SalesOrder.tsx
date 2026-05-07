@@ -7,6 +7,8 @@ import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
 import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
+import { generateInvoiceNo } from "@/src/utils/invoiceGenerator";
+import { generateInvoicePDF } from "@/src/utils/generateInvoicePDF";
 
 const SO_IMPORT_FIELDS = [
   { key: "order_id", label: "Order ID", required: true },
@@ -313,6 +315,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
   const [selected, setSelected] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceDate, setInvoiceDate] = useState(today());
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [sortKey, setSortKey] = useState<'order_id' | 'tgl_muat'>('order_id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -377,6 +382,56 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         setProcessing(false);
       }
     });
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (selected.length === 0) return;
+    const items = so.filter((x: any) => selected.includes(x.id));
+    const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
+    if (customers.length > 1) {
+      showToast("Semua SO yang dipilih harus dari customer yang sama.", "error");
+      return;
+    }
+    setGeneratingInvoice(true);
+    try {
+      const date = new Date(invoiceDate || today());
+      const invoiceNo = await generateInvoiceNo(date);
+      const customer = customers[0] || '';
+      const picCust = items[0]?.pic_cust || '';
+      const noPic = items[0]?.no_pic || '';
+
+      const totalDPP = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
+      const totalPPN = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
+      const grandTotal = items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
+
+      await api.addInvoice({
+        no_invoice: invoiceNo,
+        tgl_invoice: invoiceDate || today(),
+        customer,
+        so_ids: selected,
+        total_sebelum_pajak: totalDPP,
+        ppn: totalPPN,
+        total_setelah_pajak: grandTotal,
+      });
+
+      await api.updateSOInvoiceNo(selected, invoiceNo);
+      setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: invoiceNo } : s));
+
+      generateInvoicePDF(invoiceNo, date, customer, picCust, noPic, items);
+
+      logAction(`Generate Invoice: ${invoiceNo}`, buildMeta({
+        module: 'so', action_type: 'CREATE',
+        record_id: invoiceNo,
+        after_data: { customer, total: grandTotal, so_count: selected.length },
+      }));
+
+      showToast(`Invoice ${invoiceNo} berhasil dibuat.`);
+      setShowInvoiceModal(false);
+      setSelected([]);
+    } catch (e: any) {
+      showToast("Gagal generate invoice: " + e.message, "error");
+    }
+    setGeneratingInvoice(false);
   };
 
   const resetCustomerCombo = (name = "") => { setCustomerQuery(name); setCustomerOpen(false); };
@@ -543,6 +598,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </button>
                 <button className="btn-primary !px-3" onClick={approveBulk} disabled={processing}>
                   <Icon name="Send" size={12} /> Posting
+                </button>
+                <button className="btn-primary !px-3 !bg-emerald-600 hover:!bg-emerald-700" onClick={() => setShowInvoiceModal(true)} disabled={processing}>
+                  <Icon name="FileText" size={12} /> Invoice
                 </button>
               </div>
             )}
@@ -897,6 +955,73 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </button>
           <button className="h-10 px-6 rounded-xl text-text-light font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors order-1 sm:order-3" onClick={() => setTab("list")}>
             Batal
+          </button>
+        </div>
+      </ModalShell>
+
+      <ModalShell isOpen={showInvoiceModal} onClose={() => setShowInvoiceModal(false)}>
+        <div className="p-6 border-b border-border-main">
+          <h2 className="text-[13px] font-black text-text-dark uppercase tracking-widest">Generate Invoice PDF</h2>
+          <p className="text-[10px] text-text-light mt-1">{selected.length} Sales Order terpilih</p>
+        </div>
+        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tanggal Invoice</label>
+            <input
+              type="date"
+              className="input-field h-9 text-[11px] font-bold"
+              value={invoiceDate}
+              onChange={e => setInvoiceDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Daftar SO</label>
+            <div className="rounded-xl border border-border-main overflow-hidden">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-border-main">
+                    <th className="text-left px-3 py-2 font-bold text-text-light">Order ID</th>
+                    <th className="text-left px-3 py-2 font-bold text-text-light">Customer</th>
+                    <th className="text-left px-3 py-2 font-bold text-text-light">Rute</th>
+                    <th className="text-right px-3 py-2 font-bold text-text-light">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {so.filter((x: any) => selected.includes(x.id)).map((s: any) => (
+                    <tr key={s.id} className="border-b border-border-main/30 last:border-0">
+                      <td className="px-3 py-1.5 font-bold text-text-dark">{s.order_id || '-'}</td>
+                      <td className="px-3 py-1.5 text-text-med">{s.customer || '-'}</td>
+                      <td className="px-3 py-1.5 text-text-light">{[s.lokasi_muat, s.lokasi_bongkar].filter(Boolean).join(' → ') || '-'}</td>
+                      <td className="px-3 py-1.5 text-right font-bold text-text-dark">
+                        {(s.total_harga_pajak || s.total_harga || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-50 border-t border-border-main">
+                    <td colSpan={3} className="px-3 py-2 font-black text-text-dark text-right uppercase tracking-widest text-[9px]">Grand Total</td>
+                    <td className="px-3 py-2 text-right font-black text-accent">
+                      {so.filter((x: any) => selected.includes(x.id))
+                        .reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0)
+                        .toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 border-t border-border-main bg-slate-50/50 flex gap-3 justify-end">
+          <button className="h-10 px-6 rounded-xl text-text-light font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors" onClick={() => setShowInvoiceModal(false)}>
+            Batal
+          </button>
+          <button
+            className="btn-primary h-10 !px-6 !bg-emerald-600 hover:!bg-emerald-700 flex items-center gap-2"
+            onClick={handleGenerateInvoice}
+            disabled={generatingInvoice}
+          >
+            {generatingInvoice ? <><Icon name="Loader2" size={14} className="animate-spin" /> Memproses...</> : <><Icon name="Download" size={14} /> Download Invoice</>}
           </button>
         </div>
       </ModalShell>
