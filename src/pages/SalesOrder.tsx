@@ -319,7 +319,11 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [invoiceDate, setInvoiceDate] = useState(today());
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'uninvoiced' | 'invoiced'>('all');
-  const [invoiceValidationError, setInvoiceValidationError] = useState<Array<{ label: string; detail: string[] }> | null>(null);
+  const [invoiceValidationError, setInvoiceValidationError] = useState<{
+    title: string;
+    subtitle: string;
+    issues: Array<{ label: string; detail: string[]; hint?: string }>;
+  } | null>(null);
   const [sortKey, setSortKey] = useState<'order_id' | 'tgl_muat'>('order_id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -422,7 +426,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     }
 
     if (issues.length > 0) {
-      setInvoiceValidationError(issues);
+      setInvoiceValidationError({
+        title: 'Invoice Tidak Bisa Dibuat',
+        subtitle: issues.length > 1
+          ? `${issues.length} masalah ditemukan — perbaiki semua sebelum generate invoice`
+          : 'Perbaiki masalah berikut sebelum generate invoice',
+        issues,
+      });
       return;
     }
     setShowInvoiceModal(true);
@@ -432,27 +442,97 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     if (selected.length === 0) return;
     const items = so.filter((x: any) => selected.includes(x.id));
     const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
-    console.log('📄 handleGenerateInvoice', { count: items.length, customers });
     setGeneratingInvoice(true);
+
+    // Helper — show a persistent error modal and close the generate modal
+    const showErr = (label: string, detail: string[], hint?: string) => {
+      setShowInvoiceModal(false);
+      setInvoiceValidationError({
+        title: 'Gagal Generate Invoice',
+        subtitle: 'Terjadi kesalahan saat proses generate — lihat detail di bawah',
+        issues: [{ label, detail, hint }],
+      });
+    };
+
+    // Helper — classify raw DB error messages into actionable hints
+    const classifyDbError = (raw: string): { label: string; hint: string } => {
+      const m = raw.toLowerCase();
+      if ((m.includes('"invoices"') || m.includes("'invoices'") || m.includes('invoices')) &&
+          (m.includes('does not exist') || m.includes('relation') || m.includes('not found'))) {
+        return {
+          label: 'Tabel "invoices" belum dibuat di database',
+          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nCREATE TABLE invoices (\n  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,\n  no_invoice text,\n  tgl_invoice date,\n  customer text,\n  so_ids text[],\n  total_sebelum_pajak numeric DEFAULT 0,\n  ppn numeric DEFAULT 0,\n  total_setelah_pajak numeric DEFAULT 0,\n  created_at timestamptz DEFAULT now()\n);',
+        };
+      }
+      if (m.includes('no_invoice') && (m.includes('column') || m.includes('does not exist'))) {
+        return {
+          label: 'Kolom "no_invoice" belum ada di tabel sales_order',
+          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE sales_order\n  ADD COLUMN IF NOT EXISTS no_invoice text;',
+        };
+      }
+      if (m.includes('so_ids') || (m.includes('column') && m.includes('invoices'))) {
+        return {
+          label: 'Struktur tabel "invoices" tidak sesuai schema',
+          hint: 'Hapus dan buat ulang tabel invoices dengan SQL migration yang benar, atau periksa kolom yang kurang.',
+        };
+      }
+      if (m.includes('jwt') || m.includes('auth') || m.includes('unauthorized') || m.includes('403')) {
+        return {
+          label: 'Akses database ditolak (autentikasi gagal)',
+          hint: 'Coba logout lalu login kembali. Jika masih gagal, periksa Row-Level Security (RLS) di Supabase.',
+        };
+      }
+      return {
+        label: 'Error database tidak dikenali',
+        hint: 'Periksa koneksi internet, coba refresh halaman, atau lihat Supabase logs untuk detail.',
+      };
+    };
+
     try {
+      // ── Step 1: Validasi tanggal ──────────────────────────────────────────
       const date = new Date(invoiceDate || today());
-      const invoiceNo = await generateInvoiceNo(date);
-      console.log('🔢 Invoice number:', invoiceNo);
+      if (isNaN(date.getTime())) {
+        showErr(
+          'Tanggal invoice tidak valid',
+          [`Nilai yang dimasukkan: "${invoiceDate || '(kosong)'}"`],
+          'Pilih tanggal yang valid dari date picker sebelum generate.'
+        );
+        return;
+      }
+
+      // ── Step 2: Ambil nomor invoice dari database ─────────────────────────
+      let invoiceNo: string;
+      try {
+        invoiceNo = await generateInvoiceNo(date);
+      } catch (e: any) {
+        showErr(
+          'Gagal membaca nomor invoice dari database',
+          [`Error: ${e.message || String(e)}`],
+          'Pastikan koneksi internet aktif dan Supabase dapat dijangkau.'
+        );
+        return;
+      }
+
+      // ── Step 3: Generate & download PDF ───────────────────────────────────
       const customer = customers[0] || '';
-      const picCust = items[0]?.pic_cust || '';
-      const noPic = items[0]?.no_pic || '';
-
-      const totalDPP = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
-      const totalPPN = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
+      const picCust  = items[0]?.pic_cust || '';
+      const noPic    = items[0]?.no_pic   || '';
+      const totalDPP   = items.reduce((s: number, x: any) => s + (x.total_harga             || 0), 0);
+      const totalPPN   = items.reduce((s: number, x: any) => s + (x.nilai_pajak              || 0), 0);
       const grandTotal = items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
-      console.log('💰 Totals:', { totalDPP, totalPPN, grandTotal });
 
-      // ── PDF first — download must not depend on DB success ────────────────
-      console.log('🖨️ Generating PDF...');
-      generateInvoicePDF(invoiceNo, date, customer, picCust, noPic, items);
-      console.log('✅ PDF download triggered');
+      try {
+        generateInvoicePDF(invoiceNo, date, customer, picCust, noPic, items);
+      } catch (e: any) {
+        showErr(
+          'Gagal membuat file PDF',
+          [`Error: ${e.message || String(e)}`],
+          'Coba lagi. Jika masalah berlanjut, periksa data SO (harga, muatan, tanggal).'
+        );
+        return;
+      }
 
-      // ── DB operations ─────────────────────────────────────────────────────
+      // ── Step 4: Simpan ke database ────────────────────────────────────────
       try {
         await api.addInvoice({
           no_invoice: invoiceNo,
@@ -463,29 +543,46 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           ppn: totalPPN,
           total_setelah_pajak: grandTotal,
         });
-        console.log('✅ Invoice saved to DB');
-
         await api.updateSOInvoiceNo(selected, invoiceNo);
-        console.log('✅ SOs stamped with invoice number');
         setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: invoiceNo } : s));
       } catch (dbErr: any) {
-        console.error('⚠️ DB save failed (PDF already downloaded):', dbErr);
-        showToast(`PDF berhasil diunduh. Catatan: gagal simpan ke database — ${dbErr.message}`, "info");
+        const { label, hint } = classifyDbError(dbErr.message || '');
+        setShowInvoiceModal(false);
+        setInvoiceValidationError({
+          title: 'PDF Diunduh — Database Gagal Disimpan',
+          subtitle: 'File PDF sudah berhasil diunduh ke komputer Anda. Namun data invoice gagal tersimpan ke database.',
+          issues: [{
+            label,
+            detail: [
+              '✓ PDF invoice sudah diunduh ke komputer Anda.',
+              `✗ Error: ${dbErr.message || 'Unknown error'}`,
+            ],
+            hint,
+          }],
+        });
+        setSelected([]);
+        return;
       }
 
+      // ── Step 5: Selesai ───────────────────────────────────────────────────
       logAction(`Generate Invoice: ${invoiceNo}`, buildMeta({
         module: 'so', action_type: 'CREATE',
         record_id: invoiceNo,
         after_data: { customer, total: grandTotal, so_count: selected.length },
       }));
-
       showToast(`Invoice ${invoiceNo} berhasil dibuat.`);
       setShowInvoiceModal(false);
       setSelected([]);
+
     } catch (e: any) {
-      showToast("Gagal generate invoice: " + e.message, "error");
+      showErr(
+        'Error tidak terduga saat generate invoice',
+        [`Error: ${e.message || String(e)}`],
+        'Coba lagi atau hubungi administrator jika masalah berlanjut.'
+      );
+    } finally {
+      setGeneratingInvoice(false);
     }
-    setGeneratingInvoice(false);
   };
 
   const resetCustomerCombo = (name = "") => { setCustomerQuery(name); setCustomerOpen(false); };
@@ -1151,34 +1248,47 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         })()}
       </ModalShell>
 
-      {/* ── Invoice Validation Error Modal ─────────────────────────────── */}
+      {/* ── Invoice Error Modal ──────────────────────────────────────────── */}
       <ModalShell isOpen={invoiceValidationError !== null} onClose={() => setInvoiceValidationError(null)}>
         <div className="p-5 border-b border-border-main flex items-start gap-4 bg-white sticky top-0 z-10">
           <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
             <Icon name="AlertCircle" size={20} />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-[13px] font-black text-red-600 uppercase tracking-widest">Invoice Tidak Bisa Dibuat</h2>
-            <p className="text-[11px] text-text-light mt-1">
-              {(invoiceValidationError?.length ?? 0) > 1
-                ? `${invoiceValidationError?.length} masalah ditemukan — perbaiki semua sebelum generate invoice`
-                : 'Perbaiki masalah berikut sebelum generate invoice'}
+            <h2 className="text-[13px] font-black text-red-600 uppercase tracking-widest">
+              {invoiceValidationError?.title ?? 'Error'}
+            </h2>
+            <p className="text-[11px] text-text-light mt-1 leading-relaxed">
+              {invoiceValidationError?.subtitle}
             </p>
           </div>
         </div>
 
-        <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
-          {(invoiceValidationError || []).map((issue, i) => (
-            <div key={i} className="rounded-xl border border-red-200 bg-red-50 overflow-hidden">
+        <div className="p-5 space-y-3 max-h-[65vh] overflow-y-auto">
+          {(invoiceValidationError?.issues ?? []).map((issue, i) => (
+            <div key={i} className="rounded-xl border border-red-200 overflow-hidden">
+              {/* Issue header */}
               <div className="px-4 py-2.5 bg-red-100 border-b border-red-200 flex items-start gap-2">
                 <Icon name="XCircle" size={13} className="text-red-500 shrink-0 mt-0.5" />
                 <span className="text-[11px] font-black text-red-700 leading-snug">{issue.label}</span>
               </div>
-              <div className="px-4 py-3 space-y-1">
+              {/* Detail lines */}
+              <div className="px-4 py-3 bg-red-50 space-y-1">
                 {issue.detail.map((d, j) => (
-                  <p key={j} className="text-[11px] font-mono text-red-600 leading-relaxed">{d}</p>
+                  <p key={j} className="text-[11px] font-mono text-red-700 leading-relaxed">{d}</p>
                 ))}
               </div>
+              {/* Hint / cara memperbaiki */}
+              {issue.hint && (
+                <div className="px-4 py-3 bg-amber-50 border-t border-amber-200">
+                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">
+                    Cara Memperbaiki
+                  </p>
+                  <pre className="text-[10px] font-mono text-amber-900 whitespace-pre-wrap break-all leading-relaxed">
+                    {issue.hint}
+                  </pre>
+                </div>
+              )}
             </div>
           ))}
         </div>
