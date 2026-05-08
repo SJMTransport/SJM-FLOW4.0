@@ -20,12 +20,11 @@ function groupDigits(n: number, sep: string): string {
   return out.join('');
 }
 
-// Row cells: Rp3,461,919.00
+// All monetary values: Rp.13.847.676,00
 function fmtRow(n: number): string {
-  return 'Rp' + groupDigits(n, ',') + '.00';
+  return 'Rp.' + groupDigits(n, '.') + ',00';
 }
 
-// Footer totals: Rp.13.847.676,00
 function fmtTotal(n: number): string {
   return 'Rp.' + groupDigits(n, '.') + ',00';
 }
@@ -232,7 +231,7 @@ export function generateInvoicePDF(
     },
   ]);
 
-  // Column widths sum: 10+22+24+22+34+26+26+26 = 190 = W - ML - MR ✓
+  // Column widths sum: 10+22+26+20+34+26+24+28 = 190 = W - ML - MR ✓
   autoTable(doc, {
     head: [['No.', 'Tanggal', 'No SO', 'Armada', 'Deskripsi', 'Biaya Pengiriman', 'Biaya Asuransi', 'Jumlah']],
     body: [...dataRows, ...summaryRows],
@@ -259,12 +258,12 @@ export function generateInvoicePDF(
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 22 },
-      2: { cellWidth: 24 },
-      3: { cellWidth: 22 },
+      2: { cellWidth: 26 },
+      3: { cellWidth: 20 },
       4: { cellWidth: 34 },
       5: { halign: 'right',  cellWidth: 26 },
-      6: { halign: 'right',  cellWidth: 26 },
-      7: { halign: 'right',  cellWidth: 26 },
+      6: { halign: 'right',  cellWidth: 24 },
+      7: { halign: 'right',  cellWidth: 28 },
     },
     showHead: 'everyPage',
     didDrawPage: (data) => {
