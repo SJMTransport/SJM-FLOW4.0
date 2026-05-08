@@ -540,7 +540,7 @@ export const api = {
     };
     const [invRes, soRes] = await Promise.all([
       supabaseManual.from('invoices').select('no_invoice'),
-      supabaseManual.from('sales_order').select('no_invoice').not('no_invoice', 'is', null),
+      supabaseManual.from('sales_order').select('no_invoice'),
     ]);
     let max = 0;
     (invRes.data || []).forEach((r: any) => { const n = extractNum(r.no_invoice); if (n > max) max = n; });
