@@ -7,5 +7,5 @@ export async function generateInvoiceNo(date: Date): Promise<string> {
   const nextSeq = lastSeq + 1;
   const month = ROMAN[date.getMonth()];
   const year = date.getFullYear();
-  return `${nextSeq}/INV-SJM/${month}/${year}`;
+  return `${String(nextSeq).padStart(4, '0')}/INV-SJM/${month}/${year}`;
 }
