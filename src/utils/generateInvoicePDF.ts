@@ -1,12 +1,12 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { terbilang } from './terbilang';
+import { SJM_LOGO_B64 } from './sjmLogo';
 
 const ORANGE: [number, number, number] = [245, 166, 35];
-const BLACK:  [number, number, number] = [20,  20,  20];
+const BLACK:  [number, number, number] = [0,   0,   0];
 const WHITE:  [number, number, number] = [255, 255, 255];
 const DARK:   [number, number, number] = [40,  40,  40];
-const BORDER: [number, number, number] = [190, 190, 190];
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -66,41 +66,32 @@ export function generateInvoicePDF(
   fileName?: string
 ): void {
   const doc = new jsPDF('p', 'mm', 'a4');
-  const W  = doc.internal.pageSize.getWidth(); // 210 mm
+  const W  = doc.internal.pageSize.getWidth();  // 210 mm
+  const H  = doc.internal.pageSize.getHeight(); // 297 mm
   const ML = 10;
   const MR = 10;
 
-  // Logo position & size
-  const LX = 11, LY = 8, LS = 30;
-  const HEADER_BOTTOM = LY + LS + 7; // 45 mm — bottom of separator lines
+  // Logo dimensions (square, left side)
+  const LX = 11, LY = 8, LS = 28;
+  const HEADER_BOTTOM = LY + LS + 6; // ~42 mm
+
+  // Footer height — payment info strip at very bottom of every page
+  const FOOTER_H  = 16;
+  const FOOTER_Y  = H - FOOTER_H - 4; // ~277 mm
 
   // ── drawHeader ────────────────────────────────────────────────────────────
-  // Called for page 1 manually, then again for pages 2+ via didDrawPage
   const drawHeader = () => {
-    // Orange logo box
-    doc.setFillColor(...ORANGE);
-    doc.roundedRect(LX, LY, LS, LS, 3, 3, 'F');
-
-    // Truck shape (white primitives inside orange box)
-    doc.setFillColor(...WHITE);
-    doc.rect(LX + 3,  LY + 10, 9,  8,   'F'); // cab
-    doc.rect(LX + 3,  LY + 17, 24, 7,   'F'); // platform/bed
-    doc.rect(LX + 12, LY + 14, 13, 3,   'F'); // connector arm
-    doc.circle(LX + 7,  LY + 25.5, 3,   'F'); // left wheel
-    doc.circle(LX + 22, LY + 25.5, 3,   'F'); // right wheel
-    doc.setFillColor(...ORANGE);
-    doc.circle(LX + 7,  LY + 25.5, 1.4, 'F'); // wheel hub
-    doc.circle(LX + 22, LY + 25.5, 1.4, 'F'); // wheel hub
-    doc.rect(LX + 4, LY + 11, 4, 3.5, 'F');   // windshield cutout
+    // Real SJM logo image
+    doc.addImage(SJM_LOGO_B64, 'JPEG', LX, LY, LS, LS);
 
     // Company name (orange bold)
-    const TX = LX + LS + 5; // x = 46
+    const TX = LX + LS + 5; // x ≈ 44
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(13);
     doc.setTextColor(...ORANGE);
     doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', TX, LY + 7);
 
-    // Address / contact
+    // Address / contact lines
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...DARK);
@@ -118,7 +109,7 @@ export function generateInvoicePDF(
     doc.text('INVOICE', BX + BW / 2, BY + 7.5, { align: 'center' });
 
     // Thick black separator (full width)
-    const SEP = LY + LS + 2; // y = 40
+    const SEP = LY + LS + 2;
     doc.setDrawColor(...BLACK);
     doc.setLineWidth(0.7);
     doc.line(ML, SEP, W - MR, SEP);
@@ -128,11 +119,28 @@ export function generateInvoicePDF(
     doc.rect(W - MR - 65, SEP + 1.5, 65, 2.5, 'F');
   };
 
-  // Draw header for page 1
+  // ── drawFooter ────────────────────────────────────────────────────────────
+  // Runs on EVERY page via didDrawPage
+  const drawFooter = () => {
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.4);
+    doc.line(ML, FOOTER_Y - 2, W - MR, FOOTER_Y - 2);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...DARK);
+    doc.text('Pembayaran:', ML, FOOTER_Y + 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text('Mandiri  1330026272567  -  a/n PT Sugiarto Jaya Mandiri', ML, FOOTER_Y + 9.5);
+  };
+
+  // Draw header & footer for page 1
   drawHeader();
+  drawFooter();
 
   // ── Invoice info (page 1 only) ────────────────────────────────────────────
-  const IY  = HEADER_BOTTOM + 6; // ~51
+  const IY  = HEADER_BOTTOM + 6;
   const LBX = ML + 2;
   const CX  = LBX + 22;
   const VX  = CX + 3;
@@ -157,7 +165,7 @@ export function generateInvoicePDF(
   });
 
   // ── Table ─────────────────────────────────────────────────────────────────
-  const TABLE_Y = IY + 4 * 5.8 + 5; // ~79
+  const TABLE_Y = IY + 4 * 5.8 + 5;
 
   // Data rows
   const dataRows = items.map((s, i) => {
@@ -171,7 +179,6 @@ export function generateInvoicePDF(
     if (s.sn)             descParts.push(`SN :\n${s.sn}`);
     if (s.lokasi_muat)    descParts.push(`Lokasi Muat :\n${s.lokasi_muat}`);
     if (s.lokasi_bongkar) descParts.push(`Lokasi Tujuan :\n${s.lokasi_bongkar}`);
-    const desc = descParts;
 
     const asuransi = (s.harga_asuransi || 0) > 0
       ? fmtRow(s.harga_asuransi!)
@@ -182,7 +189,7 @@ export function generateInvoicePDF(
       tanggal,
       s.order_id || '-',
       armada || '-',
-      desc.join('\n\n') || '-',
+      descParts.join('\n\n') || '-',
       fmtRow(s.harga_pengiriman || 0),
       asuransi,
       fmtRow(s.total_harga || 0),
@@ -225,17 +232,17 @@ export function generateInvoicePDF(
     },
   ]);
 
-  // Column widths sum: 10+22+27+22+44+21+22+22 = 190 = W - ML - MR ✓
+  // Column widths sum: 8+22+26+22+44+26+20+22 = 190 = W - ML - MR ✓
   autoTable(doc, {
     head: [['No.', 'Tanggal', 'No SO', 'Armada', 'Deskripsi', 'Biaya Pengiriman', 'Biaya Asuransi', 'Jumlah']],
     body: [...dataRows, ...summaryRows],
     startY: TABLE_Y,
-    margin: { left: ML, right: MR, top: HEADER_BOTTOM + 2 },
+    margin: { left: ML, right: MR, top: HEADER_BOTTOM + 2, bottom: FOOTER_H + 8 },
     styles: {
       fontSize: 7.5,
       cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
       lineWidth: 0.2,
-      lineColor: BORDER,
+      lineColor: BLACK,
       textColor: DARK,
       valign: 'top',
       overflow: 'linebreak',
@@ -250,37 +257,35 @@ export function generateInvoicePDF(
     bodyStyles:         { fillColor: WHITE },
     alternateRowStyles: { fillColor: WHITE },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 10 },
+      0: { halign: 'center', cellWidth: 8  },
       1: { halign: 'center', cellWidth: 22 },
-      2: { cellWidth: 27 },
+      2: { cellWidth: 26 },
       3: { cellWidth: 22 },
       4: { cellWidth: 44 },
-      5: { halign: 'right', cellWidth: 21 },
-      6: { halign: 'right', cellWidth: 22 },
-      7: { halign: 'right', cellWidth: 22 },
+      5: { halign: 'right',  cellWidth: 26 },
+      6: { halign: 'right',  cellWidth: 20 },
+      7: { halign: 'right',  cellWidth: 22 },
     },
     showHead: 'everyPage',
     didDrawPage: (data) => {
       if (data.pageNumber > 1) drawHeader();
+      drawFooter();
     },
   });
 
-  // ── Signature ─────────────────────────────────────────────────────────────
+  // ── Signature (last page, after table) ────────────────────────────────────
   const finalY = (doc as any).lastAutoTable.finalY;
   const SX = W / 2 + 15;
   const SY = finalY + 12;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...DARK);
-  doc.text('Hormat Kami,', SX, SY);
-  doc.text('(Muhammad Naufal Sugiarto)', SX, SY + 28);
-
-  // ── Payment info ──────────────────────────────────────────────────────────
-  const PY = SY + 42;
-  doc.setFontSize(8);
-  doc.text('Pembayaran:', ML, PY);
-  doc.text('Mandiri 1330026272567 - a/n PT Sugiarto Jaya Mandiri', ML, PY + 5);
+  // Only draw signature if it fits above the footer
+  if (SY + 30 < FOOTER_Y - 5) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...DARK);
+    doc.text('Hormat Kami,', SX, SY);
+    doc.text('(Muhammad Naufal Sugiarto)', SX, SY + 28);
+  }
 
   doc.save(fileName ?? `Invoice_${invoiceNo.replace(/\//g, '_')}.pdf`);
 }
