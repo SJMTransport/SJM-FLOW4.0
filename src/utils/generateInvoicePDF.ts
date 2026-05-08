@@ -190,9 +190,9 @@ export function generateInvoicePDF(
       s.order_id || '-',
       armada || '-',
       descParts.join('\n\n') || '-',
-      fmtRow(s.harga_pengiriman || 0),
+      fmtRow(Number(s.harga_pengiriman) || 0),
       asuransi,
-      fmtRow(s.total_harga || 0),
+      fmtRow(Number(s.total_harga) || 0),
     ];
   });
 
@@ -232,7 +232,7 @@ export function generateInvoicePDF(
     },
   ]);
 
-  // Column widths sum: 8+22+26+22+44+26+20+22 = 190 = W - ML - MR ✓
+  // Column widths sum: 10+22+24+22+34+26+26+26 = 190 = W - ML - MR ✓
   autoTable(doc, {
     head: [['No.', 'Tanggal', 'No SO', 'Armada', 'Deskripsi', 'Biaya Pengiriman', 'Biaya Asuransi', 'Jumlah']],
     body: [...dataRows, ...summaryRows],
@@ -257,14 +257,14 @@ export function generateInvoicePDF(
     bodyStyles:         { fillColor: WHITE },
     alternateRowStyles: { fillColor: WHITE },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 8  },
+      0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 22 },
-      2: { cellWidth: 26 },
+      2: { cellWidth: 24 },
       3: { cellWidth: 22 },
-      4: { cellWidth: 44 },
+      4: { cellWidth: 34 },
       5: { halign: 'right',  cellWidth: 26 },
-      6: { halign: 'right',  cellWidth: 20 },
-      7: { halign: 'right',  cellWidth: 22 },
+      6: { halign: 'right',  cellWidth: 26 },
+      7: { halign: 'right',  cellWidth: 26 },
     },
     showHead: 'everyPage',
     didDrawPage: (data) => {
