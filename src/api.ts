@@ -534,12 +534,17 @@ export const api = {
     return data ? data[0] : null;
   },
   getLastInvoiceNo: async (): Promise<number> => {
-    const { data } = await supabaseManual.from("invoices").select("no_invoice");
+    const extractNum = (str: string): number => {
+      const m = (str || '').match(/^(\d+)\//);
+      return m ? parseInt(m[1], 10) : 0;
+    };
+    const [invRes, soRes] = await Promise.all([
+      supabaseManual.from('invoices').select('no_invoice'),
+      supabaseManual.from('sales_order').select('no_invoice').not('no_invoice', 'is', null),
+    ]);
     let max = 0;
-    (data || []).forEach((r: any) => {
-      const m = (r.no_invoice || "").match(/^(\d+)\//);
-      if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
-    });
+    (invRes.data || []).forEach((r: any) => { const n = extractNum(r.no_invoice); if (n > max) max = n; });
+    (soRes.data  || []).forEach((r: any) => { const n = extractNum(r.no_invoice); if (n > max) max = n; });
     return max;
   },
   addInvoice: async (data: any) => {

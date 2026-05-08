@@ -166,11 +166,12 @@ export function generateInvoicePDF(
     const tanggal = `${dm}\n-\n${db !== '-' ? db : dm}`;
     const armada  = [s.jenis_truk, s.no_polisi ? `(${s.no_polisi})` : ''].filter(Boolean).join('\n');
 
-    const desc: string[] = [];
-    if (s.muatan)         desc.push(`Muatan    : ${s.muatan}${s.unit_muatan ? ' ' + s.unit_muatan : ''}`);
-    if (s.sn)             desc.push(`SN           : ${s.sn}`);
-    if (s.lokasi_muat)    desc.push(`Lokasi Muat : ${s.lokasi_muat}`);
-    if (s.lokasi_bongkar) desc.push(`Lokasi Tujuan : ${s.lokasi_bongkar}`);
+    const descParts: string[] = [];
+    if (s.muatan)         descParts.push(`Muatan :\n${s.muatan}${s.unit_muatan ? ' ' + s.unit_muatan : ''}`);
+    if (s.sn)             descParts.push(`SN :\n${s.sn}`);
+    if (s.lokasi_muat)    descParts.push(`Lokasi Muat :\n${s.lokasi_muat}`);
+    if (s.lokasi_bongkar) descParts.push(`Lokasi Tujuan :\n${s.lokasi_bongkar}`);
+    const desc = descParts;
 
     const asuransi = (s.harga_asuransi || 0) > 0
       ? fmtRow(s.harga_asuransi!)
@@ -181,7 +182,7 @@ export function generateInvoicePDF(
       tanggal,
       s.order_id || '-',
       armada || '-',
-      desc.join('\n') || '-',
+      desc.join('\n\n') || '-',
       fmtRow(s.harga_pengiriman || 0),
       asuransi,
       fmtRow(s.total_harga || 0),
