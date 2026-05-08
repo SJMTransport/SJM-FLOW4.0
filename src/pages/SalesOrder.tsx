@@ -302,7 +302,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     const total = ins + pengiriman;
     // Pajak 11% hanya berlaku mulai Feb 2026
     const pajakApply = isPajakApply(f.tgl_order);
-    const tax = pajakApply ? Math.round((pengiriman + ins) * 0.11) : 0;
+    const tax = pajakApply ? Math.round((pengiriman + ins) * 0.011) : 0;
     const totalPajak = total + tax;
     return { total_harga: total, total_harga_pajak: totalPajak, nilai_pajak: tax };
   };
@@ -968,7 +968,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <CurrencyInput value={form.harga_asuransi} onChange={(v: any) => handleNumChange("harga_asuransi", v)} className="h-11 text-[13px] font-black bg-white shadow-sm border-slate-200" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">PPN (11%)</label>
+                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">PPN (1,1%)</label>
                 <CurrencyInput value={form.nilai_pajak} readOnly className="h-11 text-[13px] font-black bg-slate-100/50 border-slate-200" />
               </div>
 
@@ -980,7 +980,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </div>
                 <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
                    <Icon name={isPajakApply(form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
-                   {isPajakApply(form.tgl_order) ? "Taxable (11%)" : "Non-Taxable"}
+                   {isPajakApply(form.tgl_order) ? "Taxable (1,1%)" : "Non-Taxable"}
                 </div>
               </div>
             </div>
@@ -1107,7 +1107,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                   </div>
                   {totalPPN > 0 && (
                     <div className="flex justify-between px-4 py-2.5 border-b border-border-main/30">
-                      <span className="text-[10px] text-text-light font-bold">PPN (11%)</span>
+                      <span className="text-[10px] text-text-light font-bold">PPN (1,1%)</span>
                       <span className="text-[11px] font-bold text-text-dark tabular-nums">Rp {totalPPN.toLocaleString('id-ID')}</span>
                     </div>
                   )}
