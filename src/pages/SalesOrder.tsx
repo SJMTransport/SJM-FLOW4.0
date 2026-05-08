@@ -319,6 +319,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [invoiceDate, setInvoiceDate] = useState(today());
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'uninvoiced' | 'invoiced'>('all');
+  const [invoiceValidationError, setInvoiceValidationError] = useState<Array<{ label: string; detail: string[] }> | null>(null);
   const [sortKey, setSortKey] = useState<'order_id' | 'tgl_muat'>('order_id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -387,28 +388,41 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
   const handleOpenInvoiceModal = () => {
     if (selected.length === 0) {
-      showToast("Pilih minimal 1 Sales Order!", "error");
+      showToast("Pilih minimal 1 Sales Order untuk membuat invoice.", "error");
       return;
     }
     const items = so.filter((x: any) => selected.includes(x.id));
-    const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
+    const issues: Array<{ label: string; detail: string[] }> = [];
+
+    // Validasi 1 – semua SO harus dari customer yang sama
+    const customers = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
     if (customers.length > 1) {
-      showToast(`SO harus dari customer yang sama. Dipilih: ${customers.join(", ")}`, "error");
-      return;
+      issues.push({
+        label: `Invoice harus dari 1 customer yang sama — ditemukan ${customers.length} customer berbeda`,
+        detail: customers.map(c => `• ${c}`),
+      });
     }
+
+    // Validasi 2 – SO tidak boleh sudah punya invoice
     const alreadyInvoiced = items.filter((x: any) => x.no_invoice);
     if (alreadyInvoiced.length > 0) {
-      showToast(`${alreadyInvoiced.length} SO sudah punya invoice: ${alreadyInvoiced.map((x: any) => x.order_id).join(", ")}`, "error");
-      return;
+      issues.push({
+        label: `${alreadyInvoiced.length} SO sudah memiliki nomor invoice — tidak bisa diinvoice ulang`,
+        detail: alreadyInvoiced.map((x: any) => `• ${x.order_id}  →  ${x.no_invoice}`),
+      });
     }
+
+    // Validasi 3 – semua SO harus berstatus Completed
     const notCompleted = items.filter((x: any) => x.status_muatan !== 'Completed');
     if (notCompleted.length > 0) {
-      alert(
-        `❌ Tidak bisa generate invoice!\n\n` +
-        `${notCompleted.length} SO belum berstatus "Completed":\n\n` +
-        notCompleted.map((x: any) => `• ${x.order_id} → ${x.status_muatan}`).join('\n') +
-        `\n\nUbah status SO ke "Completed" terlebih dahulu.`
-      );
+      issues.push({
+        label: `${notCompleted.length} SO belum berstatus "Completed" — ubah status terlebih dahulu`,
+        detail: notCompleted.map((x: any) => `• ${x.order_id}  →  Status saat ini: ${x.status_muatan || '(belum diset)'}`),
+      });
+    }
+
+    if (issues.length > 0) {
+      setInvoiceValidationError(issues);
       return;
     }
     setShowInvoiceModal(true);
@@ -1136,6 +1150,49 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           );
         })()}
       </ModalShell>
+
+      {/* ── Invoice Validation Error Modal ─────────────────────────────── */}
+      <ModalShell isOpen={invoiceValidationError !== null} onClose={() => setInvoiceValidationError(null)}>
+        <div className="p-5 border-b border-border-main flex items-start gap-4 bg-white sticky top-0 z-10">
+          <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+            <Icon name="AlertCircle" size={20} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[13px] font-black text-red-600 uppercase tracking-widest">Invoice Tidak Bisa Dibuat</h2>
+            <p className="text-[11px] text-text-light mt-1">
+              {(invoiceValidationError?.length ?? 0) > 1
+                ? `${invoiceValidationError?.length} masalah ditemukan — perbaiki semua sebelum generate invoice`
+                : 'Perbaiki masalah berikut sebelum generate invoice'}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
+          {(invoiceValidationError || []).map((issue, i) => (
+            <div key={i} className="rounded-xl border border-red-200 bg-red-50 overflow-hidden">
+              <div className="px-4 py-2.5 bg-red-100 border-b border-red-200 flex items-start gap-2">
+                <Icon name="XCircle" size={13} className="text-red-500 shrink-0 mt-0.5" />
+                <span className="text-[11px] font-black text-red-700 leading-snug">{issue.label}</span>
+              </div>
+              <div className="px-4 py-3 space-y-1">
+                {issue.detail.map((d, j) => (
+                  <p key={j} className="text-[11px] font-mono text-red-600 leading-relaxed">{d}</p>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            className="w-full h-10 rounded-xl bg-slate-100 text-text-main font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors"
+            onClick={() => setInvoiceValidationError(null)}
+          >
+            Tutup
+          </button>
+        </div>
+      </ModalShell>
+
     </PageShell>
   );
 };
