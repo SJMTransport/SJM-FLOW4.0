@@ -1204,7 +1204,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1000] flex justify-end bg-black/[0.04] pointer-events-none" 
+            className="fixed inset-0 z-[1000] flex justify-end bg-white/30 backdrop-blur-sm pointer-events-none" 
             onClick={clearModals}
           >
             <div className="flex flex-row-reverse h-full overflow-x-auto pointer-events-auto items-stretch no-scrollbar" onClick={e => e.stopPropagation()}>
