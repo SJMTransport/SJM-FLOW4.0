@@ -360,7 +360,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
         </Card>
 
         {showModal && (
-          <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
              <Card className="w-full max-w-[420px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowModal(false)}><Icon name="X" size={18} /></button>
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border-main/40">
@@ -504,7 +504,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
         </Card>
 
         {showDocModal && (
-          <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
              <Card className="w-full max-w-[420px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowDocModal(false)}><Icon name="X" size={18} /></button>
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border-main/40">
@@ -638,7 +638,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
         </Card>
 
         {showServiceModal && (
-          <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
              <Card className="w-full max-w-[420px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowServiceModal(false)}><Icon name="X" size={18} /></button>
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border-main/40">
@@ -770,7 +770,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
         </Card>
 
         {showSopirModal && (
-          <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
              <Card className="w-full max-w-[400px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowSopirModal(false)}><Icon name="X" size={18} /></button>
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border-main/40">

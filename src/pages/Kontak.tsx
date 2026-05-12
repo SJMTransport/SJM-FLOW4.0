@@ -97,7 +97,7 @@ export const KontakPage = ({ so, connected }: any) => {
       } />
 
       {showForm && (
-        <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
             <Card className="w-full max-w-[420px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowForm(false)}>
                     <Icon name="X" size={18} />
