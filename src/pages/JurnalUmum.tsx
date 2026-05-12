@@ -8,6 +8,7 @@ import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
 
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -254,75 +255,79 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     return `Bulan ${["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][period.month]} ${period.year}`;
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     try {
       const periodText = getPeriodText();
       const now = new Date();
-      const tsStr = `Dicetak: ${now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} pukul ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+      const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
 
-      const wsRows: any[][] = [
-        ['PT Sugiarto Jaya Mandiri — Laporan Jurnal Umum', '', '', '', '', '', '', ''],
-        [`Periode: ${periodText}`, '', '', '', '', '', '', ''],
-        [''],
-        ['Tanggal', 'No Jurnal', 'No SO', 'Keterangan', 'Kode Akun', 'Nama Akun', 'Debit', 'Kredit'],
-      ];
-      const dataStartRow = wsRows.length;
+      if (filtered.length === 0) { showToast("Tidak ada data untuk di-export", "info"); return; }
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Jurnal');
+
+      const addMR = (text: string, opts: any = {}) => {
+        const r = ws.addRow([text, '', '', '', '', '', '', '']);
+        ws.mergeCells(`A${r.number}:H${r.number}`);
+        r.font = { bold: opts.bold, size: opts.size, color: opts.color ? { argb: opts.color } : undefined, italic: opts.italic };
+        if (opts.align) r.getCell(1).alignment = { horizontal: opts.align };
+        return r;
+      };
+      addMR('PT SUGIARTO JAYA MANDIRI', { bold: true, size: 14, color: 'FFFF8F00' });
+      addMR('JURNAL UMUM', { bold: true, size: 12 });
+      addMR(`Periode: ${periodText}`, { size: 10 });
+      ws.addRow([]);
+
+      const hdr = ws.addRow(['TANGGAL', 'NO JURNAL', 'NO SO', 'KETERANGAN', 'KODE AKUN', 'NAMA AKUN', 'DEBIT', 'KREDIT']);
+      hdr.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      hdr.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF8F00' } };
+      hdr.eachCell(c => {
+        c.border = { top:{style:'thin'}, bottom:{style:'thin'}, left:{style:'thin'}, right:{style:'thin'} };
+        c.alignment = { horizontal: 'center' };
+      });
 
       filtered.forEach((j: any) => {
         (j.jurnal_detail || []).forEach((e: any, i: number) => {
-          wsRows.push([
+          const dr = Number(e.debit || 0);
+          const kr = Number(e.kredit || 0);
+          const row = ws.addRow([
             i === 0 ? (j.tanggal || '') : '',
             i === 0 ? (j.no_jurnal || '') : '',
             i === 0 ? (j.no_so || '') : '',
             i === 0 ? (j.keterangan || '') : '',
             e.coa_kode || '',
             e.nama_akun || '',
-            Number(e.debit || 0),
-            Number(e.kredit || 0),
+            dr > 0 ? Math.round(dr * 100) / 100 : null,
+            kr > 0 ? Math.round(kr * 100) / 100 : null,
           ]);
+          row.eachCell({ includeEmpty: true }, c => {
+            c.border = { top:{style:'hair'}, bottom:{style:'hair'}, left:{style:'hair'}, right:{style:'hair'} };
+          });
+          const dCell = row.getCell(7); dCell.numFmt = '#,##0.00'; dCell.alignment = { horizontal: 'right' };
+          const kCell = row.getCell(8); kCell.numFmt = '#,##0.00'; kCell.alignment = { horizontal: 'right' };
+          if (dr > 0) { dCell.font = { color: { argb: 'FF1B5E20' } }; dCell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFE8F5E9' } }; }
+          if (kr > 0) { kCell.font = { color: { argb: 'FFB71C1C' } }; kCell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFEBEE' } }; }
         });
       });
 
-      if (wsRows.length === dataStartRow) {
-        showToast("Tidak ada data untuk di-export", "info");
-        return;
-      }
+      ws.addRow([]);
+      const tsRow = ws.addRow([footerTS, '', '', '', '', '', '', '']);
+      ws.mergeCells(`A${tsRow.number}:H${tsRow.number}`);
+      tsRow.font = { italic: true, size: 9, color: { argb: 'FF888888' } };
+      tsRow.getCell(1).alignment = { horizontal: 'right' };
 
-      wsRows.push(['']);
-      wsRows.push([tsStr, '', '', '', '', '', '', '']);
-      const footerRowIdx = wsRows.length - 1;
+      ws.getColumn(1).width = 14; ws.getColumn(2).width = 20; ws.getColumn(3).width = 18;
+      ws.getColumn(4).width = 42; ws.getColumn(5).width = 12; ws.getColumn(6).width = 32;
+      ws.getColumn(7).width = 18; ws.getColumn(8).width = 18;
 
-      const ws = XLSX.utils.aoa_to_sheet(wsRows);
-
-      ws['!cols'] = [
-        { wch: 14 },
-        { wch: 18 },
-        { wch: 18 },
-        { wch: 40 },
-        { wch: 12 },
-        { wch: 30 },
-        { wch: 18 },
-        { wch: 18 },
-      ];
-
-      ws['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
-        { s: { r: footerRowIdx, c: 0 }, e: { r: footerRowIdx, c: 7 } },
-      ];
-
-      for (let i = dataStartRow; i < footerRowIdx - 1; i++) {
-        const dr = XLSX.utils.encode_cell({ r: i, c: 6 });
-        const kr = XLSX.utils.encode_cell({ r: i, c: 7 });
-        if (ws[dr]) ws[dr].z = '#,##0.00';
-        if (ws[kr]) ws[kr].z = '#,##0.00';
-      }
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Jurnal");
-
-      const fileName = `Jurnal_Umum_${period.mode === 'day' ? period.day : period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `Jurnal_Umum_${period.mode === 'day' ? period.day : period.mode === 'month' ? `${period.year}-${period.month + 1}` : period.year}.xlsx`;
+      a.click(); URL.revokeObjectURL(url);
       showToast("Download Excel dimulai...");
     } catch (err: any) {
       console.error("Export XLS Error:", err);
@@ -335,33 +340,43 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       const doc = new jsPDF("p", "mm", "a4");
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
+      const ML = 10, MR = 10;
+      const EORANGE: [number,number,number] = [255,143,0];
+      const EWHITE:  [number,number,number] = [255,255,255];
+      const EBLACK:  [number,number,number] = [0,0,0];
       const periodText = getPeriodText();
       const now = new Date();
       const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
 
-      // Navy header
-      doc.setFillColor(30, 58, 95);
-      doc.rect(0, 0, pageW, 26, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text('PT Sugiarto Jaya Mandiri', 14, 10);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Laporan Jurnal Umum', 14, 17);
-      doc.setFontSize(7.5);
-      doc.text('SJM Flow · Sistem Manajemen Keuangan & Logistik', pageW - 14, 10, { align: 'right' });
+      // BB-style header
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(...EORANGE);
+      doc.text('PT SUGIARTO JAYA MANDIRI', ML, 12);
+      doc.setFontSize(11); doc.setTextColor(40,40,40);
+      doc.text('JURNAL UMUM', ML, 20);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(40,40,40);
+      doc.text(`Periode: ${periodText}`, ML, 26);
+      doc.setDrawColor(...EORANGE); doc.setLineWidth(0.8);
+      doc.line(ML, 30, pageW - MR, 30);
 
-      // Orange period bar
-      doc.setFillColor(249, 172, 61);
-      doc.rect(0, 26, pageW, 8, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(30, 58, 95);
-      doc.text(`Periode: ${periodText}`, 14, 31.5);
-      doc.setTextColor(0, 0, 0);
+      // KPI summary
+      const totalDr = filtered.reduce((s: number, j: any) => s + (j.jurnal_detail || []).reduce((ss: number, e: any) => ss + Number(e.debit || 0), 0), 0);
+      const totalKr = filtered.reduce((s: number, j: any) => s + (j.jurnal_detail || []).reduce((ss: number, e: any) => ss + Number(e.kredit || 0), 0), 0);
+      const kpiY = 34, kpiH = 14, kpiW = (pageW - ML - MR - 8) / 3;
+      ([
+        { label: 'TOTAL TRANSAKSI',  value: String(filtered.length), fill: [240,248,255] as [number,number,number], stroke: [70,130,180] as [number,number,number], tx: [70,130,180] as [number,number,number] },
+        { label: 'TOTAL DEBIT',      value: fmt(totalDr),            fill: [240,255,240] as [number,number,number], stroke: [34,139,34]  as [number,number,number], tx: [34,139,34]  as [number,number,number] },
+        { label: 'TOTAL KREDIT',     value: fmt(totalKr),            fill: [255,235,235] as [number,number,number], stroke: [180,0,0]    as [number,number,number], tx: [180,0,0]    as [number,number,number] },
+      ]).forEach((b, i) => {
+        const x = ML + i * (kpiW + 4);
+        doc.setFillColor(...b.fill); doc.setDrawColor(...b.stroke); doc.setLineWidth(0.3);
+        doc.rect(x, kpiY, kpiW, kpiH, 'FD');
+        doc.setFontSize(6); doc.setFont('helvetica', 'bold'); doc.setTextColor(...b.tx);
+        doc.text(b.label, x + kpiW / 2, kpiY + 4.5, { align: 'center' });
+        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(40,40,40);
+        doc.text(b.value, x + kpiW / 2, kpiY + 11, { align: 'center' });
+      });
 
       const data = filtered.flatMap((j: any) =>
         (j.jurnal_detail || []).map((e: any, i: number) => [
@@ -382,23 +397,21 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       autoTable(doc, {
         head: [["TANGGAL", "NO JURNAL", "NO SO", "AKUN", "DEBIT", "KREDIT"]],
         body: data,
-        startY: 38,
-        margin: { left: 10, right: 10, top: 10, bottom: 14 },
-        styles: { fontSize: 7, cellPadding: 1.5 },
-        headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        bodyStyles: { lineWidth: 0.1, lineColor: [226, 232, 240] },
-        columnStyles: {
-          4: { halign: 'right' },
-          5: { halign: 'right' }
-        },
+        startY: kpiY + kpiH + 5,
+        margin: { left: ML, right: MR, top: 10, bottom: 14 },
+        styles: { fontSize: 7, cellPadding: 1.5, lineWidth: 0.2, lineColor: EBLACK, textColor: [40,40,40] },
+        headStyles: { fillColor: EORANGE, textColor: EWHITE, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [252,252,252] },
+        columnStyles: { 4: { halign: 'right' }, 5: { halign: 'right' } },
         didDrawPage: () => {
-          doc.setFontSize(7.5);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(150, 150, 150);
-          doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', 14, pageH - 6);
-          doc.text(footerTS, pageW - 14, pageH - 6, { align: 'right' });
-          doc.setTextColor(0, 0, 0);
+          const pg = (doc as any).internal.getCurrentPageInfo().pageNumber;
+          doc.setDrawColor(...EORANGE); doc.setLineWidth(0.4);
+          doc.line(ML, pageH - 9, pageW - MR, pageH - 9);
+          doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(150,150,150);
+          doc.text('PT Sugiarto Jaya Mandiri · SJM Flow', ML, pageH - 5);
+          doc.text(`Halaman ${pg}`, pageW / 2, pageH - 5, { align: 'center' });
+          doc.text(footerTS, pageW - MR, pageH - 5, { align: 'right' });
+          doc.setTextColor(0,0,0);
         },
       });
 
