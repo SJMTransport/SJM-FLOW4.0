@@ -251,13 +251,40 @@ export const Toast = ({ msg, type = "success" }: { msg: string, type?: string })
     );
 };
 
+// ── Global toast singleton ────────────────────────────────────────────────────
+// The first component that calls useToast() (App.tsx) owns the React state.
+// Every other caller shares the same dispatch function so only ONE toast ever
+// appears, at ONE position, with no duplicates.
+let _toastSet: ((t: { msg: string; type: string } | null) => void) | null = null;
+let _toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function showToast(msg: string, type: "success" | "error" | "info" | "warning" = "success"): void {
+    if (!_toastSet) return;
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastSet({ msg, type });
+    _toastTimer = setTimeout(() => { _toastSet?.(null); _toastTimer = null; }, 3000);
+}
+
 export const useToast = () => {
-    const [toast, setToast] = React.useState<any>(null);
-    const showToast = (msg: string, type: any = "success") => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
-    const ToastUI = () => toast ? <Toast msg={toast.msg} type={toast.type} /> : null;
+    const [toast, setToast] = React.useState<{ msg: string; type: string } | null>(null);
+    const isOwner = React.useRef(false);
+
+    React.useEffect(() => {
+        if (!_toastSet) {
+            isOwner.current = true;
+            _toastSet = setToast;
+        }
+        return () => {
+            if (isOwner.current) { _toastSet = null; isOwner.current = false; }
+        };
+    }, [setToast]);
+
+    // Only the owning instance (App.tsx) renders the visible toast.
+    // All page-level <ToastUI /> calls become no-ops — no stacking, no duplicates.
+    const ToastUI = () => (isOwner.current && toast)
+        ? <Toast msg={toast.msg} type={toast.type} />
+        : null;
+
     return { showToast, ToastUI };
 };
 

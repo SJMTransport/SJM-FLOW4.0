@@ -778,12 +778,8 @@ export default function App() {
 
     const jurnalChannel = supabase
       .channel('sjm_jurnal')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jurnal' }, (payload: any) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jurnal' }, () => {
         loadJurnal();
-        const ev = payload.eventType;
-        if (ev === 'INSERT') showToast('Jurnal baru ditambahkan', 'info');
-        else if (ev === 'UPDATE') showToast('Jurnal diupdate', 'info');
-        else if (ev === 'DELETE') showToast('Jurnal dihapus', 'info');
       })
       .subscribe();
 
@@ -798,7 +794,6 @@ export default function App() {
       .channel('sjm_so')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_order' }, () => {
         loadSalesOrder();
-        showToast('Sales Order diupdate', 'info');
       })
       .subscribe();
 
@@ -806,7 +801,6 @@ export default function App() {
       .channel('sjm_coa')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coa' }, () => {
         loadCOA();
-        showToast('COA diupdate', 'info');
       })
       .subscribe();
 
