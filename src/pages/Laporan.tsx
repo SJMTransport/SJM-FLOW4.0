@@ -1525,14 +1525,14 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
               <div className="overflow-auto max-h-[calc(100vh-450px)]">
                 <table className="w-full border-collapse">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr>
-                      <th className="w-28">TANGGAL</th>
-                      <th className="w-32">NO. JURNAL</th>
-                      <th>KETERANGAN TRANSAKSI</th>
-                      <th className="text-right w-36">DEBIT</th>
-                      <th className="text-right w-36">KREDIT</th>
-                      <th className="text-right w-44 font-black">SALDO</th>
+                      <th className="w-28 bg-grey-50">TANGGAL</th>
+                      <th className="w-32 bg-grey-50">NO. JURNAL</th>
+                      <th className="bg-grey-50">KETERANGAN TRANSAKSI</th>
+                      <th className="text-right w-36 bg-grey-50">DEBIT</th>
+                      <th className="text-right w-36 bg-grey-50">KREDIT</th>
+                      <th className="text-right w-44 font-black bg-grey-50">SALDO</th>
                     </tr>
                   </thead>
                   <tbody className="text-[11px]">
@@ -1590,6 +1590,35 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 </table>
               </div>
             </Card>
+
+            {/* Summary Footer */}
+            <div className="mt-2 pt-3 border-t border-border-main/30">
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-green-brand/5 border border-green-brand/20 rounded-xl p-3">
+                  <p className="text-[9px] text-green-brand font-black uppercase tracking-widest mb-1">Total Debit</p>
+                  <p className="text-sm font-black text-green-brand tabular-nums">{fmt(bbTotalDebit)}</p>
+                </div>
+                <div className="bg-red-brand/5 border border-red-brand/20 rounded-xl p-3">
+                  <p className="text-[9px] text-red-brand font-black uppercase tracking-widest mb-1">Total Kredit</p>
+                  <p className="text-sm font-black text-red-brand tabular-nums">{fmt(bbTotalKredit)}</p>
+                </div>
+                <div className={`border rounded-xl p-3 ${(bbTotalDebit - bbTotalKredit) >= 0 ? 'bg-blue-brand/5 border-blue-brand/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                  <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${(bbTotalDebit - bbTotalKredit) >= 0 ? 'text-blue-brand' : 'text-amber-600'}`}>Net Mutasi</p>
+                  <p className={`text-sm font-black tabular-nums ${(bbTotalDebit - bbTotalKredit) >= 0 ? 'text-blue-brand' : 'text-amber-600'}`}>
+                    {(bbTotalDebit - bbTotalKredit) >= 0 ? '+' : ''}{fmt(bbTotalDebit - bbTotalKredit)}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-grey-50/60 border border-border-main/20 rounded-lg px-4 py-2.5 flex justify-between items-center">
+                <span className="text-[10px] font-black text-text-light uppercase tracking-widest">
+                  {rowsWithBalance.length} transaksi pada periode ini
+                </span>
+                <div className="flex gap-5 text-[10px] tabular-nums">
+                  <span className="font-bold text-text-light">Debit: <span className="text-green-brand font-black">{fmt(bbTotalDebit)}</span></span>
+                  <span className="font-bold text-text-light">Kredit: <span className="text-red-brand font-black">{fmt(bbTotalKredit)}</span></span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </PageShell>
