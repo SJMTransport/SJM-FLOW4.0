@@ -148,8 +148,8 @@ export const api = {
     });
     if (error) throw new Error(error.message || "Gagal simpan jurnal");
     const row = Array.isArray(data) ? data[0] : data;
-    if (!row?.success) throw new Error(row?.message || "Gagal simpan jurnal");
-    return row.jurnal_id as string;
+    if (row && row.success === false) throw new Error(row?.message || "Gagal simpan jurnal");
+    return (row?.jurnal_id ?? null) as string;
   },
   updateJurnalWithDetails: async (id: string, header: any, details: any[]) => {
     const { data, error } = await supabase.rpc("update_jurnal_with_details", {
@@ -167,7 +167,7 @@ export const api = {
     });
     if (error) throw new Error(error.message || "Gagal update jurnal");
     const row = Array.isArray(data) ? data[0] : data;
-    if (!row?.success) throw new Error(row?.message || "Gagal update jurnal");
+    if (row && row.success === false) throw new Error(row?.message || "Gagal update jurnal");
   },
   addJurnal: async (data: any) => {
     const { data: res, error } = await supabaseManual.from("jurnal").insert([data]).select();
