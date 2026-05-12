@@ -6,6 +6,7 @@ import { ACTION_COLORS, ACTION_LABELS, MODULE_LABELS, type ActionType, type Modu
 import { buildMeta } from "@/src/lib/activityLogger";
 
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -1197,6 +1198,289 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       return { ...m, saldo: currentBalance };
     });
 
+    // ── Buku Besar export helpers ────────────────────────────────────────────
+    const bbTotalDebit  = rowsWithBalance.reduce((s: number, m: any) => s + (m.debit  || 0), 0);
+    const bbTotalKredit = rowsWithBalance.reduce((s: number, m: any) => s + (m.kredit || 0), 0);
+
+    // OPENING row + transaction rows for exports
+    const bbTransactions = [
+      { tanggal: null, noJurnal: 'OPENING', keterangan: 'Saldo Awal / Mutasi Kumulatif', debit: 0, kredit: 0, saldo: openingBalance },
+      ...rowsWithBalance,
+    ];
+
+    const fRp = (n: number) => {
+      if (!n || n === 0) return '-';
+      return 'Rp. ' + (Math.round(n * 100) / 100).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const fRpOrDash = (n: number) => (!n || n === 0 ? '-' : fRp(n));
+
+    const bbTimestamp = (d: Date) =>
+      d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) +
+      ' pukul ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const handleExportBukuBesarPDF = () => {
+      const doc = new jsPDF('landscape', 'pt', 'a4');
+      const PW = doc.internal.pageSize.width;
+      const PH = doc.internal.pageSize.height;
+      const ML = 30, MR = 30;
+      const now = new Date();
+      const ts = bbTimestamp(now);
+      const periodLabel = getPeriodText();
+
+      // Header
+      doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 143, 0);
+      doc.text('PT SUGIARTO JAYA MANDIRI', PW / 2, 35, { align: 'center' });
+      doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+      doc.text('BUKU BESAR', PW / 2, 52, { align: 'center' });
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+      doc.text(`Akun: ${activeCoa?.kode || ''} — ${activeCoa?.nama || ''}`, PW / 2, 67, { align: 'center' });
+      doc.text(`Periode: ${periodLabel}`, PW / 2, 80, { align: 'center' });
+      doc.setDrawColor(255, 143, 0); doc.setLineWidth(1.5);
+      doc.line(ML, 90, PW - MR, 90);
+
+      // KPI boxes
+      const kpiY = 105, kpiW = (PW - ML - MR - 20) / 3;
+      const kpiBoxes = [
+        { label: 'SALDO AWAL PERIODE',  value: fRp(openingBalance),  fill: [240,248,255] as [number,number,number], stroke: [70,130,180]  as [number,number,number], tx: [70,130,180]  as [number,number,number] },
+        { label: 'NET MUTASI PERIODE',  value: fRp(bbTotalDebit - bbTotalKredit), fill: [240,255,240] as [number,number,number], stroke: [34,139,34]  as [number,number,number], tx: [34,139,34]  as [number,number,number] },
+        { label: 'SALDO AKHIR PERIODE', value: fRp(currentBalance),  fill: [255,248,220] as [number,number,number], stroke: [218,165,32] as [number,number,number], tx: [218,165,32] as [number,number,number] },
+      ];
+      kpiBoxes.forEach((b, i) => {
+        const x = ML + i * (kpiW + 10);
+        doc.setFillColor(...b.fill); doc.setDrawColor(...b.stroke); doc.setLineWidth(0.5);
+        doc.rect(x, kpiY, kpiW, 40, 'FD');
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...b.tx);
+        doc.text(b.label, x + kpiW / 2, kpiY + 12, { align: 'center' });
+        doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+        doc.text(b.value, x + kpiW / 2, kpiY + 28, { align: 'center' });
+      });
+
+      // Main table
+      autoTable(doc, {
+        startY: kpiY + 50,
+        head: [['Tanggal', 'No. Jurnal', 'Keterangan Transaksi', 'Debit', 'Kredit', 'Saldo']],
+        body: bbTransactions.map(t => [
+          t.tanggal || '-',
+          t.noJurnal || 'OPENING',
+          t.keterangan || '-',
+          fRpOrDash(t.debit),
+          fRpOrDash(t.kredit),
+          fRp(Math.round(t.saldo * 100) / 100),
+        ]),
+        theme: 'grid',
+        styles: { fontSize: 7.5, cellPadding: 3, overflow: 'linebreak', lineColor: [200,200,200], lineWidth: 0.3, textColor: [0,0,0] },
+        headStyles: { fillColor: [255,143,0], textColor: [255,255,255], fontStyle: 'bold', halign: 'center', fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 70,  halign: 'center' },
+          1: { cellWidth: 110 },
+          2: { cellWidth: 280 },
+          3: { cellWidth: 100, halign: 'right' },
+          4: { cellWidth: 100, halign: 'right' },
+          5: { cellWidth: 110, halign: 'right', fontStyle: 'bold' },
+        },
+        alternateRowStyles: { fillColor: [250,250,250] },
+        didParseCell: (data: any) => {
+          if (data.row.index === 0 && data.section === 'body') {
+            data.cell.styles.fillColor = [255,250,230];
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.textColor = [150,100,0];
+          }
+        },
+        margin: { left: ML, right: MR, top: kpiY + 55 },
+      });
+
+      // Total summary table
+      const finalY = (doc as any).lastAutoTable.finalY;
+      autoTable(doc, {
+        startY: finalY + 10,
+        body: [['', '', 'TOTAL MUTASI', fRp(bbTotalDebit), fRp(bbTotalKredit), '']],
+        theme: 'plain',
+        styles: { fontSize: 8, fontStyle: 'bold', fillColor: [240,240,240], cellPadding: 4 },
+        columnStyles: {
+          0: { cellWidth: 70  },
+          1: { cellWidth: 110 },
+          2: { cellWidth: 280, halign: 'right' },
+          3: { cellWidth: 100, halign: 'right', textColor: [0,150,0] },
+          4: { cellWidth: 100, halign: 'right', textColor: [200,0,0] },
+          5: { cellWidth: 110 },
+        },
+        margin: { left: ML, right: MR },
+      });
+
+      // Footer on every page
+      const totalPages = (doc as any).internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(255,143,0); doc.setLineWidth(0.5);
+        doc.line(ML, PH - 25, PW - MR, PH - 25);
+        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(150,150,150);
+        doc.text(`Halaman ${i} dari ${totalPages}`, PW / 2, PH - 15, { align: 'center' });
+        doc.text(`Dicetak: ${ts}`, PW - MR, PH - 15, { align: 'right' });
+      }
+
+      doc.save(`BukuBesar_${activeCoa?.kode}_${now.toISOString().split('T')[0]}.pdf`);
+    };
+
+    const handleExportBukuBesarExcel = async () => {
+      const now = new Date();
+      const ts = bbTimestamp(now);
+      const periodLabel = getPeriodText();
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Buku Besar');
+
+      // Header rows
+      ws.mergeCells('A1:F1');
+      const r1 = ws.getCell('A1');
+      r1.value = 'PT SUGIARTO JAYA MANDIRI';
+      r1.font = { bold: true, size: 16, color: { argb: 'FFFF8F00' } };
+      r1.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(1).height = 28;
+
+      ws.mergeCells('A2:F2');
+      const r2 = ws.getCell('A2');
+      r2.value = 'BUKU BESAR';
+      r2.font = { bold: true, size: 14 };
+      r2.alignment = { horizontal: 'center' };
+      ws.getRow(2).height = 22;
+
+      ws.mergeCells('A3:F3');
+      ws.getCell('A3').value = `Akun: ${activeCoa?.kode} — ${activeCoa?.nama}`;
+      ws.getCell('A3').font = { size: 11 };
+      ws.getCell('A3').alignment = { horizontal: 'center' };
+
+      ws.mergeCells('A4:F4');
+      ws.getCell('A4').value = `Periode: ${periodLabel}`;
+      ws.getCell('A4').font = { size: 10 };
+      ws.getCell('A4').alignment = { horizontal: 'center' };
+
+      ws.getRow(5).height = 8;
+
+      // KPI row
+      const kpiData = [
+        { col: 1, label: 'SALDO AWAL PERIODE', value: Math.round(openingBalance * 100) / 100, fill: 'FFE8F4FD' },
+        { col: 3, label: 'NET MUTASI PERIODE',  value: Math.round((bbTotalDebit - bbTotalKredit) * 100) / 100, fill: 'FFE8F8E8' },
+        { col: 5, label: 'SALDO AKHIR PERIODE', value: Math.round(currentBalance * 100) / 100, fill: 'FFFFF8DC' },
+      ];
+      kpiData.forEach(k => {
+        const lc = ws.getRow(6).getCell(k.col);
+        lc.value = k.label;
+        lc.font = { bold: true, size: 9 };
+        lc.alignment = { horizontal: 'center' };
+        const vc = ws.getRow(7).getCell(k.col);
+        vc.value = k.value;
+        vc.numFmt = '#,##0.00';
+        vc.font = { bold: true, size: 11 };
+        vc.alignment = { horizontal: 'center' };
+        vc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: k.fill } };
+      });
+      ws.getRow(7).height = 24;
+      ws.getRow(8).height = 8;
+
+      // Table header
+      const headers = ['Tanggal', 'No. Jurnal', 'Keterangan Transaksi', 'Debit', 'Kredit', 'Saldo'];
+      const hr = ws.getRow(9);
+      headers.forEach((h, i) => {
+        const c = hr.getCell(i + 1);
+        c.value = h;
+        c.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF8F00' } };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+        c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      });
+      hr.height = 22;
+
+      // Data rows
+      let rowIdx = 10;
+      bbTransactions.forEach((t, idx) => {
+        const row = ws.getRow(rowIdx);
+        const isOpening = !t.tanggal || t.noJurnal === 'OPENING';
+
+        row.getCell(1).value = t.tanggal || '-';
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).value = t.noJurnal || 'OPENING';
+        row.getCell(3).value = t.keterangan || 'Saldo Awal / Mutasi Kumulatif';
+
+        if (t.debit > 0) {
+          row.getCell(4).value = Math.round(t.debit * 100) / 100;
+          row.getCell(4).numFmt = '#,##0.00';
+          row.getCell(4).font = { color: { argb: 'FF006600' } };
+        } else {
+          row.getCell(4).value = '-';
+        }
+        row.getCell(4).alignment = { horizontal: 'right' };
+
+        if (t.kredit > 0) {
+          row.getCell(5).value = Math.round(t.kredit * 100) / 100;
+          row.getCell(5).numFmt = '#,##0.00';
+          row.getCell(5).font = { color: { argb: 'FFCC0000' } };
+        } else {
+          row.getCell(5).value = '-';
+        }
+        row.getCell(5).alignment = { horizontal: 'right' };
+
+        row.getCell(6).value = Math.round(t.saldo * 100) / 100;
+        row.getCell(6).numFmt = '#,##0.00';
+        row.getCell(6).font = { bold: true };
+        row.getCell(6).alignment = { horizontal: 'right' };
+
+        const rowFill = isOpening ? 'FFFFF3CD' : (idx % 2 === 0 ? 'FFF8F8F8' : 'FFFFFFFF');
+        for (let c = 1; c <= 6; c++) {
+          const cell = row.getCell(c);
+          if (isOpening) cell.font = { ...(cell.font as any || {}), bold: true };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowFill } };
+          cell.border = { top: { style: 'hair' }, bottom: { style: 'hair' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        }
+        rowIdx++;
+      });
+
+      // Total row
+      rowIdx++;
+      const totalRow = ws.getRow(rowIdx);
+      ws.mergeCells(`A${rowIdx}:C${rowIdx}`);
+      totalRow.getCell(1).value = 'TOTAL MUTASI PERIODE';
+      totalRow.getCell(1).font = { bold: true, size: 10 };
+      totalRow.getCell(1).alignment = { horizontal: 'right' };
+      totalRow.getCell(4).value = Math.round(bbTotalDebit  * 100) / 100;
+      totalRow.getCell(4).numFmt = '#,##0.00';
+      totalRow.getCell(4).font = { bold: true, color: { argb: 'FF006600' } };
+      totalRow.getCell(4).alignment = { horizontal: 'right' };
+      totalRow.getCell(5).value = Math.round(bbTotalKredit * 100) / 100;
+      totalRow.getCell(5).numFmt = '#,##0.00';
+      totalRow.getCell(5).font = { bold: true, color: { argb: 'FFCC0000' } };
+      totalRow.getCell(5).alignment = { horizontal: 'right' };
+      for (let c = 1; c <= 6; c++) {
+        totalRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+        totalRow.getCell(c).border = { top: { style: 'medium' }, bottom: { style: 'medium' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      }
+      totalRow.height = 20;
+
+      // Timestamp
+      rowIdx += 2;
+      ws.mergeCells(`A${rowIdx}:F${rowIdx}`);
+      const tsCell = ws.getCell(`A${rowIdx}`);
+      tsCell.value = `Dicetak: ${ts}`;
+      tsCell.font = { italic: true, size: 9, color: { argb: 'FF888888' } };
+      tsCell.alignment = { horizontal: 'right' };
+
+      // Column widths
+      ws.getColumn(1).width = 14;
+      ws.getColumn(2).width = 22;
+      ws.getColumn(3).width = 50;
+      ws.getColumn(4).width = 20;
+      ws.getColumn(5).width = 20;
+      ws.getColumn(6).width = 22;
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BukuBesar_${activeCoa?.kode}_${now.toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
     return (
       <PageShell>
         <SectionHeader
@@ -1204,10 +1488,10 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           sub="Laporan mutasi transaksi mendalam per akun COA"
           action={
             <div className="btn-export-group">
-              <button className="text-green-brand" onClick={() => exportExcel(`BukuBesar_${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+              <button className="text-green-brand" onClick={handleExportBukuBesarExcel}>
                 <Icon name="Download" size={13} /> Excel
               </button>
-              <button className="text-red-brand" onClick={() => exportPDF(`Buku Besar ${activeCoa?.kode}`, rowsWithBalance, ["tanggal", "noJurnal", "keterangan", "debit", "kredit", "saldo"])}>
+              <button className="text-red-brand" onClick={handleExportBukuBesarPDF}>
                 <Icon name="FileText" size={13} /> PDF
               </button>
             </div>
