@@ -457,23 +457,32 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     // Helper — classify raw DB error messages into actionable hints
     const classifyDbError = (raw: string): { label: string; hint: string } => {
       const m = raw.toLowerCase();
-      if ((m.includes('"invoices"') || m.includes("'invoices'") || m.includes('invoices')) &&
-          (m.includes('does not exist') || m.includes('relation') || m.includes('not found'))) {
+      // invoices table missing entirely
+      if (m.includes('invoices') && (m.includes('does not exist') || m.includes('relation') || m.includes('not found')) && !m.includes('column') && !m.includes('schema cache')) {
         return {
           label: 'Tabel "invoices" belum dibuat di database',
           hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nCREATE TABLE invoices (\n  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,\n  no_invoice text,\n  tgl_invoice date,\n  customer text,\n  so_ids text[],\n  total_sebelum_pajak numeric DEFAULT 0,\n  ppn numeric DEFAULT 0,\n  total_setelah_pajak numeric DEFAULT 0,\n  created_at timestamptz DEFAULT now()\n);',
         };
       }
-      if (m.includes('no_invoice') && (m.includes('column') || m.includes('does not exist'))) {
+      // no_invoice column missing from invoices table (schema cache error)
+      if (m.includes('no_invoice') && m.includes('invoices')) {
+        return {
+          label: 'Kolom "no_invoice" belum ada di tabel invoices',
+          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE invoices\n  ADD COLUMN IF NOT EXISTS no_invoice text;\n\nSELECT pg_notify(\'pgrst\', \'reload schema\');',
+        };
+      }
+      // no_invoice column missing from sales_order
+      if (m.includes('no_invoice') && (m.includes('sales_order') || m.includes('column') || m.includes('does not exist'))) {
         return {
           label: 'Kolom "no_invoice" belum ada di tabel sales_order',
           hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE sales_order\n  ADD COLUMN IF NOT EXISTS no_invoice text;',
         };
       }
+      // invoices table structure mismatch
       if (m.includes('so_ids') || (m.includes('column') && m.includes('invoices'))) {
         return {
           label: 'Struktur tabel "invoices" tidak sesuai schema',
-          hint: 'Hapus dan buat ulang tabel invoices dengan SQL migration yang benar, atau periksa kolom yang kurang.',
+          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE invoices\n  ADD COLUMN IF NOT EXISTS no_invoice text,\n  ADD COLUMN IF NOT EXISTS so_ids text[],\n  ADD COLUMN IF NOT EXISTS tgl_invoice date,\n  ADD COLUMN IF NOT EXISTS customer text,\n  ADD COLUMN IF NOT EXISTS total_sebelum_pajak numeric DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS ppn numeric DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS total_setelah_pajak numeric DEFAULT 0;\n\nSELECT pg_notify(\'pgrst\', \'reload schema\');',
         };
       }
       if (m.includes('jwt') || m.includes('auth') || m.includes('unauthorized') || m.includes('403')) {
