@@ -72,7 +72,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             Preview & Export
          </button>
          {showExport && (
-           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex justify-center items-center p-4 md:p-10">
+           <div className="fixed inset-0 bg-black/[0.06] z-[2000] flex justify-center items-center p-4 md:p-10">
               <div className="fade-up w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-border-main">
                  <div className="p-6 border-b border-border-main bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
@@ -996,7 +996,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       <PageShell>
         {/* Before/After detail modal */}
         {auditDetailLog && detailMeta && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setAuditDetailLog(null)}>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/[0.06]" onClick={() => setAuditDetailLog(null)}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
               <div className="p-5 border-b border-border-main flex items-center justify-between">
                 <div>

@@ -189,7 +189,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
         </Card>
 
         {showModal === 'coa' && (
-          <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-black/[0.06] z-[1100] flex justify-center items-center p-4">
              <Card className="w-full max-w-[420px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowModal(null)}>
                     <Icon name="X" size={18} />
@@ -404,7 +404,7 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
         </Card>
 
         {showModal === 'user' && (
-          <div className="fixed inset-0 bg-text-main/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
+          <div className="fixed inset-0 bg-black/[0.06] z-[1100] flex justify-center items-center p-4">
              <Card className="w-full max-w-[420px] p-6 animate-fade-up shadow-2xl relative">
                 <button className="absolute top-5 right-5 text-text-light hover:text-text-main transition-colors" onClick={() => setShowModal(null)}>
                     <Icon name="X" size={18} />

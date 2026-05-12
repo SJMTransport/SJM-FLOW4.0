@@ -198,7 +198,7 @@ export const NotificationBadge = ({ count, icon, onClick }: any) => (
 export const ModalShell = ({ children, onClose, isOpen }: any) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-end p-0 bg-abyssal-blue/40 backdrop-blur-sm animate-fade" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-end p-0 bg-black/[0.06] animate-fade" onClick={onClose}>
       <div className="absolute inset-0" onClick={onClose} />
       <Card 
         className="relative w-full max-w-4xl h-full shadow-2xl animate-fade-left p-0 border-none rounded-none flex flex-col bg-white overflow-hidden" 
@@ -213,7 +213,7 @@ export const ModalShell = ({ children, onClose, isOpen }: any) => {
 export const ConfirmModal = ({ open, title, msg, onConfirm, onCancel, confirmLabel = "Hapus", confirmColor = null }: any) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-text-main/40 z-[9000] flex items-center justify-center p-6 backdrop-blur-sm" onClick={onCancel}>
+    <div className="fixed inset-0 bg-black/[0.06] z-[9000] flex items-center justify-center p-6" onClick={onCancel}>
       <Card className="max-w-md w-full shadow-xl animate-fade-up" onClick={e => e.stopPropagation()}>
         <div className="text-lg font-black text-text-main mb-2">{title || "Konfirmasi"}</div>
         <div className="text-[13px] text-text-med font-medium leading-relaxed mb-8">{msg}</div>
