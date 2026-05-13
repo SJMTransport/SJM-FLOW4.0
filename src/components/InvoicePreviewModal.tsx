@@ -10,6 +10,21 @@ interface InvoicePreviewModalProps {
   onConfirm: () => Promise<void>;
 }
 
+// FIX 7: Wait for all images inside an element to fully load
+const waitForImages = (el: HTMLElement): Promise<void> => {
+  const imgs = Array.from(el.querySelectorAll<HTMLImageElement>('img'));
+  if (imgs.length === 0) return Promise.resolve();
+  return Promise.all(
+    imgs.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>(resolve => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve(); // don't block PDF on broken image
+      });
+    })
+  ).then(() => undefined);
+};
+
 const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   data,
   invoiceNumber,
@@ -26,6 +41,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     setDownloading(true);
 
     try {
+      // FIX 7: Wait for logo PNG conversion (set by InvoiceTemplate useEffect) to settle
+      await waitForImages(templateRef.current);
+
       // Capture template as high-res canvas
       const canvas = await html2canvas(templateRef.current, {
         scale: 2,
@@ -35,6 +53,16 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         logging: false,
         width: 794,
         height: templateRef.current.scrollHeight,
+        imageTimeout: 15000,
+        // FIX 7: Replace any still-broken images in the clone so html2canvas doesn't choke
+        onclone: (_clonedDoc, clonedEl) => {
+          const imgs = clonedEl.querySelectorAll<HTMLImageElement>('img');
+          imgs.forEach(img => {
+            if (!img.complete || img.naturalWidth === 0) {
+              img.style.visibility = 'hidden';
+            }
+          });
+        },
       });
 
       // Convert canvas → PDF (A4, points unit)
