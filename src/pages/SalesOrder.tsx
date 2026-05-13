@@ -8,7 +8,8 @@ import { api } from "@/src/api";
 import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
 import { generateInvoiceNo } from "@/src/utils/invoiceGenerator";
-import { generateInvoicePDF } from "@/src/utils/generateInvoicePDF";
+import InvoicePreviewModal from "@/src/components/InvoicePreviewModal";
+import type { InvoiceTemplateProps } from "@/src/components/InvoiceTemplate";
 
 const SO_IMPORT_FIELDS = [
   { key: "order_id", label: "Order ID", required: true },
@@ -317,6 +318,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [processing, setProcessing] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceDate, setInvoiceDate] = useState(today());
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [previewData, setPreviewData] = useState<InvoiceTemplateProps | null>(null);
+  const [pendingInvoiceNo, setPendingInvoiceNo] = useState('');
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'uninvoiced' | 'invoiced'>('all');
   const [invoiceValidationError, setInvoiceValidationError] = useState<{
@@ -438,159 +442,145 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     setShowInvoiceModal(true);
   };
 
-  const handleGenerateInvoice = async () => {
+  // Classify DB error messages into actionable hints (shared by both prepare + confirm)
+  const classifyDbError = (raw: string): { label: string; hint: string } => {
+    const m = raw.toLowerCase();
+    if (m.includes('invoices') && (m.includes('does not exist') || m.includes('relation') || m.includes('not found')) && !m.includes('column') && !m.includes('schema cache')) {
+      return { label: 'Tabel "invoices" belum dibuat di database', hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nCREATE TABLE invoices (\n  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,\n  no_invoice text,\n  tgl_invoice date,\n  customer text,\n  so_ids text[],\n  total_sebelum_pajak numeric DEFAULT 0,\n  ppn numeric DEFAULT 0,\n  total_setelah_pajak numeric DEFAULT 0,\n  created_at timestamptz DEFAULT now()\n);' };
+    }
+    if (m.includes('no_invoice') && m.includes('invoices')) {
+      return { label: 'Kolom "no_invoice" belum ada di tabel invoices', hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE invoices\n  ADD COLUMN IF NOT EXISTS no_invoice text;\n\nSELECT pg_notify(\'pgrst\', \'reload schema\');' };
+    }
+    if (m.includes('no_invoice') && (m.includes('sales_order') || m.includes('column') || m.includes('does not exist'))) {
+      return { label: 'Kolom "no_invoice" belum ada di tabel sales_order', hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE sales_order\n  ADD COLUMN IF NOT EXISTS no_invoice text;' };
+    }
+    if (m.includes('so_ids') || (m.includes('column') && m.includes('invoices'))) {
+      return { label: 'Struktur tabel "invoices" tidak sesuai schema', hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE invoices\n  ADD COLUMN IF NOT EXISTS no_invoice text,\n  ADD COLUMN IF NOT EXISTS so_ids text[],\n  ADD COLUMN IF NOT EXISTS tgl_invoice date,\n  ADD COLUMN IF NOT EXISTS customer text,\n  ADD COLUMN IF NOT EXISTS total_sebelum_pajak numeric DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS ppn numeric DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS total_setelah_pajak numeric DEFAULT 0;\n\nSELECT pg_notify(\'pgrst\', \'reload schema\');' };
+    }
+    if (m.includes('jwt') || m.includes('auth') || m.includes('unauthorized') || m.includes('403')) {
+      return { label: 'Akses database ditolak (autentikasi gagal)', hint: 'Coba logout lalu login kembali. Jika masih gagal, periksa Row-Level Security (RLS) di Supabase.' };
+    }
+    return { label: 'Error database tidak dikenali', hint: 'Periksa koneksi internet, coba refresh halaman, atau lihat Supabase logs untuk detail.' };
+  };
+
+  // ── Step 1: Validate + get invoice number + open preview ──────────────────
+  const handlePrepareInvoice = async () => {
     if (selected.length === 0) return;
     const items = so.filter((x: any) => selected.includes(x.id));
-    const customers: string[] = [...new Set<string>(items.map((x: any) => x.customer).filter(Boolean))];
-    setGeneratingInvoice(true);
 
-    // Helper — show a persistent error modal and close the generate modal
-    const showErr = (label: string, detail: string[], hint?: string) => {
+    const date = new Date(invoiceDate || today());
+    if (isNaN(date.getTime())) {
       setShowInvoiceModal(false);
       setInvoiceValidationError({
         title: 'Gagal Generate Invoice',
         subtitle: 'Terjadi kesalahan saat proses generate — lihat detail di bawah',
-        issues: [{ label, detail, hint }],
+        issues: [{ label: 'Tanggal invoice tidak valid', detail: [`Nilai: "${invoiceDate || '(kosong)'}"`], hint: 'Pilih tanggal yang valid dari date picker.' }],
       });
-    };
+      return;
+    }
 
-    // Helper — classify raw DB error messages into actionable hints
-    const classifyDbError = (raw: string): { label: string; hint: string } => {
-      const m = raw.toLowerCase();
-      // invoices table missing entirely
-      if (m.includes('invoices') && (m.includes('does not exist') || m.includes('relation') || m.includes('not found')) && !m.includes('column') && !m.includes('schema cache')) {
-        return {
-          label: 'Tabel "invoices" belum dibuat di database',
-          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nCREATE TABLE invoices (\n  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,\n  no_invoice text,\n  tgl_invoice date,\n  customer text,\n  so_ids text[],\n  total_sebelum_pajak numeric DEFAULT 0,\n  ppn numeric DEFAULT 0,\n  total_setelah_pajak numeric DEFAULT 0,\n  created_at timestamptz DEFAULT now()\n);',
-        };
-      }
-      // no_invoice column missing from invoices table (schema cache error)
-      if (m.includes('no_invoice') && m.includes('invoices')) {
-        return {
-          label: 'Kolom "no_invoice" belum ada di tabel invoices',
-          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE invoices\n  ADD COLUMN IF NOT EXISTS no_invoice text;\n\nSELECT pg_notify(\'pgrst\', \'reload schema\');',
-        };
-      }
-      // no_invoice column missing from sales_order
-      if (m.includes('no_invoice') && (m.includes('sales_order') || m.includes('column') || m.includes('does not exist'))) {
-        return {
-          label: 'Kolom "no_invoice" belum ada di tabel sales_order',
-          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE sales_order\n  ADD COLUMN IF NOT EXISTS no_invoice text;',
-        };
-      }
-      // invoices table structure mismatch
-      if (m.includes('so_ids') || (m.includes('column') && m.includes('invoices'))) {
-        return {
-          label: 'Struktur tabel "invoices" tidak sesuai schema',
-          hint: 'Jalankan SQL ini di Supabase → SQL Editor:\n\nALTER TABLE invoices\n  ADD COLUMN IF NOT EXISTS no_invoice text,\n  ADD COLUMN IF NOT EXISTS so_ids text[],\n  ADD COLUMN IF NOT EXISTS tgl_invoice date,\n  ADD COLUMN IF NOT EXISTS customer text,\n  ADD COLUMN IF NOT EXISTS total_sebelum_pajak numeric DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS ppn numeric DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS total_setelah_pajak numeric DEFAULT 0;\n\nSELECT pg_notify(\'pgrst\', \'reload schema\');',
-        };
-      }
-      if (m.includes('jwt') || m.includes('auth') || m.includes('unauthorized') || m.includes('403')) {
-        return {
-          label: 'Akses database ditolak (autentikasi gagal)',
-          hint: 'Coba logout lalu login kembali. Jika masih gagal, periksa Row-Level Security (RLS) di Supabase.',
-        };
-      }
-      return {
-        label: 'Error database tidak dikenali',
-        hint: 'Periksa koneksi internet, coba refresh halaman, atau lihat Supabase logs untuk detail.',
-      };
-    };
-
+    setGeneratingInvoice(true);
     try {
-      // ── Step 1: Validasi tanggal ──────────────────────────────────────────
-      const date = new Date(invoiceDate || today());
-      if (isNaN(date.getTime())) {
-        showErr(
-          'Tanggal invoice tidak valid',
-          [`Nilai yang dimasukkan: "${invoiceDate || '(kosong)'}"`],
-          'Pilih tanggal yang valid dari date picker sebelum generate.'
-        );
-        return;
-      }
+      const invoiceNo = await generateInvoiceNo(date);
+      setPendingInvoiceNo(invoiceNo);
 
-      // ── Step 2: Ambil nomor invoice dari database ─────────────────────────
-      let invoiceNo: string;
-      try {
-        invoiceNo = await generateInvoiceNo(date);
-      } catch (e: any) {
-        showErr(
-          'Gagal membaca nomor invoice dari database',
-          [`Error: ${e.message || String(e)}`],
-          'Pastikan koneksi internet aktif dan Supabase dapat dijangkau.'
-        );
-        return;
-      }
+      const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+      const invDateStr = `${String(date.getDate()).padStart(2,'0')}-${MONTHS[date.getMonth()]}-${date.getFullYear()}`;
+      const fmtDate = (d: string) => {
+        if (!d) return '-';
+        const dt = new Date(d.includes('T') ? d : d + 'T00:00:00');
+        return isNaN(dt.getTime()) ? d : `${String(dt.getDate()).padStart(2,'0')}-${MONTHS[dt.getMonth()]}-${dt.getFullYear()}`;
+      };
 
-      // ── Step 3: Generate & download PDF ───────────────────────────────────
-      const customer = customers[0] || '';
-      const picCust  = items[0]?.pic_cust || '';
-      const noPic    = items[0]?.no_pic   || '';
-      const totalDPP   = items.reduce((s: number, x: any) => s + (x.total_harga             || 0), 0);
-      const totalPPN   = items.reduce((s: number, x: any) => s + (x.nilai_pajak              || 0), 0);
-      const grandTotal = items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
-
-      try {
-        generateInvoicePDF(invoiceNo, date, customer, picCust, noPic, items);
-      } catch (e: any) {
-        showErr(
-          'Gagal membuat file PDF',
-          [`Error: ${e.message || String(e)}`],
-          'Coba lagi. Jika masalah berlanjut, periksa data SO (harga, muatan, tanggal).'
-        );
-        return;
-      }
-
-      // ── Step 4: Simpan ke database ────────────────────────────────────────
-      try {
-        await api.addInvoice({
-          no_invoice: invoiceNo,
-          tgl_invoice: invoiceDate || today(),
-          customer,
-          so_ids: selected,
-          total_sebelum_pajak: totalDPP,
-          ppn: totalPPN,
-          total_setelah_pajak: grandTotal,
-        });
-        await api.updateSOInvoiceNo(selected, invoiceNo);
-        setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: invoiceNo } : s));
-      } catch (dbErr: any) {
-        const { label, hint } = classifyDbError(dbErr.message || '');
-        setShowInvoiceModal(false);
-        setInvoiceValidationError({
-          title: 'PDF Diunduh — Database Gagal Disimpan',
-          subtitle: 'File PDF sudah berhasil diunduh ke komputer Anda. Namun data invoice gagal tersimpan ke database.',
-          issues: [{
-            label,
-            detail: [
-              '✓ PDF invoice sudah diunduh ke komputer Anda.',
-              `✗ Error: ${dbErr.message || 'Unknown error'}`,
-            ],
-            hint,
-          }],
-        });
-        setSelected([]);
-        return;
-      }
-
-      // ── Step 5: Selesai ───────────────────────────────────────────────────
-      logAction(`Generate Invoice: ${invoiceNo}`, buildMeta({
-        module: 'so', action_type: 'CREATE',
-        record_id: invoiceNo,
-        after_data: { customer, total: grandTotal, so_count: selected.length },
+      const templateItems = items.map((s: any, idx: number) => ({
+        rowNo: idx + 1,
+        tglMuat: fmtDate(s.tgl_muat),
+        tglTiba: fmtDate(s.tgl_bongkar),
+        noSO: s.order_id || '-',
+        armada: s.jenis_truk || '-',
+        noPol: s.no_polisi || '-',
+        muatan: s.muatan || '',
+        sn: s.sn || '',
+        lokasiMuat: s.lokasi_muat || '-',
+        lokasiTujuan: s.lokasi_bongkar || '-',
+        hargaPengiriman: Number(s.harga_pengiriman) || 0,
+        hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
+        total: Number(s.total_harga) || 0,
       }));
-      showToast(`Invoice ${invoiceNo} berhasil dibuat.`);
-      setShowInvoiceModal(false);
-      setSelected([]);
 
+      const subTotal  = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
+      const ppn       = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
+      const grandTotal= items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
+
+      setPreviewData({
+        invoiceNumber: invoiceNo,
+        invoiceDate: invDateStr,
+        customer: items[0]?.customer || '-',
+        picCust: [items[0]?.pic_cust, items[0]?.no_pic].filter(Boolean).join(' '),
+        items: templateItems,
+        subTotal,
+        ppn,
+        total: grandTotal,
+      });
+
+      setShowInvoiceModal(false);
+      setShowInvoicePreview(true);
     } catch (e: any) {
-      showErr(
-        'Error tidak terduga saat generate invoice',
-        [`Error: ${e.message || String(e)}`],
-        'Coba lagi atau hubungi administrator jika masalah berlanjut.'
-      );
+      setShowInvoiceModal(false);
+      setInvoiceValidationError({
+        title: 'Gagal Generate Invoice',
+        subtitle: 'Terjadi kesalahan saat proses generate — lihat detail di bawah',
+        issues: [{ label: 'Gagal membaca nomor invoice', detail: [`Error: ${e.message || String(e)}`], hint: 'Pastikan koneksi internet aktif dan Supabase dapat dijangkau.' }],
+      });
     } finally {
       setGeneratingInvoice(false);
+    }
+  };
+
+  // ── Step 2: Save to DB after PDF downloaded ───────────────────────────────
+  const handleConfirmInvoice = async () => {
+    if (!previewData || !pendingInvoiceNo) return;
+    const items = so.filter((x: any) => selected.includes(x.id));
+    const totalDPP   = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
+    const totalPPN   = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
+    const grandTotal = items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
+
+    try {
+      await api.addInvoice({
+        no_invoice: pendingInvoiceNo,
+        tgl_invoice: invoiceDate || today(),
+        customer: previewData.customer,
+        so_ids: selected,
+        total_sebelum_pajak: totalDPP,
+        ppn: totalPPN,
+        total_setelah_pajak: grandTotal,
+      });
+      await api.updateSOInvoiceNo(selected, pendingInvoiceNo);
+      setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: pendingInvoiceNo } : s));
+
+      logAction(`Generate Invoice: ${pendingInvoiceNo}`, buildMeta({
+        module: 'so', action_type: 'CREATE',
+        record_id: pendingInvoiceNo,
+        after_data: { customer: previewData.customer, total: grandTotal, so_count: selected.length },
+      }));
+      showToast(`Invoice ${pendingInvoiceNo} berhasil dibuat.`);
+      setShowInvoicePreview(false);
+      setPreviewData(null);
+      setPendingInvoiceNo('');
+      setSelected([]);
+    } catch (dbErr: any) {
+      const { label, hint } = classifyDbError(dbErr.message || '');
+      setShowInvoicePreview(false);
+      setInvoiceValidationError({
+        title: 'PDF Diunduh — Database Gagal Disimpan',
+        subtitle: 'File PDF sudah berhasil diunduh ke komputer Anda. Namun data invoice gagal tersimpan ke database.',
+        issues: [{
+          label,
+          detail: ['✓ PDF invoice sudah diunduh ke komputer Anda.', `✗ Error: ${dbErr.message || 'Unknown error'}`],
+          hint,
+        }],
+      });
+      setSelected([]);
     }
   };
 
@@ -1244,12 +1234,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </button>
                 <button
                   className="btn-primary h-10 !px-6 !bg-emerald-600 hover:!bg-emerald-700 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                  onClick={handleGenerateInvoice}
+                  onClick={handlePrepareInvoice}
                   disabled={generatingInvoice}
                 >
                   {generatingInvoice
                     ? <><Icon name="Loader2" size={14} className="animate-spin" /> Memproses...</>
-                    : <><Icon name="Download" size={14} /> Generate PDF Invoice</>}
+                    : <><Icon name="Eye" size={14} /> Preview Invoice</>}
                 </button>
               </div>
             </>
@@ -1311,6 +1301,19 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </button>
         </div>
       </ModalShell>
+
+      {/* ── Invoice Preview Modal ───────────────────────────────────────── */}
+      {showInvoicePreview && previewData && (
+        <InvoicePreviewModal
+          data={previewData}
+          invoiceNumber={pendingInvoiceNo}
+          onClose={() => {
+            setShowInvoicePreview(false);
+            setShowInvoiceModal(true);
+          }}
+          onConfirm={handleConfirmInvoice}
+        />
+      )}
 
     </PageShell>
   );
