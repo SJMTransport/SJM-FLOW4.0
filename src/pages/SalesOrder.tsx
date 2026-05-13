@@ -503,14 +503,15 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         sn: s.sn || '',
         lokasiMuat: s.lokasi_muat || '-',
         lokasiTujuan: s.lokasi_bongkar || '-',
-        hargaPengiriman: Number(s.harga_pengiriman) || 0,
-        hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
-        total: Number(s.total_harga) || 0,
+        hargaPengiriman: Number(s.harga_pengiriman)  || 0,
+        nilaiPajak:      Number(s.nilai_pajak)       || 0,
+        hargaAsuransi:   Number(s.nilai_asuransi) > 0 ? Number(s.nilai_asuransi) : null,
+        total:           Number(s.total_harga_pajak) || 0,
       }));
 
-      const subTotal  = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
-      const ppn       = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
-      const grandTotal= items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
+      const subTotal   = items.reduce((s: number, x: any) => s + (Number(x.harga_pengiriman) || 0), 0);
+      const ppn        = items.reduce((s: number, x: any) => s + (Number(x.nilai_pajak)      || 0), 0);
+      const grandTotal = items.reduce((s: number, x: any) => s + (Number(x.total_harga_pajak)|| 0), 0);
 
       setPreviewData({
         invoiceNumber: invoiceNo,
@@ -541,19 +542,16 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const handleConfirmInvoice = async () => {
     if (!previewData || !pendingInvoiceNo) return;
     const items = so.filter((x: any) => selected.includes(x.id));
-    const totalDPP   = items.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
-    const totalPPN   = items.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
-    const grandTotal = items.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
-
     try {
       await api.addInvoice({
-        no_invoice: pendingInvoiceNo,
-        tgl_invoice: invoiceDate || today(),
-        customer: previewData.customer,
-        so_ids: selected,
-        total_sebelum_pajak: totalDPP,
-        ppn: totalPPN,
-        total_setelah_pajak: grandTotal,
+        no_invoice:          pendingInvoiceNo,
+        tgl_invoice:         invoiceDate || today(),
+        customer:            previewData.customer,
+        pic_cust:            previewData.picCust,
+        so_ids:              selected,
+        total_sebelum_pajak: previewData.subTotal,
+        ppn:                 previewData.ppn,
+        total_setelah_pajak: previewData.total,
       });
       await api.updateSOInvoiceNo(selected, pendingInvoiceNo);
       setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: pendingInvoiceNo } : s));
@@ -561,7 +559,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       logAction(`Generate Invoice: ${pendingInvoiceNo}`, buildMeta({
         module: 'so', action_type: 'CREATE',
         record_id: pendingInvoiceNo,
-        after_data: { customer: previewData.customer, total: grandTotal, so_count: selected.length },
+        after_data: { customer: previewData.customer, total: previewData.total, so_count: selected.length },
       }));
       showToast(`Invoice ${pendingInvoiceNo} berhasil dibuat.`);
       setShowInvoicePreview(false);

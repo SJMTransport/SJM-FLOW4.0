@@ -13,9 +13,10 @@ export interface InvoiceItem {
   sn: string;
   lokasiMuat: string;
   lokasiTujuan: string;
-  hargaPengiriman: number;
+  hargaPengiriman: number;  // DPP (harga_pengiriman)
+  nilaiPajak: number;       // PPN per row (nilai_pajak)
   hargaAsuransi: number | null;
-  total: number;
+  total: number;            // total_harga_pajak (DPP + PPN)
 }
 
 export interface InvoiceTemplateProps {
