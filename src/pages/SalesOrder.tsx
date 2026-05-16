@@ -278,8 +278,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     tgl_order: today(), tgl_muat: today(), jam_muat: "08:00",
     lokasi_muat: "", lokasi_bongkar: "", status_muatan: "Order Confirmed",
     customer: "", pic_cust: "", no_pic: "",
-    no_polisi: "", nama_sopir: "", nama_vendor: "", muatan: "", unit_muatan: "",
-    harga_asuransi: "", pajak: "", nilai_pajak: "",
+    no_polisi: "", jenis_truk: "", nama_sopir: "", nama_vendor: "", muatan: "", unit_muatan: "",
+    harga_asuransi: "", pajak: "", nilai_pajak: "", nilai_asuransi: "",
     harga_pengiriman: "", total_harga: 0, total_harga_pajak: 0,
     is_posted: false, bukti_muatan: "", surat_jalan: "", keterangan: "",
     modal_legs: [],
@@ -305,13 +305,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     const pajakApply = isPajakApply(f.tgl_order);
     const tax = pajakApply ? Math.round((pengiriman + ins) * 0.011) : 0;
     const totalPajak = total + tax;
-    return { total_harga: total, total_harga_pajak: totalPajak, nilai_pajak: tax };
+    return { total_harga: total, total_harga_pajak: totalPajak, nilai_pajak: tax, nilai_asuransi: ins };
   };
 
   const handleNumChange = (k: string, v: any) => {
     const updated = { ...form, [k]: v };
-    const { total_harga, total_harga_pajak, nilai_pajak } = calcTotal(updated);
-    setForm({ ...updated, total_harga, total_harga_pajak, nilai_pajak });
+    const { total_harga, total_harga_pajak, nilai_pajak, nilai_asuransi } = calcTotal(updated);
+    setForm({ ...updated, total_harga, total_harga_pajak, nilai_pajak, nilai_asuransi });
   };
 
   const [selected, setSelected] = useState<string[]>([]);
@@ -505,7 +505,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         lokasiTujuan: s.lokasi_bongkar || '-',
         hargaPengiriman: Number(s.harga_pengiriman)  || 0,
         nilaiPajak:      Number(s.nilai_pajak)       || 0,
-        hargaAsuransi:   Number(s.nilai_asuransi) > 0 ? Number(s.nilai_asuransi) : null,
+        hargaAsuransi:   (Number(s.harga_asuransi) || Number(s.nilai_asuransi)) > 0
+                           ? (Number(s.harga_asuransi) || Number(s.nilai_asuransi))
+                           : null,
         total:           Number(s.total_harga_pajak) || 0,
       }));
 
@@ -1022,6 +1024,26 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </div>
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer</label>
+                <input
+                  className="input-field h-9 text-[11px] font-bold"
+                  value={form.pic_cust || ""}
+                  onChange={e => setForm((f: any) => ({ ...f, pic_cust: e.target.value }))}
+                  placeholder="Nama PIC / Contact Person..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC</label>
+                <input
+                  className="input-field h-9 text-[11px] font-bold"
+                  value={form.no_pic || ""}
+                  onChange={e => setForm((f: any) => ({ ...f, no_pic: e.target.value }))}
+                  placeholder="08xx-xxxx-xxxx"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -1033,6 +1055,21 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Unit Armada</label>
                 <input list="armada-list" className="input-field h-9 text-[11px] font-bold" value={form.no_polisi || ""} onChange={e => setForm((f: any) => ({ ...f, no_polisi: e.target.value }))} placeholder="Cari No Polisi..." />
                 <datalist id="armada-list">{armada.map((a: any) => <option key={a.id} value={a.no_polisi} />)}</datalist>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Jenis Truk</label>
+                <select
+                  className="input-field h-9 text-[11px] font-bold"
+                  value={form.jenis_truk || ''}
+                  onChange={e => setForm((f: any) => ({ ...f, jenis_truk: e.target.value }))}
+                >
+                  <option value="">Pilih Jenis Truk</option>
+                  <option value="Selfloader">Selfloader</option>
+                  <option value="Selfloader Kecil">Selfloader Kecil</option>
+                  <option value="Towing">Towing</option>
+                  <option value="Lowbed">Lowbed</option>
+                  <option value="Dolly">Dolly</option>
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Nama Sopir</label>
@@ -1149,7 +1186,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           const invoiceItems = so.filter((x: any) => selected.includes(x.id));
           const invoiceCustomer = invoiceItems[0]?.customer || '-';
           const invoicePic = invoiceItems[0]?.pic_cust || '';
-          const totalDPP = invoiceItems.reduce((s: number, x: any) => s + (x.total_harga || 0), 0);
+          const totalDPP = invoiceItems.reduce((s: number, x: any) => s + (Number(x.harga_pengiriman) || 0), 0);
           const totalPPN = invoiceItems.reduce((s: number, x: any) => s + (x.nilai_pajak || 0), 0);
           const grandTotal = invoiceItems.reduce((s: number, x: any) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
           return (
@@ -1199,7 +1236,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                           <td className="px-3 py-2 text-text-med tabular-nums">{s.tgl_muat || '-'}</td>
                           <td className="px-3 py-2 text-text-light max-w-[150px] truncate" title={[s.lokasi_muat, s.lokasi_bongkar].join(' → ')}>{[s.lokasi_muat, s.lokasi_bongkar].filter(Boolean).join(' → ') || '-'}</td>
                           <td className="px-3 py-2 text-text-light">{s.muatan || '-'}</td>
-                          <td className="px-3 py-2 text-right tabular-nums font-bold text-text-dark">{(s.total_harga || 0).toLocaleString('id-ID')}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-bold text-text-dark">{(Number(s.harga_pengiriman) || 0).toLocaleString('id-ID')}</td>
                           <td className="px-3 py-2 text-right tabular-nums text-text-med">{(s.nilai_pajak || 0).toLocaleString('id-ID')}</td>
                           <td className="px-3 py-2 text-right tabular-nums font-black text-text-dark">{(s.total_harga_pajak || s.total_harga || 0).toLocaleString('id-ID')}</td>
                         </tr>
