@@ -28,24 +28,25 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     try {
       console.log('📸 Starting html2canvas capture...');
 
-      const canvas = await html2canvas(templateRef.current, {
+      const captureEl = templateRef.current;
+      // Use offsetHeight to avoid capturing trailing whitespace that creates a blank page 2
+      const captureHeight = Math.max(captureEl.offsetHeight, captureEl.scrollHeight);
+      const canvasPromise = html2canvas(captureEl, {
         scale: 2,
-        useCORS: false,        // false = no CORS fetch, uses allowTaint instead
+        useCORS: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         width: 794,
-        height: templateRef.current.scrollHeight,
-        imageTimeout: 10000,
-        // Hide any img elements that failed to load — SVG logo never triggers this
-        onclone: (clonedDoc: Document) => {
-          clonedDoc.querySelectorAll<HTMLImageElement>('img').forEach(img => {
-            if (!img.complete || img.naturalWidth === 0) {
-              img.style.visibility = 'hidden';
-            }
-          });
-        },
+        height: captureHeight,
       });
+
+      // Safety net: if html2canvas hangs for more than 20s, reject with a clear message
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('html2canvas timeout — coba refresh halaman dan coba lagi')), 20000)
+      );
+
+      const canvas = await Promise.race([canvasPromise, timeoutPromise]);
 
       console.log('✅ Canvas captured, size:', canvas.width, 'x', canvas.height);
 
@@ -56,7 +57,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       const cW = canvas.width;
       const cH = canvas.height;
       const ratio = cW / pdfW;
-      const totalPages = Math.ceil(cH / (pdfH * ratio));
+      // Subtract small epsilon to prevent floating-point rounding from creating a blank final page
+      const totalPages = Math.max(1, Math.ceil(cH / (pdfH * ratio) - 0.01));
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();

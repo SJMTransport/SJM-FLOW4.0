@@ -30,9 +30,8 @@ export interface InvoiceTemplateProps {
   catatan?: string;
 }
 
-// FIX 6: No dot after Rp → Rp13.000.000,00
 const fRp = (n: number): string =>
-  'Rp' + Math.round(n).toLocaleString('id-ID') + ',00';
+  'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
 const th: React.CSSProperties = {
   backgroundColor: '#FFC840',
@@ -72,13 +71,19 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
 
           {/* Logo + company info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* SVG logo — always renders perfectly in html2canvas without image loading issues */}
-            <svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-              <rect width="70" height="70" fill="#FF8F00" rx="6" />
-              <text x="35" y="26" textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial, sans-serif" fontWeight="bold">PT. SUGIARTO</text>
-              <text x="35" y="38" textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial, sans-serif" fontWeight="bold">JAYA MANDIRI</text>
-              <text x="35" y="55" textAnchor="middle" fill="white" fontSize="16" fontFamily="Arial, sans-serif" fontWeight="bold">SJM</text>
-            </svg>
+            {/* Pure-HTML logo box — no SVG/img so html2canvas never hangs */}
+            <div style={{
+              width: '70px', height: '70px', flexShrink: 0,
+              backgroundColor: '#FF8F00', borderRadius: '6px',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontFamily: 'Arial, Helvetica, sans-serif',
+              fontWeight: 'bold', textAlign: 'center', lineHeight: 1.25,
+            }}>
+              <div style={{ fontSize: '7px' }}>PT. SUGIARTO</div>
+              <div style={{ fontSize: '7px' }}>JAYA MANDIRI</div>
+              <div style={{ fontSize: '18px', letterSpacing: '1px' }}>SJM</div>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#FF8F00', letterSpacing: '0.3px' }}>
                 SUGIARTO JAYA MANDIRI TRANSPORT
@@ -133,7 +138,7 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
         </div>
 
         {/* ── ITEMS TABLE ── */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px', border: '2px solid #000' }}>
           <thead>
             <tr>
               <th style={{ ...th, width: '26px' }}>No.</th>
@@ -212,7 +217,7 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
         </table>
 
         {/* ── TERBILANG ── */}
-        <div style={{ border: '1px solid #000', padding: '5px 8px', fontSize: '9px', borderTop: 'none' }}>
+        <div style={{ border: '2px solid #000', padding: '5px 8px', fontSize: '9px', borderTop: 'none' }}>
           <strong>Terbilang:</strong> {terbilang(total)}
         </div>
 
