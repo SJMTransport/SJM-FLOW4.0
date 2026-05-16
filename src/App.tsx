@@ -737,10 +737,16 @@ export default function App() {
   };
 
   const loadJurnal = async () => {
-    try { setJurnal(await api.getJurnal()); } catch { /* silent — keep stale data */ }
+    try { setJurnal(await api.getJurnal()); } catch (err: any) {
+      console.error('loadJurnal error:', err);
+      showToast('Data jurnal gagal dimuat ulang. Refresh halaman jika data tidak akurat.', 'error');
+    }
   };
   const loadSalesOrder = async () => {
-    try { setSo(await api.getSO()); } catch { /* silent */ }
+    try { setSo(await api.getSO()); } catch (err: any) {
+      console.error('loadSalesOrder error:', err);
+      showToast('Data Sales Order gagal dimuat ulang. Refresh halaman jika data tidak akurat.', 'error');
+    }
   };
   const loadCOA = async () => {
     try { setCoa(await api.getCoa()); } catch { /* silent */ }

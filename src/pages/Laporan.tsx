@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { C } from "../constants";
 import { fmt, fmtShort, filterByPeriod, filterUpToPeriod } from "@/src/utils";
-import { Card, SectionHeader, EmptyState, PeriodFilter, Icon, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, EmptyState, PeriodFilter, Icon, PageShell, KPIGrid, ActionBar, showToast } from "@/src/components/SJMComponents";
 import { ACTION_COLORS, ACTION_LABELS, MODULE_LABELS, type ActionType, type ModuleKey } from "@/src/lib/activityLogger";
 import { buildMeta } from "@/src/lib/activityLogger";
 
@@ -17,6 +17,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   const [selectedCoa, setSelectedCoa] = useState("");
   const [search, setSearch] = useState("");
   const [auditDetailLog, setAuditDetailLog] = useState<any>(null);
+  const [exporting, setExporting] = useState<string | null>(null);
   const filteredJurnal = useMemo(() => filterByPeriod(jurnal || [], period), [jurnal, period]);
   const cumulativeJurnal = useMemo(() => filterUpToPeriod(jurnal || [], period), [jurnal, period]);
 
@@ -29,6 +30,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
   };
 
   const exportExcel = async (title: string, data: any[], columns: string[]) => {
+    if (exporting) return;
+    setExporting('excel');
+    try {
     const periodText = getPeriodText();
     const now = new Date();
     const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -83,9 +87,19 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const a = document.createElement('a'); a.href = url;
     a.download = `${title}_${now.toISOString().slice(0,10)}.xlsx`;
     a.click(); URL.revokeObjectURL(url);
+    showToast('File Excel berhasil diunduh!', 'success');
+    } catch (err: any) {
+      console.error('Export Excel error:', err);
+      showToast('Gagal mengunduh Excel. Coba lagi.', 'error');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const exportPDF = (title: string, data: any[], columns: string[]) => {
+    if (exporting) return;
+    setExporting('pdf');
+    try {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -132,6 +146,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       },
     });
     doc.save(`${title}_${now.toISOString().slice(0,10)}.pdf`);
+    showToast('File PDF berhasil diunduh!', 'success');
+    } catch (err: any) {
+      console.error('Export PDF error:', err);
+      showToast('Gagal mengunduh PDF. Coba lagi.', 'error');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const RenderExportActions = ({ title, data, columns }: any) => {
@@ -151,11 +172,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                        <p className="text-[11px] font-bold text-text-light mt-1 tracking-widest uppercase">{data.length} records found</p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                       <button className="btn-primary bg-green-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportExcel(title, data, columns)}>
-                          <Icon name="Download" size={16} /> Excel
+                       <button className="btn-primary bg-green-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportExcel(title, data, columns)} disabled={exporting !== null}>
+                          <Icon name="Download" size={16} /> {exporting === 'excel' ? '⏳ Mengunduh...' : 'Excel'}
                        </button>
-                       <button className="btn-primary bg-red-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportPDF(title, data, columns)}>
-                          <Icon name="FileText" size={16} /> PDF
+                       <button className="btn-primary bg-red-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportPDF(title, data, columns)} disabled={exporting !== null}>
+                          <Icon name="FileText" size={16} /> {exporting === 'pdf' ? '⏳ Mengunduh...' : 'PDF'}
                        </button>
                        <button className="h-[42px] px-6 rounded-xl border border-border-main text-text-med font-black hover:bg-slate-50 transition-all uppercase tracking-widest text-[11px]" onClick={() => setShowExport(false)}>✕ Close</button>
                     </div>
@@ -433,6 +454,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const periodLabel = getPeriodText();
 
     const handleExportNeraca = async (mode: 'pdf' | 'xlsx') => {
+        if (exporting) return;
+        setExporting(mode === 'xlsx' ? 'excel' : 'pdf');
+        try {
         type NRowType = 'section' | 'item' | 'subtotal' | 'summary' | 'balance' | 'blank';
         const tableRows: [string, string, string, number | string][] = [];
         const rowMeta: NRowType[] = [];
@@ -632,6 +656,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         }
 
         if (logAction) logAction(`Export Neraca Saldo: ${periodLabel} (${mode.toUpperCase()})`, buildMeta({ module: 'laporan', action_type: 'EXPORT', record_id: `neraca-${periodLabel}`, after_data: { format: mode, period: periodLabel } }));
+        showToast(`File ${mode === 'xlsx' ? 'Excel' : 'PDF'} berhasil diunduh!`, 'success');
+        } catch (err: any) {
+          console.error('Export Neraca error:', err);
+          showToast('Gagal mengunduh laporan. Coba lagi.', 'error');
+        } finally {
+          setExporting(null);
+        }
     };
 
     const CategoryTable = ({ label, items, factor = 1 }: any) => {
@@ -667,11 +698,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           action={
             <div className="flex items-center gap-2">
               <div className="btn-export-group">
-                <button className="text-green-brand" onClick={() => handleExportNeraca('xlsx')}>
-                  <Icon name="Download" size={13} /> Excel
+                <button className="text-green-brand" onClick={() => handleExportNeraca('xlsx')} disabled={exporting !== null}>
+                  <Icon name="Download" size={13} /> {exporting === 'excel' ? '⏳' : 'Excel'}
                 </button>
-                <button className="text-red-brand" onClick={() => handleExportNeraca('pdf')}>
-                  <Icon name="FileText" size={13} /> PDF
+                <button className="text-red-brand" onClick={() => handleExportNeraca('pdf')} disabled={exporting !== null}>
+                  <Icon name="FileText" size={13} /> {exporting === 'pdf' ? '⏳' : 'PDF'}
                 </button>
               </div>
               <div className={`status-badge ${balanced ? "balanced" : "unbalanced"}`}>
@@ -762,6 +793,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const periodLabel = getPeriodText();
 
     const handleExportLR = async (mode: 'pdf' | 'xlsx') => {
+        if (exporting) return;
+        setExporting(mode === 'xlsx' ? 'excel' : 'pdf');
+        try {
         // ── shared data builder ───────────────────────────────────────────
         type RowType = 'section' | 'item' | 'subtotal' | 'highlight' | 'total' | 'blank';
         const tableRows: [string, string, number | string][] = [];
@@ -994,6 +1028,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         }
 
         if (logAction) logAction(`Export Laba Rugi: ${periodLabel} (${mode.toUpperCase()})`, buildMeta({ module: 'laporan', action_type: 'EXPORT', record_id: `labarugi-${periodLabel}`, after_data: { format: mode, period: periodLabel } }));
+        showToast(`File ${mode === 'xlsx' ? 'Excel' : 'PDF'} berhasil diunduh!`, 'success');
+        } catch (err: any) {
+          console.error('Export LabaRugi error:', err);
+          showToast('Gagal mengunduh laporan. Coba lagi.', 'error');
+        } finally {
+          setExporting(null);
+        }
     };
 
     return (
@@ -1003,11 +1044,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           sub={`Laporan Laba Rugi periode ${periodLabel}`}
           action={
             <div className="btn-export-group">
-              <button className="text-green-brand" onClick={() => handleExportLR('xlsx')}>
-                <Icon name="Download" size={13} /> Excel
+              <button className="text-green-brand" onClick={() => handleExportLR('xlsx')} disabled={exporting !== null}>
+                <Icon name="Download" size={13} /> {exporting === 'excel' ? '⏳' : 'Excel'}
               </button>
-              <button className="text-red-brand" onClick={() => handleExportLR('pdf')}>
-                <Icon name="FileText" size={13} /> PDF
+              <button className="text-red-brand" onClick={() => handleExportLR('pdf')} disabled={exporting !== null}>
+                <Icon name="FileText" size={13} /> {exporting === 'pdf' ? '⏳' : 'PDF'}
               </button>
             </div>
           }
@@ -1085,11 +1126,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           sub="Pemantauan margin keuntungan real-time per order"
           action={
             <div className="btn-export-group">
-              <button className="text-green-brand" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])}>
-                <Icon name="Download" size={13} /> Excel
+              <button className="text-green-brand" onClick={() => exportExcel("Profitabilitas_Muatan", tbProfit, ["order_id", "customer", "revenue", "expense", "profit"])} disabled={exporting !== null}>
+                <Icon name="Download" size={13} /> {exporting === 'excel' ? '⏳' : 'Excel'}
               </button>
-              <button className="text-red-brand" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])}>
-                <Icon name="FileText" size={13} /> PDF
+              <button className="text-red-brand" onClick={() => exportPDF("Profitabilitas Muatan", tbProfit, ["order_id", "tgl", "customer", "revenue", "expense", "profit"])} disabled={exporting !== null}>
+                <Icon name="FileText" size={13} /> {exporting === 'pdf' ? '⏳' : 'PDF'}
               </button>
             </div>
           }
@@ -1383,6 +1424,9 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       ' pukul ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     const handleExportBukuBesarPDF = () => {
+      if (exporting) return;
+      setExporting('pdf');
+      try {
       const doc = new jsPDF('landscape', 'pt', 'a4');
       const PW = doc.internal.pageSize.width;
       const PH = doc.internal.pageSize.height;
@@ -1483,9 +1527,19 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       }
 
       doc.save(`BukuBesar_${activeCoa?.kode}_${now.toISOString().split('T')[0]}.pdf`);
+      showToast('File PDF berhasil diunduh!', 'success');
+      } catch (err: any) {
+        console.error('Export BukuBesar PDF error:', err);
+        showToast('Gagal mengunduh PDF. Coba lagi.', 'error');
+      } finally {
+        setExporting(null);
+      }
     };
 
     const handleExportBukuBesarExcel = async () => {
+      if (exporting) return;
+      setExporting('excel');
+      try {
       const now = new Date();
       const ts = bbTimestamp(now);
       const periodLabel = getPeriodText();
@@ -1643,6 +1697,13 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       a.download = `BukuBesar_${activeCoa?.kode}_${now.toISOString().split('T')[0]}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
+      showToast('File Excel berhasil diunduh!', 'success');
+      } catch (err: any) {
+        console.error('Export BukuBesar Excel error:', err);
+        showToast('Gagal mengunduh Excel. Coba lagi.', 'error');
+      } finally {
+        setExporting(null);
+      }
     };
 
     return (
@@ -1652,11 +1713,11 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           sub="Laporan mutasi transaksi mendalam per akun COA"
           action={
             <div className="btn-export-group">
-              <button className="text-green-brand" onClick={handleExportBukuBesarExcel}>
-                <Icon name="Download" size={13} /> Excel
+              <button className="text-green-brand" onClick={handleExportBukuBesarExcel} disabled={exporting !== null}>
+                <Icon name="Download" size={13} /> {exporting === 'excel' ? '⏳' : 'Excel'}
               </button>
-              <button className="text-red-brand" onClick={handleExportBukuBesarPDF}>
-                <Icon name="FileText" size={13} /> PDF
+              <button className="text-red-brand" onClick={handleExportBukuBesarPDF} disabled={exporting !== null}>
+                <Icon name="FileText" size={13} /> {exporting === 'pdf' ? '⏳' : 'PDF'}
               </button>
             </div>
           }

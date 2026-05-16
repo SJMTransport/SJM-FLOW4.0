@@ -356,7 +356,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       const item = so.find((x:any) => x.id === id);
       return item && !item.is_posted;
     });
-    if (toPost.length === 0) return alert("Pilih minimal satu SO berstatus DRAFT untuk diposting.");
+    if (toPost.length === 0) { showToast("Pilih minimal satu SO berstatus DRAFT untuk diposting.", "error"); return; }
     
     confirmModal({
       title: "Posting Masal",
@@ -631,7 +631,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             module: 'so', action_type: 'DELETE', record_id: item?.order_id || id,
             before_data: item ? { order_id: item.order_id, customer: item.customer, tgl_muat: item.tgl_muat, status_muatan: item.status_muatan, total_harga: item.total_harga } : { id },
           }));
-        } catch (e: any) { alert("Gagal hapus: " + e.message); }
+        } catch (e: any) { showToast("Gagal hapus: " + e.message, "error"); }
       }
     });
   };
