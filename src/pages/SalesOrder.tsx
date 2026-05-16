@@ -275,13 +275,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   
   const emptyForm = {
     order_id: "", no_invoice: "", kode_invoice: "", laporan_keuangan: "",
-    tgl_order: today(), tgl_muat: today(), jam_muat: "08:00",
+    tgl_order: today(), tgl_muat: today(), tgl_bongkar: "", jam_muat: "08:00",
     lokasi_muat: "", lokasi_bongkar: "", status_muatan: "Order Confirmed",
     customer: "", pic_cust: "", no_pic: "",
-    no_polisi: "", jenis_truk: "", nama_sopir: "", nama_vendor: "", muatan: "", unit_muatan: "",
+    no_polisi: "", jenis_truk: "", nama_sopir: "", nama_vendor: "", muatan: "", unit_muatan: "", sn: "",
     harga_asuransi: "", pajak: "", nilai_pajak: "", nilai_asuransi: "",
     harga_pengiriman: "", total_harga: 0, total_harga_pajak: 0,
-    is_posted: false, bukti_muatan: "", surat_jalan: "", keterangan: "",
+    is_posted: false, bukti_muatan: "", surat_jalan: "", spk: "", keterangan: "",
     modal_legs: [],
   };
   const [form, setForm] = useState<any>(emptyForm);
@@ -961,7 +961,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 />
               </div>
               <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer & Tanggal</label>
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer <span className="text-red-brand">*</span> & Tanggal</label>
                 <div className="flex gap-2">
                   {(() => {
                     const allNames: string[] = [
@@ -1026,7 +1026,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer</label>
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer <span className="text-red-brand">*</span></label>
                 <input
                   className="input-field h-9 text-[11px] font-bold"
                   value={form.pic_cust || ""}
@@ -1035,7 +1035,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC</label>
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC <span className="text-red-brand">*</span></label>
                 <input
                   className="input-field h-9 text-[11px] font-bold"
                   value={form.no_pic || ""}
@@ -1051,13 +1051,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                <Icon name="Truck" size={12} className="text-accent" /> Logistik & Rute
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Unit Armada</label>
-                <input list="armada-list" className="input-field h-9 text-[11px] font-bold" value={form.no_polisi || ""} onChange={e => setForm((f: any) => ({ ...f, no_polisi: e.target.value }))} placeholder="Cari No Polisi..." />
-                <datalist id="armada-list">{armada.map((a: any) => <option key={a.id} value={a.no_polisi} />)}</datalist>
-              </div>
+              {/* Row 1: Jenis Truk | No. Polisi */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Jenis Truk</label>
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Jenis Truk <span className="text-red-brand">*</span></label>
                 <select
                   className="input-field h-9 text-[11px] font-bold"
                   value={form.jenis_truk || ''}
@@ -1072,6 +1068,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </select>
               </div>
               <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Polisi <span className="text-red-brand">*</span></label>
+                <input list="armada-list" className="input-field h-9 text-[11px] font-bold" value={form.no_polisi || ""} onChange={e => setForm((f: any) => ({ ...f, no_polisi: e.target.value }))} placeholder="Cari No Polisi..." />
+                <datalist id="armada-list">{armada.map((a: any) => <option key={a.id} value={a.no_polisi} />)}</datalist>
+              </div>
+              {/* Row 2: Nama Sopir | Expedisi */}
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Nama Sopir</label>
                 <input list="sopir-list" className="input-field h-9 text-[11px] font-bold" value={form.nama_sopir || ""} onChange={e => setForm((f: any) => ({ ...f, nama_sopir: e.target.value }))} placeholder="Cari Sopir..." />
                 <datalist id="sopir-list">{sopir.map((s: any) => <option key={s.id} value={s.nama} />)}</datalist>
@@ -1080,20 +1082,35 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Expedisi Pelaksana</label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.nama_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, nama_vendor: e.target.value }))} placeholder="..." />
               </div>
+              {/* Row 3: Lokasi Muat | Lokasi Tujuan */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Lokasi Muat <span className="text-red-brand">*</span></label>
+                <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_muat || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_muat: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Lokasi Tujuan <span className="text-red-brand">*</span></label>
+                <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_bongkar: e.target.value }))} />
+              </div>
+              {/* Row 4: Tgl Muat | Tgl Bongkar */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Muat <span className="text-red-brand">*</span></label>
+                <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_muat || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_muat: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Bongkar</label>
+                <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_bongkar: e.target.value }))} />
+              </div>
+              {/* Row 5: Muatan / Volume | SN */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Muatan / Volume</label>
                 <div className="flex gap-2">
                   <input className="input-field h-9 flex-1 text-[11px] font-bold" value={form.muatan || ""} onChange={e => setForm((f: any) => ({ ...f, muatan: e.target.value }))} placeholder="Jenis" />
-                  <input className="input-field h-9 w-20 text-[11px] font-bold" value={form.unit_muatan || ""} onChange={e => setForm((f: any) => ({ ...f, unit_muatan: e.target.value }))} placeholder="20" />
+                  <input className="input-field h-9 w-20 text-[11px] font-bold" value={form.unit_muatan || ""} onChange={e => setForm((f: any) => ({ ...f, unit_muatan: e.target.value }))} placeholder="Unit" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Titik Muat</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_muat || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_muat: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Titik Bongkar</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_bongkar: e.target.value }))} />
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">SN / No. Seri</label>
+                <input className="input-field h-9 text-[11px] font-bold" value={form.sn || ""} onChange={e => setForm((f: any) => ({ ...f, sn: e.target.value }))} placeholder="Serial number muatan..." />
               </div>
             </div>
           </div>
@@ -1105,7 +1122,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">Harga Pengiriman</label>
+                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">Harga Pengiriman <span className="text-red-brand">*</span></label>
                 <CurrencyInput value={form.harga_pengiriman} onChange={(v: any) => handleNumChange("harga_pengiriman", v)} className="h-11 text-[13px] font-black bg-white shadow-sm border-slate-200" />
               </div>
               <div className="space-y-1.5">
@@ -1132,6 +1149,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
+               <Icon name="Paperclip" size={12} className="text-accent" /> Dokumen
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Bukti Muat (GDrive)</label>
@@ -1146,6 +1166,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                   <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold" value={form.surat_jalan || ""} onChange={e => setForm((f: any) => ({ ...f, surat_jalan: e.target.value }))} placeholder="https://..." />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. SPK</label>
+                <input className="input-field h-9 text-[11px] font-bold" value={form.spk || ""} onChange={e => setForm((f: any) => ({ ...f, spk: e.target.value }))} placeholder="Nomor SPK / Work Order..." />
               </div>
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Catatan Internal</label>
