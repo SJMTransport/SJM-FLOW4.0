@@ -44,7 +44,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const [err, setErr] = useState("");
   const [editJurnalId, setEditJurnalId] = useState<string | null>(null);
   const [editJurnalSnap, setEditJurnalSnap] = useState<any>(null);
-  const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
+  const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, status: "Draft", entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
   const [sortKey, setSortKey] = useState<'no_jurnal' | 'tanggal'>('no_jurnal');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -120,6 +120,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
           keterangan: j.keterangan,
           noSO: j.no_so ? (j.no_so as string).split(",").map(s => s.trim()) : [],
           soValues: j.so_values || {},
+          status: j.status || "Draft",
           entries: (j.jurnal_detail || []).map((d: any) => ({
               coa: d.coa_kode,
               akun: d.nama_akun,
@@ -147,6 +148,12 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     if (form.entries.length < 2) return setErr("Minimal harus ada 2 baris transaksi");
     for (let e of form.entries) if (!e.coa) return setErr("Semua akun harus dipilih");
     if (!balanced) return setErr("Total debit & kredit harus seimbang");
+    if (!editJurnalId) {
+      const candidateNo = form.noJurnal?.trim() || genJUNo(form.tanggal, jurnal);
+      if (jurnal.some((j: any) => j.no_jurnal === candidateNo)) {
+        return setErr(`No. Jurnal "${candidateNo}" sudah digunakan. Gunakan nomor lain.`);
+      }
+    }
 
     setSaving(true);
     setSaveError(false);
@@ -166,7 +173,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         no_so: allSO,
         // Preserve so_values when multiple SOs present in header — prevents JSONB data loss on re-save
         so_values: allSOList.length > 1 ? (form.soValues || {}) : {},
-        total_debit: totalD, total_kredit: totalK, status: "Draft",
+        total_debit: totalD, total_kredit: totalK, status: editJurnalId ? (form.status || "Draft") : "Draft",
         created_by: currentUser?.nama || "—"
       };
       const details = form.entries.map((e: any) => ({
@@ -457,7 +464,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
             className={`tab-btn ${tab === k ? "active" : ""}`} 
             onClick={() => {
               if (k === "input" && !editJurnalId) {
-                setForm({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
+                setForm({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, status: "Draft", entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
               }
               setTab(k);
             }}

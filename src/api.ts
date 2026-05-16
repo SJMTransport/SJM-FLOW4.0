@@ -121,7 +121,10 @@ export const api = {
   },
   getJurnal: async () => {
     const { data, error } = await supabaseManual.from("jurnal").select("*, jurnal_detail(*)").order("no_jurnal", { ascending: true });
-    if (error) { console.error("getJurnal", error); return []; }
+    if (error) {
+      console.error("getJurnal", error);
+      throw new Error("Gagal memuat data jurnal: " + (error.message || JSON.stringify(error)));
+    }
     return (data || []).map((j: any) => ({
       ...j,
       status: j.status || "Draft"
@@ -147,6 +150,7 @@ export const api = {
       p_details:     details,
     });
     if (error) throw new Error(error.message || "Gagal simpan jurnal");
+    if (data == null) throw new Error("Jurnal tidak tersimpan — server tidak mengembalikan data");
     const row = Array.isArray(data) ? data[0] : data;
     if (row && row.success === false) throw new Error(row?.message || "Gagal simpan jurnal");
     return (row?.jurnal_id ?? null) as string;
@@ -166,14 +170,17 @@ export const api = {
       p_details:     details,
     });
     if (error) throw new Error(error.message || "Gagal update jurnal");
+    if (data == null) throw new Error("Jurnal tidak terupdate — server tidak mengembalikan data");
     const row = Array.isArray(data) ? data[0] : data;
     if (row && row.success === false) throw new Error(row?.message || "Gagal update jurnal");
   },
+  /** @deprecated Superseded by createJurnalWithDetails RPC. Do not use. */
   addJurnal: async (data: any) => {
     const { data: res, error } = await supabaseManual.from("jurnal").insert([data]).select();
     if (error) throw new Error(error.message || "Gagal tambah jurnal");
     return res || [];
   },
+  /** @deprecated Superseded by createJurnalWithDetails RPC. Do not use. */
   addJurnalDetail: async (rows: any[]) => {
     const { error } = await supabaseManual.from("jurnal_detail").insert(rows);
     if (error) throw new Error(error.message || "Gagal tambah detail jurnal");
@@ -185,9 +192,10 @@ export const api = {
     return [];
   },
   deleteJurnal: async (id: string) => {
-    await supabaseManual.from("jurnal_detail").delete().eq("jurnal_id", id);
-    const { error } = await supabaseManual.from("jurnal").delete().eq("id", id);
-    if (error) throw new Error(error.message || "Gagal hapus jurnal");
+    const { error: detailError } = await supabaseManual.from("jurnal_detail").delete().eq("jurnal_id", id);
+    if (detailError) throw new Error("Gagal menghapus detail jurnal: " + (detailError.message || JSON.stringify(detailError)));
+    const { error: headerError } = await supabaseManual.from("jurnal").delete().eq("id", id);
+    if (headerError) throw new Error("Gagal menghapus jurnal: " + (headerError.message || JSON.stringify(headerError)));
     return [];
   },
   getPiutang: async () => {
@@ -247,6 +255,7 @@ export const api = {
     if (error) throw new Error(error.message || "Gagal hapus vendor");
     return [];
   },
+  /** @deprecated Use genJUNo from utils instead. */
   getLastJurnalNo: async () => {
     const { data, error } = await supabaseManual.from("jurnal").select("no_jurnal").order("created_at", { ascending: false }).limit(1);
     if (error || !data?.length) return [];
