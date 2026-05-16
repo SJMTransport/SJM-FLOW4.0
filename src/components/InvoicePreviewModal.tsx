@@ -10,21 +10,6 @@ interface InvoicePreviewModalProps {
   onConfirm: () => Promise<void>;
 }
 
-// FIX 7: Wait for all images inside an element to fully load
-const waitForImages = (el: HTMLElement): Promise<void> => {
-  const imgs = Array.from(el.querySelectorAll<HTMLImageElement>('img'));
-  if (imgs.length === 0) return Promise.resolve();
-  return Promise.all(
-    imgs.map(img => {
-      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-      return new Promise<void>(resolve => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve(); // don't block PDF on broken image
-      });
-    })
-  ).then(() => undefined);
-};
-
 const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   data,
   invoiceNumber,
@@ -41,23 +26,20 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     setDownloading(true);
 
     try {
-      // FIX 7: Wait for logo PNG conversion (set by InvoiceTemplate useEffect) to settle
-      await waitForImages(templateRef.current);
+      console.log('📸 Starting html2canvas capture...');
 
-      // Capture template as high-res canvas
       const canvas = await html2canvas(templateRef.current, {
         scale: 2,
-        useCORS: true,
+        useCORS: false,        // false = no CORS fetch, uses allowTaint instead
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         width: 794,
         height: templateRef.current.scrollHeight,
-        imageTimeout: 15000,
-        // FIX 7: Replace any still-broken images in the clone so html2canvas doesn't choke
-        onclone: (_clonedDoc, clonedEl) => {
-          const imgs = clonedEl.querySelectorAll<HTMLImageElement>('img');
-          imgs.forEach(img => {
+        imageTimeout: 10000,
+        // Hide any img elements that failed to load — SVG logo never triggers this
+        onclone: (clonedDoc: Document) => {
+          clonedDoc.querySelectorAll<HTMLImageElement>('img').forEach(img => {
             if (!img.complete || img.naturalWidth === 0) {
               img.style.visibility = 'hidden';
             }
@@ -65,7 +47,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         },
       });
 
-      // Convert canvas → PDF (A4, points unit)
+      console.log('✅ Canvas captured, size:', canvas.width, 'x', canvas.height);
+
+      // Convert canvas → PDF (A4 in points)
       const pdf = new jsPDF('portrait', 'pt', 'a4');
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
@@ -84,15 +68,19 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         pageCanvas.height = srcH;
         pageCanvas.getContext('2d')!.drawImage(canvas, 0, srcY, cW, srcH, 0, 0, cW, srcH);
 
-        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, srcH / ratio);
+        // JPEG is ~3× smaller than PNG and faster to embed
+        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, srcH / ratio);
       }
 
-      pdf.save(`Invoice_${invoiceNumber.replace(/\//g, '_')}.pdf`);
+      const filename = `Invoice_${invoiceNumber.replace(/\//g, '_')}.pdf`;
+      console.log('⬇️ Saving PDF:', filename);
+      pdf.save(filename);
+      console.log('✅ PDF saved successfully');
 
       // Save to database after PDF is downloaded
       await onConfirm();
     } catch (err: any) {
-      console.error('PDF generation error:', err);
+      console.error('❌ PDF generation error:', err);
       setError(err.message || 'Gagal generate PDF');
     } finally {
       setDownloading(false);

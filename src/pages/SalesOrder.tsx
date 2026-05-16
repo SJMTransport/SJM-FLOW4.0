@@ -1024,6 +1024,26 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </div>
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer</label>
+                <input
+                  className="input-field h-9 text-[11px] font-bold"
+                  value={form.pic_cust || ""}
+                  onChange={e => setForm((f: any) => ({ ...f, pic_cust: e.target.value }))}
+                  placeholder="Nama PIC / Contact Person..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC</label>
+                <input
+                  className="input-field h-9 text-[11px] font-bold"
+                  value={form.no_pic || ""}
+                  onChange={e => setForm((f: any) => ({ ...f, no_pic: e.target.value }))}
+                  placeholder="08xx-xxxx-xxxx"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { terbilang } from '../utils/terbilang';
-import { SJM_LOGO_B64 } from '../utils/sjmLogo';
 
 export interface InvoiceItem {
   rowNo: number;
@@ -55,27 +54,7 @@ const tdC: React.CSSProperties = { ...td, textAlign: 'center' };
 const tdR: React.CSSProperties = { ...td, textAlign: 'right' };
 
 const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
-  ({ invoiceNumber, invoiceDate, customer, picCust, items, subTotal, ppn, total, catatan = '' }, ref) => {
-    // FIX 1: Convert JPEG logo to PNG for html2canvas compatibility
-    const [logoSrc, setLogoSrc] = useState<string>(SJM_LOGO_B64);
-
-    useEffect(() => {
-      const img = new Image();
-      img.onload = () => {
-        const cnv = document.createElement('canvas');
-        cnv.width = img.naturalWidth || 68;
-        cnv.height = img.naturalHeight || 68;
-        const ctx = cnv.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          setLogoSrc(cnv.toDataURL('image/png'));
-        }
-      };
-      img.onerror = () => { /* keep original src if conversion fails */ };
-      img.src = SJM_LOGO_B64;
-    }, []);
-
-    return (
+  ({ invoiceNumber, invoiceDate, customer, picCust, items, subTotal, ppn, total, catatan = '' }, ref) => (
       <div ref={ref} style={{
         width: '794px',
         minHeight: '1123px',
@@ -93,12 +72,13 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
 
           {/* Logo + company info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img
-              src={logoSrc}
-              alt="SJM"
-              style={{ width: '68px', height: '68px', objectFit: 'contain' }}
-              crossOrigin="anonymous"
-            />
+            {/* SVG logo — always renders perfectly in html2canvas without image loading issues */}
+            <svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+              <rect width="70" height="70" fill="#FF8F00" rx="6" />
+              <text x="35" y="26" textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial, sans-serif" fontWeight="bold">PT. SUGIARTO</text>
+              <text x="35" y="38" textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial, sans-serif" fontWeight="bold">JAYA MANDIRI</text>
+              <text x="35" y="55" textAnchor="middle" fill="white" fontSize="16" fontFamily="Arial, sans-serif" fontWeight="bold">SJM</text>
+            </svg>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#FF8F00', letterSpacing: '0.3px' }}>
                 SUGIARTO JAYA MANDIRI TRANSPORT
@@ -248,8 +228,7 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
           </div>
         </div>
       </div>
-    );
-  }
+  )
 );
 
 InvoiceTemplate.displayName = 'InvoiceTemplate';
