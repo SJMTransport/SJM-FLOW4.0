@@ -30,9 +30,8 @@ export interface InvoiceTemplateProps {
   catatan?: string;
 }
 
-// FIX 6: No dot after Rp → Rp13.000.000,00
 const fRp = (n: number): string =>
-  'Rp' + Math.round(n).toLocaleString('id-ID') + ',00';
+  'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
 const th: React.CSSProperties = {
   backgroundColor: '#FFC840',
@@ -139,7 +138,7 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
         </div>
 
         {/* ── ITEMS TABLE ── */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px', border: '2px solid #000' }}>
           <thead>
             <tr>
               <th style={{ ...th, width: '26px' }}>No.</th>
@@ -218,7 +217,7 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
         </table>
 
         {/* ── TERBILANG ── */}
-        <div style={{ border: '1px solid #000', padding: '5px 8px', fontSize: '9px', borderTop: 'none' }}>
+        <div style={{ border: '2px solid #000', padding: '5px 8px', fontSize: '9px', borderTop: 'none' }}>
           <strong>Terbilang:</strong> {terbilang(total)}
         </div>
 
