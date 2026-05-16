@@ -72,13 +72,19 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
 
           {/* Logo + company info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* SVG logo — always renders perfectly in html2canvas without image loading issues */}
-            <svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-              <rect width="70" height="70" fill="#FF8F00" rx="6" />
-              <text x="35" y="26" textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial, sans-serif" fontWeight="bold">PT. SUGIARTO</text>
-              <text x="35" y="38" textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial, sans-serif" fontWeight="bold">JAYA MANDIRI</text>
-              <text x="35" y="55" textAnchor="middle" fill="white" fontSize="16" fontFamily="Arial, sans-serif" fontWeight="bold">SJM</text>
-            </svg>
+            {/* Pure-HTML logo box — no SVG/img so html2canvas never hangs */}
+            <div style={{
+              width: '70px', height: '70px', flexShrink: 0,
+              backgroundColor: '#FF8F00', borderRadius: '6px',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontFamily: 'Arial, Helvetica, sans-serif',
+              fontWeight: 'bold', textAlign: 'center', lineHeight: 1.25,
+            }}>
+              <div style={{ fontSize: '7px' }}>PT. SUGIARTO</div>
+              <div style={{ fontSize: '7px' }}>JAYA MANDIRI</div>
+              <div style={{ fontSize: '18px', letterSpacing: '1px' }}>SJM</div>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#FF8F00', letterSpacing: '0.3px' }}>
                 SUGIARTO JAYA MANDIRI TRANSPORT
