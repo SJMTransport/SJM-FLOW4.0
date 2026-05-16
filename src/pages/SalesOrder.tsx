@@ -641,7 +641,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     if (!form.customer) return setErr("Customer wajib diisi");
     if (!form.lokasi_muat) return setErr("Lokasi muat wajib diisi");
     if (!form.lokasi_bongkar) return setErr("Lokasi bongkar wajib diisi");
-    
+    if (!form.no_polisi?.trim()) return setErr("No. Polisi wajib diisi");
+    if (!(parseFloat(String(form.harga_pengiriman || 0)) > 0)) return setErr("Harga pengiriman wajib diisi dan harus lebih dari 0");
+
     setSaving(true);
     setSaveError(false);
     setSaveSuccess(false);
@@ -670,13 +672,15 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           after_data: afterSnap,
         }));
       }
+      showToast(editItem ? "Sales Order berhasil diperbarui!" : "Sales Order berhasil disimpan!");
       setSaveSuccess(true);
       setTimeout(() => {
         setTab("list"); setEditItem(null);
         setSaveSuccess(false);
       }, 1000);
-    } catch (e: any) { 
-        setErr("Gagal simpan: " + e.message); 
+    } catch (e: any) {
+        console.error('simpan SO error:', e);
+        setErr("Gagal menyimpan data. Periksa koneksi dan coba lagi.");
         setSaveError(true);
         setTimeout(() => setSaveError(false), 2000);
     }

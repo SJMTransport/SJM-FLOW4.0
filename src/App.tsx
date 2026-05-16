@@ -721,7 +721,11 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    if (confirm("Keluar dari aplikasi?")) {
+    confirm({
+      title: "Keluar Aplikasi",
+      msg: "Apakah Anda yakin ingin keluar dari aplikasi?",
+      confirmLabel: "Keluar",
+      onConfirm: async () => {
         api.addLog({
           timestamp: new Date().toISOString(),
           user_name: currentUser.nama,
@@ -733,7 +737,8 @@ export default function App() {
         setCurrentUser(null);
         setActiveModule("dashboard");
         setActiveSub("default");
-    }
+      }
+    });
   };
 
   const loadJurnal = async () => {

@@ -105,7 +105,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                 }));
                 const updated = await api.getJurnal();
                 setJurnal(updated);
-            } catch (e: any) { alert("Gagal hapus: " + e.message); }
+            } catch (e: any) { showToast("Gagal hapus jurnal. Coba lagi.", "error"); console.error('deleteJurnal error:', e); }
         }
     });
   };
@@ -113,6 +113,9 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const openEdit = (j: any) => {
       setEditJurnalId(j.id);
       setEditJurnalSnap({ no_jurnal: j.no_jurnal, tanggal: j.tanggal, keterangan: j.keterangan, total_debit: j.total_debit, entries: j.jurnal_detail?.length });
+      if (j.status === 'Posted') {
+          showToast('Perhatian: Jurnal ini berstatus Posted. Perubahan akan tetap tercatat dengan status yang sama.', 'warning');
+      }
       setForm({
           tanggal: j.tanggal,
           noJurnal: j.no_jurnal,
@@ -202,8 +205,9 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         setSaveSuccess(false);
       }, 1000);
       showToast("Jurnal berhasil disimpan!");
-    } catch (e: any) { 
-        setErr("Gagal simpan: " + e.message); 
+    } catch (e: any) {
+        console.error('simpan jurnal error:', e);
+        setErr("Gagal menyimpan jurnal. Periksa koneksi dan coba lagi.");
         setSaveError(true);
         setTimeout(() => setSaveError(false), 2000);
     }
@@ -244,7 +248,8 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
           showToast("Tidak ada jurnal baru yang cocok dengan data SO.", "info");
       }
     } catch (e: any) {
-      alert("Gagal sinkronisasi: " + e.message);
+      console.error('syncSO error:', e);
+      showToast("Gagal sinkronisasi. Coba lagi.", "error");
     }
     setSyncing(false);
   };

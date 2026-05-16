@@ -172,10 +172,10 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                        <p className="text-[11px] font-bold text-text-light mt-1 tracking-widest uppercase">{data.length} records found</p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                       <button className="btn-primary bg-green-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportExcel(title, data, columns)} disabled={exporting !== null}>
+                       <button className="btn-primary bg-green-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportExcel(title, data, columns)} disabled={exporting !== null || data.length === 0}>
                           <Icon name="Download" size={16} /> {exporting === 'excel' ? '⏳ Mengunduh...' : 'Excel'}
                        </button>
-                       <button className="btn-primary bg-red-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportPDF(title, data, columns)} disabled={exporting !== null}>
+                       <button className="btn-primary bg-red-brand flex-1 sm:flex-none flex items-center justify-center gap-2" onClick={() => exportPDF(title, data, columns)} disabled={exporting !== null || data.length === 0}>
                           <Icon name="FileText" size={16} /> {exporting === 'pdf' ? '⏳ Mengunduh...' : 'PDF'}
                        </button>
                        <button className="h-[42px] px-6 rounded-xl border border-border-main text-text-med font-black hover:bg-slate-50 transition-all uppercase tracking-widest text-[11px]" onClick={() => setShowExport(false)}>✕ Close</button>
@@ -438,17 +438,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const totalPassiva = totalLiab + totalEku + netLR;
     const selisih = totalAset - totalPassiva;
 
-    console.log('=== NERACA DEBUG ===');
-    console.log('totalAset:', totalAset);
-    console.log('totalLiab:', totalLiab);
-    console.log('totalEku:', totalEku);
-    console.log('totalPnd:', totalPnd);
-    console.log('totalBbn:', totalBbn);
-    console.log('netLR:', netLR);
-    console.log('totalPassiva:', totalPassiva);
-    console.log('selisih:', selisih);
-    console.log('aset items:', aset.length, '| liab items:', liab.length, '| eku items:', eku.length);
-    console.log('_cumDetails count:', _cumDetails.length);
     const balanced = Math.abs(selisih) < 1;
 
     const periodLabel = getPeriodText();
