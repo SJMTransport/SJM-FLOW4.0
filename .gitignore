@@ -1,49 +1,34 @@
-# Dependencies
-node_modules/
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
 
-# Build output
-dist/
-dist-ssr/
+# testing
+/coverage
 
-# Environment files
-build/
+# next.js
+/.next/
+/out/
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+# production
+/build
 
-# Logs
-*.log
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# Editor
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-# Editor
-.vscode/
-.idea/
-*.swp
-*.swo
+# local env files
+.env*.local
 
-# OS
-.DS_Store
-Thumbs.db
+# vercel
+.vercel
 
-# Logs
-*.log
-npm-debug.log*
-
-# TypeScript
+# typescript
 *.tsbuildinfo
-
-# Vite
-vite.config.ts.timestamp-*
+next-env.d.ts
