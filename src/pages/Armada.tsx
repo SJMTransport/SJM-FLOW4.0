@@ -311,7 +311,12 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
   }
 
   if (activeSub === "unit") {
-    const filtered = (armada || []).filter((a: any) => !search || a.no_polisi?.toLowerCase().includes(search.toLowerCase()) || a.merk?.toLowerCase().includes(search.toLowerCase()));
+    const filtered = (armada || [])
+      .filter((a: any) => !search || a.no_polisi?.toLowerCase().includes(search.toLowerCase()) || a.merk?.toLowerCase().includes(search.toLowerCase()))
+      .sort((a: any, b: any) => {
+        const getNum = (str: string) => { const m = (str || '').match(/(\d+)$/); return m ? parseInt(m[1], 10) : 999; };
+        return getNum(a.no_armada) - getNum(b.no_armada);
+      });
     return (
       <PageShell>
         <ConfirmModalUI />
