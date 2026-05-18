@@ -66,13 +66,9 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   // ── Load all invoices
   const loadInvoices = async () => {
     setLoadingInvoices(true);
-    console.log('📋 Loading invoices...');
     try {
-      const data = await api.getInvoices();
-      console.log('✅ Invoices loaded:', data?.length, data?.[0]);
-      setInvoices(data);
+      setInvoices(await api.getInvoices());
     } catch (err: any) {
-      console.error('❌ Load invoices error:', err);
       showToast('Gagal memuat invoice: ' + err.message, 'error');
     } finally {
       setLoadingInvoices(false);
@@ -245,12 +241,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
   // ── Tab 2 helpers
   const filteredInvoices = useMemo(() => {
-    console.log('🔍 Filtering invoices:', {
-      total: invoices.length,
-      filterCustomer: filterInvCustomer,
-      filterTipe: filterInvTipe,
-      filterStatus: filterInvStatus,
-    });
     return invoices.filter(inv => {
       if (filterInvCustomer && !inv.customer?.toLowerCase().includes(filterInvCustomer.toLowerCase())) return false;
       if (filterInvTipe !== 'all' && inv.tipe !== filterInvTipe) return false;
