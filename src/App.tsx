@@ -462,7 +462,7 @@ const ArmadaDetailModal = ({ data, onClose, armadaDokumen, so, jurnal, armadaSer
       <div className="p-6 border-b border-border-main flex justify-between items-center bg-slate-50/50">
         <div>
           <h3 className="text-xl font-black tracking-tight">Detail Unit Armada</h3>
-          <div className="text-[11px] font-black text-blue-brand uppercase tracking-widest mt-1">{data.no_polisi} — {data.nama_armada || "Truck Unit"}</div>
+          <div className="text-[11px] font-black text-blue-brand uppercase tracking-widest mt-1">{data.no_polisi} — {data.no_armada || "Truck Unit"}</div>
         </div>
         <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors" onClick={onClose}>
           <Icon name="X" size={24} />

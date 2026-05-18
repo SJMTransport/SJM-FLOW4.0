@@ -333,7 +333,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                                 </button>
                             </td>
                             <td>
-                                <div className="text-[12px] font-bold text-text-main leading-none">{r.nama_armada || "—"}</div>
+                                <div className="text-[12px] font-bold text-text-main leading-none">{r.no_armada || "—"}</div>
                                 <div className="text-[9px] font-bold text-text-light mt-1 opacity-40 italic">{r.tahun || "Tahun —"}</div>
                             </td>
                             <td>
@@ -383,7 +383,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                      </div>
                      <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-text-light uppercase tracking-widest px-1 opacity-60">Nama Panggilan</label>
-                        <input className="input-field h-10 font-bold" value={item.nama_armada || ""} placeholder="SJM-01" onChange={e => setItem({...item, nama_armada: e.target.value})} />
+                        <input className="input-field h-10 font-bold" value={item.no_armada || ""} placeholder="SJM-01" onChange={e => setItem({...item, no_armada: e.target.value})} />
                      </div>
                    </div>
 
@@ -400,7 +400,7 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
 
                    <div className="space-y-1.5">
                       <label className="text-[9px] font-black text-text-light uppercase tracking-widest px-1 opacity-60">Driver Utama</label>
-                      <select className="input-field h-10 font-bold appearance-none bg-white" value={item.sopir_id || ""} onChange={e => setItem({...item, sopir_id: e.target.value})}>
+                      <select className="input-field h-10 font-bold appearance-none bg-white" value={item.vendor_id || ""} onChange={e => setItem({...item, vendor_id: e.target.value})}>
                          <option value="">— Standar / Pool —</option>
                          {sopir.map((s: any) => <option key={s.id} value={s.id}>{s.nama}</option>)}
                       </select>

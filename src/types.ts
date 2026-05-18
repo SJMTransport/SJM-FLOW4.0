@@ -72,10 +72,10 @@ export interface SalesOrder {
 export interface Armada {
   id: string;
   no_polisi: string;
-  nama_armada: string;
+  no_armada: string;
   merk: string;
   jenis: string;
-  sopir_id?: string;
+  vendor_id?: string;
   status: "Aktif" | "Maintenance" | "Nonaktif";
   posisi_log?: ArmadaLog[];
 }
