@@ -3,7 +3,7 @@ import { api } from '@/src/api';
 import { generateInvoiceNo } from '@/src/utils/invoiceGenerator';
 import InvoicePreviewModal from '@/src/components/InvoicePreviewModal';
 import type { InvoiceTemplateProps } from '@/src/components/InvoiceTemplate';
-import { Card, SectionHeader, useToast, Icon, PageShell, statusBadge } from '@/src/components/SJMComponents';
+import { Card, SectionHeader, StatCard, useToast, Icon, PageShell, statusBadge, KPIGrid, EmptyState } from '@/src/components/SJMComponents';
 import { buildMeta } from '@/src/lib/activityLogger';
 
 type InvoiceTipe = 'normal' | 'dp' | 'pelunasan';
@@ -80,11 +80,22 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     if (activeTab === 'daftar') loadInvoices();
   }, [activeTab]);
 
-  // ── Tab 1: available SO by tipe
+  // ── Tab 1: available SO by tipe — exclude SO with no_invoice set (legacy data fix)
   const availableSO = useMemo(() => {
-    if (invoiceTipe === 'normal') return so.filter(s => s.status_muatan === 'Completed' && !(s.invoice_count > 0));
-    if (invoiceTipe === 'dp') return so.filter(s => !(s.invoice_count > 0));
-    return so.filter(s => s.invoice_count === 1);
+    if (invoiceTipe === 'normal') {
+      return so.filter(s =>
+        s.status_muatan === 'Completed' &&
+        (s.invoice_count === 0 || !s.invoice_count) &&
+        (!s.no_invoice || s.no_invoice === '')
+      );
+    } else if (invoiceTipe === 'dp') {
+      return so.filter(s =>
+        (s.invoice_count === 0 || !s.invoice_count) &&
+        (!s.no_invoice || s.no_invoice === '')
+      );
+    } else {
+      return so.filter(s => s.invoice_count === 1);
+    }
   }, [so, invoiceTipe]);
 
   const filteredSO = useMemo(() =>
@@ -281,183 +292,171 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     if (activeTab === 'pembayaran') loadPaymentStatus();
   }, [activeTab]);
 
+  // ── KPI computed values for Tab 2
+  const belumBayarCount = invoices.filter(inv => !inv.status_bayar || inv.status_bayar === 'Belum Bayar').length;
+  const totalNilai = invoices.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0);
+
   // ── RENDER
   return (
     <PageShell>
       <ToastUI />
       <SectionHeader title="Invoice" sub="Manajemen invoice PT Sugiarto Jaya Mandiri" />
 
-      {/* Tabs */}
-      <div className="flex border-b border-border-main mb-6 gap-1">
+      {/* Tab bar — same style as SalesOrder */}
+      <div className="tab-bar">
         {([
-          { key: 'buat', label: '➕ Buat Invoice' },
-          { key: 'daftar', label: '📋 Daftar Invoice' },
-          { key: 'pembayaran', label: '💰 Status Pembayaran' },
+          { key: 'buat', label: 'Buat Invoice' },
+          { key: 'daftar', label: 'Daftar Invoice' },
+          { key: 'pembayaran', label: 'Status Pembayaran' },
         ] as const).map(({ key, label }) => (
           <button
             key={key}
+            className={`tab-btn ${activeTab === key ? 'active' : ''}`}
             onClick={() => setActiveTab(key)}
-            className={`px-5 h-11 text-[12px] font-black uppercase tracking-widest border-b-2 transition-colors ${
-              activeTab === key ? 'border-accent text-accent' : 'border-transparent text-text-light hover:text-text-med'
-            }`}
           >
-            {label}
+            {label.toUpperCase()}
           </button>
         ))}
       </div>
 
       {/* ── TAB 1: BUAT INVOICE ── */}
       {activeTab === 'buat' && (
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)' }}>
 
-          {/* ── STICKY TOP PANEL ── */}
-          <div style={{
-            position: 'sticky', top: 0, zIndex: 10,
-            backgroundColor: '#fff',
-            borderBottom: '1px solid #e5e7eb',
-            paddingBottom: '12px',
-          }}>
+          {/* Sticky top panel */}
+          <div className="sticky top-0 z-10 bg-white border-b border-border-main pb-3">
 
-            {/* Type selector + Tanggal inline */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {(['normal', 'dp', 'pelunasan'] as InvoiceTipe[]).map(tipe => (
+            {/* Type pills + tanggal invoice inline */}
+            <div className="flex items-center gap-2 py-2 flex-wrap">
+              {([
+                { key: 'normal' as InvoiceTipe, label: 'Normal' },
+                { key: 'dp' as InvoiceTipe, label: 'DP' },
+                { key: 'pelunasan' as InvoiceTipe, label: 'Pelunasan' },
+              ]).map(({ key, label }) => (
                 <button
-                  key={tipe}
-                  onClick={() => { setInvoiceTipe(tipe); setSelectedIds(new Set()); setDpNominal(''); setDpKeterangan(''); }}
-                  style={{
-                    padding: '6px 16px', borderRadius: '8px', border: '2px solid',
-                    borderColor: invoiceTipe === tipe ? '#FF8F00' : '#e5e7eb',
-                    backgroundColor: invoiceTipe === tipe ? '#FFF3E0' : '#fff',
-                    color: invoiceTipe === tipe ? '#FF8F00' : '#666',
-                    fontWeight: invoiceTipe === tipe ? 700 : 400,
-                    cursor: 'pointer', fontSize: '13px',
-                  }}
+                  key={key}
+                  onClick={() => { setInvoiceTipe(key); setSelectedIds(new Set()); setDpNominal(''); setDpKeterangan(''); }}
+                  className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold border transition-colors ${
+                    invoiceTipe === key
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-white text-text-med border-border-main hover:border-accent'
+                  }`}
                 >
-                  {tipe === 'normal' ? '📄 Normal' : tipe === 'dp' ? '📑 DP' : '✅ Pelunasan'}
+                  {label}
                 </button>
               ))}
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <label style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>Tgl Invoice:</label>
+              <div className="ml-auto flex items-center gap-2">
+                <label className="text-[10px] font-bold text-text-light opacity-60 uppercase tracking-widest whitespace-nowrap">Tgl Invoice</label>
                 <input type="date" value={tglInvoice} onChange={e => setTglInvoice(e.target.value)}
-                  style={{ padding: '5px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px' }} />
+                  className="input-field h-8 w-40 text-[11px] font-bold" />
               </div>
             </div>
 
             {/* Description */}
-            <div style={{ padding: '7px 12px', backgroundColor: '#EFF6FF', borderRadius: '6px', marginBottom: '10px', fontSize: '12px', color: '#1D4ED8' }}>
-              {invoiceTipe === 'normal' && '📄 Invoice Normal: SO Completed, belum punya invoice. Bisa pilih lebih dari 1 SO dari customer yang sama.'}
-              {invoiceTipe === 'dp' && '📑 Invoice DP: Hanya 1 SO, status apapun, belum punya invoice. Isi nominal DP secara manual (min Rp 100.000).'}
-              {invoiceTipe === 'pelunasan' && '✅ Pelunasan: Hanya 1 SO yang sudah punya Invoice DP. Nominal otomatis = Total SO - DP.'}
+            <div className="text-[11px] text-text-med bg-blue-50 rounded-lg px-3 py-2 mb-2">
+              {invoiceTipe === 'normal' && 'SO Completed yang belum punya invoice. Bisa pilih lebih dari 1 SO dari customer yang sama.'}
+              {invoiceTipe === 'dp' && 'Hanya 1 SO, status apapun, belum punya invoice. Isi nominal DP minimal Rp 100.000.'}
+              {invoiceTipe === 'pelunasan' && 'Hanya 1 SO yang sudah punya Invoice DP. Nominal otomatis = Total SO − DP.'}
             </div>
 
-            {/* DP Form (conditional) */}
+            {/* DP form */}
             {invoiceTipe === 'dp' && (
-              <div style={{
-                padding: '10px 12px', border: '1px solid #FCD34D', borderRadius: '6px',
-                backgroundColor: '#FFFBEB', marginBottom: '10px',
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
-              }}>
-                <div>
-                  <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '3px' }}>
-                    Nominal DP (Rp) * min Rp 100.000
-                  </label>
-                  <input type="number" value={dpNominal} onChange={e => setDpNominal(e.target.value)}
-                    placeholder="Contoh: 5000000" min={100000}
-                    style={{ width: '100%', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                  {dpNominal && Number(dpNominal) > 0 && (
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>= {fRp(parseFloat(dpNominal) || 0)}</div>
-                  )}
+              <Card className="p-3 border-amber-200 bg-amber-50/40 mb-2">
+                <div className="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-2">Detail Invoice DP</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-light opacity-60 px-1">Nominal DP (Rp) * min Rp 100.000</label>
+                    <input type="number" min={100000} value={dpNominal} onChange={e => setDpNominal(e.target.value)}
+                      placeholder="5000000" className="input-field h-9 text-[11px] font-bold" />
+                    {dpNominal && <div className="text-[10px] text-text-light px-1">= {fRp(parseFloat(dpNominal) || 0)}</div>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-light opacity-60 px-1">Keterangan (opsional)</label>
+                    <input type="text" value={dpKeterangan} onChange={e => setDpKeterangan(e.target.value)}
+                      placeholder="50% atau sesuai kesepakatan" className="input-field h-9 text-[11px] font-bold" />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '3px' }}>
-                    Keterangan (opsional, contoh: 50%)
-                  </label>
-                  <input type="text" value={dpKeterangan} onChange={e => setDpKeterangan(e.target.value)}
-                    placeholder="Contoh: 50%"
-                    style={{ width: '100%', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                </div>
-              </div>
+              </Card>
             )}
 
-            {/* Customer filter + SO count + Summary + Preview button */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Customer filter + count + Preview button */}
+            <div className="flex items-center gap-3 flex-wrap">
               <input type="text" placeholder="🔍 Cari customer..." value={filterCustomer}
                 onChange={e => setFilterCustomer(e.target.value)}
-                style={{ padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', width: '220px' }} />
-              <div style={{ fontSize: '12px', color: '#9ca3af' }}>{filteredSO.length} SO tersedia</div>
-              <div style={{ flex: 1 }} />
+                className="input-field h-9 max-w-xs text-[11px] font-bold" />
+              <span className="text-[11px] text-text-light italic">{filteredSO.length} SO tersedia</span>
+              <div className="flex-1" />
               {selectedIds.size > 0 && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '16px',
-                  backgroundColor: '#FFF3E0', padding: '8px 16px',
-                  borderRadius: '8px', border: '1px solid #FCD34D',
-                }}>
+                <div className="flex items-center gap-4 px-4 py-2 bg-accent/5 border border-accent/20 rounded-xl">
                   <div>
-                    <div style={{ fontSize: '11px', color: '#666' }}>
-                      {selectedIds.size} SO dipilih · {selectedSOList[0]?.customer}
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#FF8F00' }}>
+                    <div className="text-[11px] text-text-med">{selectedIds.size} SO dipilih · {selectedSOList[0]?.customer}</div>
+                    <div className="font-black text-[15px] text-accent">
                       {invoiceTipe === 'normal' && fRp(selectedSOList.reduce((s, x) => s + (x.total_harga_pajak || 0), 0))}
                       {invoiceTipe === 'dp' && dpNominal && `DP: ${fRp(parseFloat(dpNominal) || 0)}`}
                       {invoiceTipe === 'pelunasan' && 'Lihat preview untuk nominal'}
                     </div>
                   </div>
                   <button onClick={handlePrepareInvoice} disabled={preparing}
-                    style={{
-                      padding: '8px 20px',
-                      backgroundColor: preparing ? '#9ca3af' : '#FF8F00',
-                      color: '#fff', border: 'none', borderRadius: '8px',
-                      fontWeight: 700, cursor: preparing ? 'not-allowed' : 'pointer',
-                      fontSize: '13px', whiteSpace: 'nowrap',
-                    }}>
-                    {preparing ? '⏳ Mempersiapkan...' : '👁️ Preview Invoice'}
+                    className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <Icon name="Eye" size={14} />
+                    {preparing ? '⏳ Mempersiapkan...' : 'Preview Invoice'}
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── SCROLLABLE SO TABLE ── */}
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', marginTop: '8px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead style={{ position: 'sticky', top: 0, zIndex: 5, backgroundColor: '#f3f4f6' }}>
+          {/* Scrollable SO table */}
+          <div className="table-container mt-2" style={{ flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
+            <table className="w-full border-collapse">
+              <thead>
                 <tr>
-                  <th style={{ padding: '10px', textAlign: 'center', width: '40px', border: '1px solid #e5e7eb' }}>☐</th>
-                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>No SO</th>
-                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Customer</th>
-                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Rute</th>
-                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Tgl Muat</th>
-                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Status</th>
-                  <th style={{ padding: '10px', textAlign: 'right', border: '1px solid #e5e7eb' }}>Total</th>
+                  <th className="w-10 text-center">☐</th>
+                  <th>No SO</th>
+                  <th>Customer</th>
+                  <th>Rute</th>
+                  <th>Tgl Muat</th>
+                  <th>Status</th>
+                  <th className="text-right">Total</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border-main/20">
                 {filteredSO.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', fontSize: '12px', color: '#9ca3af' }}>
-                    {invoiceTipe === 'normal' ? 'Tidak ada SO Completed yang belum punya invoice' :
-                     invoiceTipe === 'dp' ? 'Tidak ada SO yang belum punya invoice' :
-                     'Tidak ada SO yang sudah punya Invoice DP'}
-                  </td></tr>
+                  <EmptyState colSpan={7} />
                 ) : filteredSO.map(s => {
                   const isSel = selectedIds.has(s.id);
                   return (
                     <tr key={s.id} onClick={() => toggleSelect(s.id)}
-                      style={{ cursor: 'pointer', backgroundColor: isSel ? 'rgba(255,143,0,0.06)' : undefined }}
-                      onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = '#f9fafb'; }}
-                      onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = ''; }}>
-                      <td style={{ padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                        <input type="checkbox" checked={isSel} readOnly style={{ width: '14px', height: '14px' }} />
+                      className={`cursor-pointer transition-colors group ${isSel ? 'bg-accent/5' : 'hover:bg-slate-50'}`}>
+                      <td className="text-center">
+                        <input type="checkbox" checked={isSel} readOnly
+                          className="w-3.5 h-3.5 rounded border-border-main text-accent focus:ring-accent" />
                       </td>
-                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontWeight: 'bold', color: '#FF8F00', fontStyle: 'italic', fontSize: '12px' }}>{s.order_id}</td>
-                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '12px' }}>{s.customer}</td>
-                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280' }}>{s.lokasi_muat} → {s.lokasi_bongkar}</td>
-                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '12px' }}>{s.tgl_muat}</td>
-                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6' }}>{statusBadge(s.status_muatan)}</td>
-                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}>{fRp(s.total_harga_pajak || 0)}</td>
+                      <td>
+                        <span className="text-[11px] font-black text-accent uppercase tracking-tight">{s.order_id}</span>
+                      </td>
+                      <td>
+                        <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{s.customer}</div>
+                      </td>
+                      <td className="max-w-[200px]">
+                        <div className="text-[12px] font-bold text-text-main truncate">{s.lokasi_muat}</div>
+                        <div className="text-[10px] font-medium text-text-light opacity-70 italic truncate">to {s.lokasi_bongkar}</div>
+                      </td>
+                      <td className="tabular-nums text-[11px] font-bold text-text-med italic">{s.tgl_muat}</td>
+                      <td>{statusBadge(s.status_muatan)}</td>
+                      <td className="text-right font-black text-[12px] tabular-nums">{fRp(s.total_harga_pajak || 0)}</td>
                     </tr>
                   );
                 })}
               </tbody>
+              {filteredSO.length > 0 && (
+                <tfoot>
+                  <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
+                    <td colSpan={6} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total SO Terfilter</td>
+                    <td className="py-3 px-4 text-right text-[12px] font-black text-accent">{filteredSO.length} Records</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
 
@@ -467,85 +466,140 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       {/* ── TAB 2: DAFTAR INVOICE ── */}
       {activeTab === 'daftar' && (
         <div className="space-y-4">
-          <div className="flex gap-3 flex-wrap items-end">
+
+          <KPIGrid cols={3}>
+            <StatCard label="Total Invoice" value={invoices.length} color="var(--color-accent)" icon="FileText" />
+            <StatCard label="Belum Bayar" value={belumBayarCount} color="var(--color-red-brand)" icon="AlertCircle" />
+            <StatCard label="Total Nilai" value={`Rp ${Math.round(totalNilai / 1_000_000)}jt`} color="var(--color-green-brand)" icon="DollarSign" />
+          </KPIGrid>
+
+          {/* Filters */}
+          <div className="flex gap-3 flex-wrap items-center">
             <input type="text" placeholder="🔍 Cari customer..." value={filterInvCustomer}
-              onChange={e => setFilterInvCustomer(e.target.value)} className="input-field h-9 w-48" />
-            <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)} className="input-field h-9">
+              onChange={e => setFilterInvCustomer(e.target.value)}
+              className="input-field h-9 w-48 text-[11px] font-bold" />
+            <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)}
+              className="input-field h-9 text-[11px] font-bold">
               <option value="all">Semua Tipe</option>
               <option value="normal">Normal</option>
               <option value="dp">DP</option>
               <option value="pelunasan">Pelunasan</option>
             </select>
-            <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input-field h-9">
+            <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)}
+              className="input-field h-9 text-[11px] font-bold">
               <option value="all">Semua Status</option>
               <option value="Belum Bayar">Belum Bayar</option>
               <option value="Parsial">Parsial</option>
               <option value="Lunas">Lunas</option>
               <option value="Lebih Bayar">Lebih Bayar</option>
             </select>
-            <button onClick={loadInvoices} disabled={loadingInvoices} className="btn-ghost h-9 px-3 flex items-center gap-1.5">
+            <button onClick={loadInvoices} disabled={loadingInvoices}
+              className="btn-ghost h-9 px-3 flex items-center gap-1.5 text-[11px]">
               <Icon name="RefreshCw" size={13} /> {loadingInvoices ? 'Memuat...' : 'Refresh'}
             </button>
+            <span className="text-[11px] text-text-light italic ml-auto">{filteredInvoices.length} invoice ditemukan</span>
           </div>
-          <div className="text-[11px] text-text-light">{filteredInvoices.length} invoice ditemukan</div>
 
           {loadingInvoices ? (
             <div className="text-center py-12 text-text-light text-[13px]">Memuat invoice...</div>
-          ) : filteredInvoices.length === 0 ? (
-            <div className="text-center py-12 text-text-light text-[13px]">Belum ada invoice</div>
           ) : (
-            <div className="space-y-2">
-              {filteredInvoices.map(inv => (
-                <Card key={inv.id} className="p-0 overflow-hidden">
-                  <div
-                    onClick={() => setExpandedInvoice(expandedInvoice === inv.id ? null : inv.id)}
-                    className={`px-4 py-3 flex justify-between items-center cursor-pointer transition-colors ${expandedInvoice === inv.id ? 'bg-accent/5' : 'hover:bg-slate-50'}`}
-                  >
-                    <div className="flex items-center gap-4 flex-wrap">
-                      <div>
-                        <div className="font-bold text-accent text-[13px]">{inv.no_invoice}</div>
-                        <div className="text-[11px] text-text-med">{fmtDate(inv.tgl_invoice)} · {inv.customer}</div>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' :
-                        inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
-                      }`}>
-                        {inv.tipe === 'normal' ? 'Normal' : inv.tipe === 'dp' ? 'DP' : 'Pelunasan'}
-                      </span>
-                      <span style={{ backgroundColor: (STATUS_COLOR[inv.status_bayar] || '#666') + '20', color: STATUS_COLOR[inv.status_bayar] || '#666' }}
-                        className="px-2 py-0.5 rounded-full text-[10px] font-bold">
-                        {inv.status_bayar || 'Belum Bayar'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="text-right">
-                        <div className="font-bold text-[13px] tabular-nums">{fRp(inv.total_setelah_pajak || 0)}</div>
-                        <div className="text-[10px] text-text-light">{inv.so_order_ids?.length || 0} SO</div>
-                      </div>
-                      <Icon name={expandedInvoice === inv.id ? 'ChevronUp' : 'ChevronDown'} size={14} className="text-text-light" />
-                    </div>
-                  </div>
-                  {expandedInvoice === inv.id && (
-                    <div className="px-4 pb-4 pt-3 border-t border-border-main/30 bg-slate-50/50 space-y-3">
-                      <div>
-                        <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-2 opacity-60">Sales Order</div>
-                        <div className="flex gap-2 flex-wrap">
-                          {(inv.so_order_ids || []).map((soId: string) => (
-                            <span key={soId} className="px-2 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[11px] font-bold text-accent">{soId}</span>
-                          ))}
-                        </div>
-                      </div>
-                      {inv.keterangan_invoice && (
-                        <div className="text-[11px] text-text-med">Keterangan: <strong>{inv.keterangan_invoice}</strong></div>
+            <div className="table-container max-h-[calc(100vh-420px)]">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th>No Invoice</th>
+                    <th>Tgl Invoice</th>
+                    <th>Customer</th>
+                    <th>Tipe</th>
+                    <th className="text-right">Total</th>
+                    <th>Status Bayar</th>
+                    <th className="text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-main/20">
+                  {filteredInvoices.length === 0 ? (
+                    <EmptyState colSpan={7} />
+                  ) : filteredInvoices.map(inv => (
+                    <React.Fragment key={inv.id}>
+                      <tr
+                        onClick={() => setExpandedInvoice(expandedInvoice === inv.id ? null : inv.id)}
+                        className={`cursor-pointer transition-colors group ${expandedInvoice === inv.id ? 'bg-accent/5' : 'hover:bg-slate-50'}`}
+                      >
+                        <td>
+                          <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{inv.no_invoice}</div>
+                          <div className="text-[9px] text-text-light opacity-60">{inv.so_order_ids?.length || 0} SO</div>
+                        </td>
+                        <td className="tabular-nums text-[11px] font-bold text-text-med italic">{fmtDate(inv.tgl_invoice)}</td>
+                        <td>
+                          <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{inv.customer}</div>
+                        </td>
+                        <td>
+                          <span className={`badge text-[8px] ${
+                            inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' :
+                            inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-blue-50 text-blue-700'
+                          }`}>
+                            {inv.tipe === 'normal' ? 'Normal' : inv.tipe === 'dp' ? 'DP' : 'Pelunasan'}
+                          </span>
+                        </td>
+                        <td className="text-right font-black text-[12px] tabular-nums">{fRp(inv.total_setelah_pajak || 0)}</td>
+                        <td>
+                          <span className="badge text-[8px]" style={{
+                            backgroundColor: (STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666') + '20',
+                            color: STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666',
+                          }}>
+                            {inv.status_bayar || 'Belum Bayar'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex gap-0.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors"
+                              onClick={e => { e.stopPropagation(); handleReprint(inv); }}
+                              title="Preview & Reprint"
+                            >
+                              <Icon name="Eye" size={12} />
+                            </button>
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-blue-brand/10 text-blue-brand transition-colors"
+                              onClick={e => { e.stopPropagation(); handleReprint(inv); }}
+                              title="Download"
+                            >
+                              <Icon name="Download" size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedInvoice === inv.id && (
+                        <tr>
+                          <td colSpan={7} className="bg-slate-50/80 border-b border-border-main/30">
+                            <div className="px-4 py-3 space-y-2">
+                              <div className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 mb-1">Sales Order Terkait</div>
+                              <div className="flex gap-2 flex-wrap">
+                                {(inv.so_order_ids || []).map((soId: string) => (
+                                  <span key={soId} className="px-2 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[11px] font-bold text-accent">{soId}</span>
+                                ))}
+                              </div>
+                              {inv.keterangan_invoice && (
+                                <div className="text-[11px] text-text-med">Keterangan: <strong>{inv.keterangan_invoice}</strong></div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                      <button onClick={() => handleReprint(inv)}
-                        className="btn-primary !bg-blue-600 hover:!bg-blue-700 flex items-center gap-2 !text-[11px]">
-                        <Icon name="Eye" size={12} /> Preview & Reprint
-                      </button>
-                    </div>
-                  )}
-                </Card>
-              ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
+                    <td colSpan={4} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Invoice Terfilter</td>
+                    <td className="py-3 px-4 text-right text-[12px] font-black text-accent tabular-nums">
+                      {fRp(filteredInvoices.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0))}
+                    </td>
+                    <td colSpan={2} className="py-3 px-4 text-center text-[12px] font-black text-accent">{filteredInvoices.length} Records</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           )}
         </div>
@@ -564,52 +618,54 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           {loadingPayment ? (
             <div className="text-center py-12 text-text-light text-[13px]">Menghitung status pembayaran...</div>
           ) : (
-            <Card className="p-0 border-border-main/40 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr>
-                      <th>No Invoice</th>
-                      <th>Customer</th>
-                      <th>Tipe</th>
-                      <th className="text-right">Total Invoice</th>
-                      <th className="text-right">Terbayar</th>
-                      <th className="text-right">Sisa</th>
-                      <th className="text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-main/20">
-                    {paymentData.length === 0 ? (
-                      <tr><td colSpan={7} className="py-12 text-center text-text-light text-[12px]">Belum ada data</td></tr>
-                    ) : paymentData.map(inv => {
-                      const ps = inv.paymentStatus;
-                      const sc = STATUS_COLOR[ps?.status || 'Belum Bayar'] || '#666';
-                      return (
-                        <tr key={inv.id}>
-                          <td className="font-bold text-accent italic text-[12px]">{inv.no_invoice}</td>
-                          <td className="text-[12px]">{inv.customer}</td>
-                          <td>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' :
-                              inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
-                            }`}>{inv.tipe}</span>
-                          </td>
-                          <td className="text-right tabular-nums text-[12px]">{fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0)}</td>
-                          <td className="text-right tabular-nums text-[12px] text-green-600">{fRp(ps?.total_paid || 0)}</td>
-                          <td className="text-right tabular-nums text-[12px] text-red-500">{fRp(ps?.total_remaining || 0)}</td>
-                          <td className="text-center">
-                            <span style={{ backgroundColor: sc + '20', color: sc }}
-                              className="px-2 py-0.5 rounded-full text-[10px] font-bold">
-                              {ps?.status || 'Belum Bayar'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+            <div className="table-container max-h-[calc(100vh-380px)]">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th>No Invoice</th>
+                    <th>Customer</th>
+                    <th>Tipe</th>
+                    <th className="text-right">Total Invoice</th>
+                    <th className="text-right">Terbayar</th>
+                    <th className="text-right">Sisa</th>
+                    <th className="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-main/20">
+                  {paymentData.length === 0 ? (
+                    <EmptyState colSpan={7} />
+                  ) : paymentData.map(inv => {
+                    const ps = inv.paymentStatus;
+                    const sc = STATUS_COLOR[ps?.status || 'Belum Bayar'] || '#666';
+                    return (
+                      <tr key={inv.id} className="transition-colors hover:bg-slate-50">
+                        <td>
+                          <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{inv.no_invoice}</div>
+                        </td>
+                        <td>
+                          <div className="text-[12px] font-bold text-text-main">{inv.customer}</div>
+                        </td>
+                        <td>
+                          <span className={`badge text-[8px] ${
+                            inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' :
+                            inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-blue-50 text-blue-700'
+                          }`}>{inv.tipe}</span>
+                        </td>
+                        <td className="text-right tabular-nums text-[12px] font-bold">{fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0)}</td>
+                        <td className="text-right tabular-nums text-[12px] font-bold text-green-600">{fRp(ps?.total_paid || 0)}</td>
+                        <td className="text-right tabular-nums text-[12px] font-bold text-red-500">{fRp(ps?.total_remaining || 0)}</td>
+                        <td className="text-center">
+                          <span className="badge text-[8px]" style={{ backgroundColor: sc + '20', color: sc }}>
+                            {ps?.status || 'Belum Bayar'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
