@@ -595,10 +595,16 @@ export const api = {
     }
   },
   getInvoices: async () => {
-    const { data, error } = await supabaseManual
+    console.log('🔍 Calling getInvoices...');
+    const { data, error } = await supabase
       .from('invoices')
       .select('*')
       .order('created_at', { ascending: false });
+    console.log('📊 getInvoices result:', {
+      count: data?.length,
+      error: error?.message,
+      firstItem: data?.[0],
+    });
     if (error) throw new Error(error.message || "Gagal ambil data invoice");
     return data || [];
   },

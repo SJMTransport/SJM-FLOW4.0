@@ -66,15 +66,23 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   // ── Load all invoices
   const loadInvoices = async () => {
     setLoadingInvoices(true);
+    console.log('📋 Loading invoices...');
     try {
-      setInvoices(await api.getInvoices());
+      const data = await api.getInvoices();
+      console.log('✅ Invoices loaded:', data?.length, data?.[0]);
+      setInvoices(data);
     } catch (err: any) {
+      console.error('❌ Load invoices error:', err);
       showToast('Gagal memuat invoice: ' + err.message, 'error');
     } finally {
       setLoadingInvoices(false);
     }
   };
 
+  // Load on mount so KPI cards are ready immediately
+  useEffect(() => { loadInvoices(); }, []);
+
+  // Reload when switching to daftar tab
   useEffect(() => {
     if (activeTab === 'daftar') loadInvoices();
   }, [activeTab]);
@@ -236,14 +244,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   };
 
   // ── Tab 2 helpers
-  const filteredInvoices = useMemo(() =>
-    invoices.filter(inv => {
+  const filteredInvoices = useMemo(() => {
+    console.log('🔍 Filtering invoices:', {
+      total: invoices.length,
+      filterCustomer: filterInvCustomer,
+      filterTipe: filterInvTipe,
+      filterStatus: filterInvStatus,
+    });
+    return invoices.filter(inv => {
       if (filterInvCustomer && !inv.customer?.toLowerCase().includes(filterInvCustomer.toLowerCase())) return false;
       if (filterInvTipe !== 'all' && inv.tipe !== filterInvTipe) return false;
       if (filterInvStatus !== 'all' && inv.status_bayar !== filterInvStatus) return false;
       return true;
-    }),
-  [invoices, filterInvCustomer, filterInvTipe, filterInvStatus]);
+    });
+  }, [invoices, filterInvCustomer, filterInvTipe, filterInvStatus]);
 
   const handleReprint = (invoice: any) => {
     const soData = so.filter(s => invoice.so_order_ids?.includes(s.order_id));
