@@ -596,15 +596,29 @@ export const api = {
   },
   getInvoices: async () => {
     console.log('🔍 Calling getInvoices...');
-    const { data, error } = await supabase
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('🔐 Auth session:', sessionData?.session?.user?.email || '(no session)');
+
+    // Head-only count check first (fast, reveals RLS blocking)
+    const { count: headCount, error: headErr } = await supabase
       .from('invoices')
-      .select('*')
+      .select('*', { count: 'exact', head: true });
+    console.log('📊 Invoice count check (head):', { count: headCount, error: headErr?.message, errorCode: headErr?.code });
+
+    const { data, error, count } = await supabase
+      .from('invoices')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
-    console.log('📊 getInvoices result:', {
-      count: data?.length,
+
+    console.log('📊 Raw result:', {
+      dataLength: data?.length,
+      count,
       error: error?.message,
-      firstItem: data?.[0],
+      errorCode: error?.code,
+      firstRow: data?.[0],
     });
+
     if (error) throw new Error(error.message || "Gagal ambil data invoice");
     return data || [];
   },
