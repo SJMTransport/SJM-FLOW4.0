@@ -462,7 +462,7 @@ const ArmadaDetailModal = ({ data, onClose, armadaDokumen, so, jurnal, armadaSer
       <div className="p-6 border-b border-border-main flex justify-between items-center bg-slate-50/50">
         <div>
           <h3 className="text-xl font-black tracking-tight">Detail Unit Armada</h3>
-          <div className="text-[11px] font-black text-blue-brand uppercase tracking-widest mt-1">{data.no_polisi} — {data.nama_armada || "Truck Unit"}</div>
+          <div className="text-[11px] font-black text-blue-brand uppercase tracking-widest mt-1">{data.no_polisi} — {data.no_armada || "Truck Unit"}</div>
         </div>
         <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors" onClick={onClose}>
           <Icon name="X" size={24} />
@@ -721,7 +721,11 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    if (confirm("Keluar dari aplikasi?")) {
+    confirm({
+      title: "Keluar Aplikasi",
+      msg: "Apakah Anda yakin ingin keluar dari aplikasi?",
+      confirmLabel: "Keluar",
+      onConfirm: async () => {
         api.addLog({
           timestamp: new Date().toISOString(),
           user_name: currentUser.nama,
@@ -733,14 +737,21 @@ export default function App() {
         setCurrentUser(null);
         setActiveModule("dashboard");
         setActiveSub("default");
-    }
+      }
+    });
   };
 
   const loadJurnal = async () => {
-    try { setJurnal(await api.getJurnal()); } catch { /* silent — keep stale data */ }
+    try { setJurnal(await api.getJurnal()); } catch (err: any) {
+      console.error('loadJurnal error:', err);
+      showToast('Data jurnal gagal dimuat ulang. Refresh halaman jika data tidak akurat.', 'error');
+    }
   };
   const loadSalesOrder = async () => {
-    try { setSo(await api.getSO()); } catch { /* silent */ }
+    try { setSo(await api.getSO()); } catch (err: any) {
+      console.error('loadSalesOrder error:', err);
+      showToast('Data Sales Order gagal dimuat ulang. Refresh halaman jika data tidak akurat.', 'error');
+    }
   };
   const loadCOA = async () => {
     try { setCoa(await api.getCoa()); } catch { /* silent */ }

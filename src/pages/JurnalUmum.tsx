@@ -32,6 +32,17 @@ const filterByPeriod = (items: any[], period: any) => {
   });
 };
 
+const getFriendlyError = (err: any): string => {
+  const msg = err?.message || '';
+  if (msg.includes('duplicate key') || msg.includes('unique')) return 'Data ini sudah ada. Gunakan nomor/kode yang berbeda.';
+  if (msg.includes('foreign key') || msg.includes('violates')) return 'Data tidak dapat disimpan karena terkait dengan data lain.';
+  if (msg.includes('network') || msg.includes('fetch')) return 'Koneksi terputus. Periksa internet dan coba lagi.';
+  if (msg.includes('timeout')) return 'Server terlalu lama merespons. Coba lagi.';
+  if (msg.includes('permission') || msg.includes('not authorized')) return 'Anda tidak memiliki akses untuk melakukan tindakan ini.';
+  if (msg.includes('JWT') || msg.includes('token') || msg.includes('expired')) return 'Sesi Anda telah berakhir. Silakan login kembali.';
+  return 'Terjadi kesalahan. Coba lagi atau hubungi admin.';
+};
+
 export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser, prefill, onPrefillUsed, onSOClick, onJurnalClick, logAction }: any) => {
   const { confirm: askConfirmJurnal, Modal: ConfirmJurnalModal } = useConfirm();
   const { showToast, ToastUI } = useToast();
@@ -44,9 +55,10 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const [err, setErr] = useState("");
   const [editJurnalId, setEditJurnalId] = useState<string | null>(null);
   const [editJurnalSnap, setEditJurnalSnap] = useState<any>(null);
-  const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
+  const [form, setForm] = useState<any>({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, status: "Draft", entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
   const [sortKey, setSortKey] = useState<'no_jurnal' | 'tanggal'>('no_jurnal');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [reloading, setReloading] = useState(false);
 
   React.useEffect(() => {
     if (prefill) {
@@ -77,7 +89,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
 
   const totalD = form.entries.reduce((s: number, e: any) => s + (parseFloat(e.debit) || 0), 0);
   const totalK = form.entries.reduce((s: number, e: any) => s + (parseFloat(e.kredit) || 0), 0);
-  const balanced = Math.abs(Math.round(totalD) - Math.round(totalK)) === 0 && totalD > 0;
+  const balanced = Math.abs(totalD - totalK) < 0.01 && totalD > 0;
 
   const updateEntry = (i: number, field: string, val: any) => {
     const entries = [...form.entries];
@@ -103,14 +115,20 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                   module: 'jurnal', action_type: 'DELETE', record_id: no,
                   before_data: beforeSnap ? { no_jurnal: beforeSnap.no_jurnal, tanggal: beforeSnap.tanggal, keterangan: beforeSnap.keterangan, total_debit: beforeSnap.total_debit } : { id },
                 }));
+                setReloading(true);
                 const updated = await api.getJurnal();
                 setJurnal(updated);
-            } catch (e: any) { alert("Gagal hapus: " + e.message); }
+            } catch (e: any) {
+                console.error('deleteJurnal error:', e);
+                showToast(getFriendlyError(e), "error");
+            } finally {
+                setReloading(false);
+            }
         }
     });
   };
 
-  const openEdit = (j: any) => {
+  const doOpenEdit = (j: any) => {
       setEditJurnalId(j.id);
       setEditJurnalSnap({ no_jurnal: j.no_jurnal, tanggal: j.tanggal, keterangan: j.keterangan, total_debit: j.total_debit, entries: j.jurnal_detail?.length });
       setForm({
@@ -120,6 +138,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
           keterangan: j.keterangan,
           noSO: j.no_so ? (j.no_so as string).split(",").map(s => s.trim()) : [],
           soValues: j.so_values || {},
+          status: j.status || "Draft",
           entries: (j.jurnal_detail || []).map((d: any) => ({
               coa: d.coa_kode,
               akun: d.nama_akun,
@@ -130,6 +149,19 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       });
       setTab("input");
       setErr("");
+  };
+
+  const openEdit = (j: any) => {
+      if (j.status === 'Posted') {
+          askConfirmJurnal({
+              title: "Edit Jurnal Posted",
+              msg: `Jurnal ini sudah berstatus "Posted". Mengubah jurnal yang sudah diposting dapat mempengaruhi laporan keuangan.\n\nYakin ingin mengedit?`,
+              confirmLabel: "Ya, Edit",
+              onConfirm: async () => { doOpenEdit(j); }
+          });
+          return;
+      }
+      doOpenEdit(j);
   };
 
   const moveRow = (i: number, dir: "up" | "down") => {
@@ -147,6 +179,12 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     if (form.entries.length < 2) return setErr("Minimal harus ada 2 baris transaksi");
     for (let e of form.entries) if (!e.coa) return setErr("Semua akun harus dipilih");
     if (!balanced) return setErr("Total debit & kredit harus seimbang");
+    if (!editJurnalId) {
+      const candidateNo = form.noJurnal?.trim() || genJUNo(form.tanggal, jurnal);
+      if (jurnal.some((j: any) => j.no_jurnal === candidateNo)) {
+        return setErr(`No. Jurnal "${candidateNo}" sudah digunakan. Gunakan nomor lain.`);
+      }
+    }
 
     setSaving(true);
     setSaveError(false);
@@ -166,7 +204,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         no_so: allSO,
         // Preserve so_values when multiple SOs present in header — prevents JSONB data loss on re-save
         so_values: allSOList.length > 1 ? (form.soValues || {}) : {},
-        total_debit: totalD, total_kredit: totalK, status: "Draft",
+        total_debit: totalD, total_kredit: totalK, status: editJurnalId ? (form.status || "Draft") : "Draft",
         created_by: currentUser?.nama || "—"
       };
       const details = form.entries.map((e: any) => ({
@@ -179,8 +217,10 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       } else {
         await api.createJurnalWithDetails(jurnalData, details);
       }
+      setReloading(true);
       const updated = await api.getJurnal();
       setJurnal(updated);
+      setReloading(false);
       const afterSnap = { no_jurnal: nj, tanggal: t, keterangan: form.keterangan, total_debit: totalD, entries: form.entries.length };
       logAction(editJurnalId ? `Update Jurnal Umum: ${nj}` : `Buat Jurnal Umum: ${nj}`, buildMeta({
         module: 'jurnal',
@@ -195,8 +235,9 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         setSaveSuccess(false);
       }, 1000);
       showToast("Jurnal berhasil disimpan!");
-    } catch (e: any) { 
-        setErr("Gagal simpan: " + e.message); 
+    } catch (e: any) {
+        console.error('simpan jurnal error:', e);
+        setErr(getFriendlyError(e));
         setSaveError(true);
         setTimeout(() => setSaveError(false), 2000);
     }
@@ -231,15 +272,20 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       if (linked > 0) {
           showToast(`${linked} jurnal berhasil dihubungkan kembali dengan SO.`);
           logAction(`Sinkronisasi Jurnal ke SO: ${linked} jurnal dihubungkan`, buildMeta({ module: 'jurnal', action_type: 'SYNC', after_data: { linked_count: linked } }));
+          setReloading(true);
           const updated = await api.getJurnal();
           setJurnal(updated);
+          setReloading(false);
       } else {
           showToast("Tidak ada jurnal baru yang cocok dengan data SO.", "info");
       }
     } catch (e: any) {
-      alert("Gagal sinkronisasi: " + e.message);
+      console.error('syncSO error:', e);
+      showToast(getFriendlyError(e), "error");
+    } finally {
+      setReloading(false);
+      setSyncing(false);
     }
-    setSyncing(false);
   };
 
   const grandD = filtered.reduce((sum: number, j: any) => {
@@ -457,7 +503,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
             className={`tab-btn ${tab === k ? "active" : ""}`} 
             onClick={() => {
               if (k === "input" && !editJurnalId) {
-                setForm({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
+                setForm({ tanggal: today(), noJurnal: "", noBukti: "", keterangan: "", noSO: [], soValues: {}, status: "Draft", entries: [{ coa: "", akun: "", debit: "", kredit: "", no_so: "" }, { coa: "", akun: "", debit: "", kredit: "", no_so: "" }] });
               }
               setTab(k);
             }}
@@ -470,6 +516,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       {tab === "list" ? (
         <div className="animate-fade-up">
           <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />} />
+          {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
           
           <div className="table-container max-h-[calc(100vh-340px)] overflow-y-auto">
             <table className="w-full border-collapse">
