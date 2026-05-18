@@ -556,8 +556,25 @@ export const api = {
     (soRes.data  || []).forEach((r: any) => { const n = extractNum(r.no_invoice); if (n > max) max = n; });
     return max;
   },
-  addInvoice: async (data: any) => {
-    const { data: res, error } = await supabaseManual.from("invoices").insert([data]).select();
+  addInvoice: async (invoice: {
+    no_invoice: string;
+    tgl_invoice: string;
+    customer: string;
+    pic_cust: string;
+    so_ids: string[];
+    so_order_ids: string[];
+    total_sebelum_pajak: number;
+    ppn: number;
+    total_setelah_pajak: number;
+    tipe: 'normal' | 'dp' | 'pelunasan';
+    keterangan_invoice?: string;
+    [key: string]: any;
+  }) => {
+    const { data: res, error } = await supabaseManual.from("invoices").insert([{
+      ...invoice,
+      status_bayar: 'Belum Bayar',
+      total_terbayar: 0,
+    }]).select();
     if (error) throw new Error(error.message || "Gagal simpan invoice");
     return res?.[0];
   },
@@ -566,6 +583,38 @@ export const api = {
       const { error } = await supabaseManual.from("sales_order").update({ no_invoice }).eq("id", id);
       if (error) throw new Error(error.message || "Gagal update no_invoice SO");
     }
+  },
+  getInvoices: async () => {
+    const { data, error } = await supabaseManual
+      .from('invoices')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message || "Gagal ambil data invoice");
+    return data || [];
+  },
+  getInvoicesBySO: async (orderIds: string[]) => {
+    const { data, error } = await supabaseManual
+      .from('invoices')
+      .select('*')
+      .overlaps('so_order_ids', orderIds)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message || "Gagal ambil invoice SO");
+    return data || [];
+  },
+  getPaymentStatusRPC: async (soOrderIds: string[]) => {
+    const { data, error } = await supabase.rpc(
+      'get_invoice_payment_status',
+      { p_so_order_ids: soOrderIds }
+    );
+    if (error) throw new Error(error.message || "Gagal cek status pembayaran");
+    return data;
+  },
+  updateSOInvoiceCount: async (soId: string, count: number) => {
+    const { error } = await supabaseManual
+      .from('sales_order')
+      .update({ invoice_count: count })
+      .eq('id', soId);
+    if (error) throw new Error(error.message || "Gagal update invoice count");
   },
 };
 

@@ -566,9 +566,11 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         customer:            previewData.customer,
         pic_cust:            previewData.picCust,
         so_ids:              selected,
+        so_order_ids:        items.map((x: any) => x.order_id).filter(Boolean),
         total_sebelum_pajak: previewData.subTotal,
         ppn:                 previewData.ppn,
         total_setelah_pajak: previewData.total,
+        tipe:                'normal',
       });
       await api.updateSOInvoiceNo(selected, pendingInvoiceNo);
       setSo((prev: any[]) => prev.map(s => selected.includes(s.id) ? { ...s, no_invoice: pendingInvoiceNo } : s));
