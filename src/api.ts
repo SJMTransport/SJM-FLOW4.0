@@ -571,9 +571,19 @@ export const api = {
     [key: string]: any;
   }) => {
     const { data: res, error } = await supabaseManual.from("invoices").insert([{
-      ...invoice,
-      status_bayar: 'Belum Bayar',
-      total_terbayar: 0,
+      no_invoice:          invoice.no_invoice,
+      tgl_invoice:         invoice.tgl_invoice,
+      customer:            invoice.customer,
+      pic_cust:            invoice.pic_cust,
+      so_ids:              invoice.so_ids,
+      so_order_ids:        invoice.so_order_ids,
+      total_sebelum_pajak: invoice.total_sebelum_pajak,
+      ppn:                 invoice.ppn,
+      total_setelah_pajak: invoice.total_setelah_pajak,
+      tipe:                invoice.tipe || 'normal',
+      keterangan_invoice:  invoice.keterangan_invoice || '',
+      status_bayar:        'Belum Bayar',
+      total_terbayar:      0,
     }]).select();
     if (error) throw new Error(error.message || "Gagal simpan invoice");
     return res?.[0];
@@ -585,15 +595,21 @@ export const api = {
     }
   },
   getInvoices: async () => {
-    const { data, error } = await supabaseManual
+    console.log('🔍 Calling getInvoices...');
+    const { data, error } = await supabase
       .from('invoices')
       .select('*')
       .order('created_at', { ascending: false });
+    console.log('📊 getInvoices result:', {
+      count: data?.length,
+      error: error?.message,
+      firstItem: data?.[0],
+    });
     if (error) throw new Error(error.message || "Gagal ambil data invoice");
     return data || [];
   },
   getInvoicesBySO: async (orderIds: string[]) => {
-    const { data, error } = await supabaseManual
+    const { data, error } = await supabase
       .from('invoices')
       .select('*')
       .overlaps('so_order_ids', orderIds)
