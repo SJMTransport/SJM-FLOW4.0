@@ -308,125 +308,159 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
       {/* ── TAB 1: BUAT INVOICE ── */}
       {activeTab === 'buat' && (
-        <div className="space-y-5">
-          <Card className="p-4">
-            <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-3 opacity-60">Tipe Invoice</div>
-            <div className="flex gap-3 flex-wrap">
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)' }}>
+
+          {/* ── STICKY TOP PANEL ── */}
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 10,
+            backgroundColor: '#fff',
+            borderBottom: '1px solid #e5e7eb',
+            paddingBottom: '12px',
+          }}>
+
+            {/* Type selector + Tanggal inline */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               {(['normal', 'dp', 'pelunasan'] as InvoiceTipe[]).map(tipe => (
                 <button
                   key={tipe}
                   onClick={() => { setInvoiceTipe(tipe); setSelectedIds(new Set()); setDpNominal(''); setDpKeterangan(''); }}
-                  className={`px-5 py-2 rounded-xl border-2 text-[12px] font-black uppercase tracking-wide transition-all ${
-                    invoiceTipe === tipe ? 'border-accent bg-accent/5 text-accent' : 'border-border-main text-text-med hover:border-accent/50'
-                  }`}
+                  style={{
+                    padding: '6px 16px', borderRadius: '8px', border: '2px solid',
+                    borderColor: invoiceTipe === tipe ? '#FF8F00' : '#e5e7eb',
+                    backgroundColor: invoiceTipe === tipe ? '#FFF3E0' : '#fff',
+                    color: invoiceTipe === tipe ? '#FF8F00' : '#666',
+                    fontWeight: invoiceTipe === tipe ? 700 : 400,
+                    cursor: 'pointer', fontSize: '13px',
+                  }}
                 >
                   {tipe === 'normal' ? '📄 Normal' : tipe === 'dp' ? '📑 DP' : '✅ Pelunasan'}
                 </button>
               ))}
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>Tgl Invoice:</label>
+                <input type="date" value={tglInvoice} onChange={e => setTglInvoice(e.target.value)}
+                  style={{ padding: '5px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px' }} />
+              </div>
             </div>
-            <div className="mt-3 text-[11px] text-text-med bg-blue-50 rounded-lg px-3 py-2">
-              {invoiceTipe === 'normal' && 'SO Completed yang belum punya invoice. Bisa pilih lebih dari 1 SO dari customer yang sama.'}
-              {invoiceTipe === 'dp' && 'Hanya 1 SO, status apapun, belum punya invoice. Isi nominal DP minimal Rp 100.000.'}
-              {invoiceTipe === 'pelunasan' && 'Hanya 1 SO yang sudah punya Invoice DP. Nominal otomatis = Total SO − DP.'}
-            </div>
-          </Card>
 
-          {invoiceTipe === 'dp' && (
-            <Card className="p-4 border-amber-200 bg-amber-50/40">
-              <div className="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-3">Detail Invoice DP</div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60 px-1">Nominal DP (Rp) *</label>
-                  <input
-                    type="number" min={100000} value={dpNominal} onChange={e => setDpNominal(e.target.value)}
-                    placeholder="5000000" className="input-field h-10"
-                  />
-                  {dpNominal && <div className="text-[10px] text-text-light px-1">= {fRp(parseFloat(dpNominal) || 0)}</div>}
+            {/* Description */}
+            <div style={{ padding: '7px 12px', backgroundColor: '#EFF6FF', borderRadius: '6px', marginBottom: '10px', fontSize: '12px', color: '#1D4ED8' }}>
+              {invoiceTipe === 'normal' && '📄 Invoice Normal: SO Completed, belum punya invoice. Bisa pilih lebih dari 1 SO dari customer yang sama.'}
+              {invoiceTipe === 'dp' && '📑 Invoice DP: Hanya 1 SO, status apapun, belum punya invoice. Isi nominal DP secara manual (min Rp 100.000).'}
+              {invoiceTipe === 'pelunasan' && '✅ Pelunasan: Hanya 1 SO yang sudah punya Invoice DP. Nominal otomatis = Total SO - DP.'}
+            </div>
+
+            {/* DP Form (conditional) */}
+            {invoiceTipe === 'dp' && (
+              <div style={{
+                padding: '10px 12px', border: '1px solid #FCD34D', borderRadius: '6px',
+                backgroundColor: '#FFFBEB', marginBottom: '10px',
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+              }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '3px' }}>
+                    Nominal DP (Rp) * min Rp 100.000
+                  </label>
+                  <input type="number" value={dpNominal} onChange={e => setDpNominal(e.target.value)}
+                    placeholder="Contoh: 5000000" min={100000}
+                    style={{ width: '100%', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
+                  {dpNominal && Number(dpNominal) > 0 && (
+                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>= {fRp(parseFloat(dpNominal) || 0)}</div>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60 px-1">Keterangan (opsional)</label>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '3px' }}>
+                    Keterangan (opsional, contoh: 50%)
+                  </label>
                   <input type="text" value={dpKeterangan} onChange={e => setDpKeterangan(e.target.value)}
-                    placeholder="50% atau sesuai kesepakatan" className="input-field h-10" />
+                    placeholder="Contoh: 50%"
+                    style={{ width: '100%', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
                 </div>
               </div>
-            </Card>
-          )}
+            )}
 
-          <div className="flex gap-4 items-end flex-wrap">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60 px-1">Tanggal Invoice</label>
-              <input type="date" value={tglInvoice} onChange={e => setTglInvoice(e.target.value)} className="input-field h-10 w-48" />
-            </div>
-            <div className="space-y-1.5 flex-1 max-w-xs">
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60 px-1">Filter Customer</label>
-              <input type="text" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)}
-                placeholder="Cari customer..." className="input-field h-10" />
+            {/* Customer filter + SO count + Summary + Preview button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <input type="text" placeholder="🔍 Cari customer..." value={filterCustomer}
+                onChange={e => setFilterCustomer(e.target.value)}
+                style={{ padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', width: '220px' }} />
+              <div style={{ fontSize: '12px', color: '#9ca3af' }}>{filteredSO.length} SO tersedia</div>
+              <div style={{ flex: 1 }} />
+              {selectedIds.size > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '16px',
+                  backgroundColor: '#FFF3E0', padding: '8px 16px',
+                  borderRadius: '8px', border: '1px solid #FCD34D',
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>
+                      {selectedIds.size} SO dipilih · {selectedSOList[0]?.customer}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#FF8F00' }}>
+                      {invoiceTipe === 'normal' && fRp(selectedSOList.reduce((s, x) => s + (x.total_harga_pajak || 0), 0))}
+                      {invoiceTipe === 'dp' && dpNominal && `DP: ${fRp(parseFloat(dpNominal) || 0)}`}
+                      {invoiceTipe === 'pelunasan' && 'Lihat preview untuk nominal'}
+                    </div>
+                  </div>
+                  <button onClick={handlePrepareInvoice} disabled={preparing}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: preparing ? '#9ca3af' : '#FF8F00',
+                      color: '#fff', border: 'none', borderRadius: '8px',
+                      fontWeight: 700, cursor: preparing ? 'not-allowed' : 'pointer',
+                      fontSize: '13px', whiteSpace: 'nowrap',
+                    }}>
+                    {preparing ? '⏳ Mempersiapkan...' : '👁️ Preview Invoice'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <Card className="p-0 border-border-main/40 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr>
-                    <th className="w-10 text-center">☐</th>
-                    <th>No SO</th>
-                    <th>Customer</th>
-                    <th>Rute</th>
-                    <th>Tgl Muat</th>
-                    <th>Status</th>
-                    <th className="text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-main/20">
-                  {filteredSO.length === 0 ? (
-                    <tr><td colSpan={7} className="py-10 text-center text-[12px] text-text-light">
-                      {invoiceTipe === 'normal' ? 'Tidak ada SO Completed yang belum punya invoice' :
-                       invoiceTipe === 'dp' ? 'Tidak ada SO yang belum punya invoice' :
-                       'Tidak ada SO yang sudah punya Invoice DP'}
-                    </td></tr>
-                  ) : filteredSO.map(s => {
-                    const isSel = selectedIds.has(s.id);
-                    return (
-                      <tr key={s.id} onClick={() => toggleSelect(s.id)}
-                        className={`cursor-pointer transition-colors ${isSel ? 'bg-accent/5' : 'hover:bg-slate-50'}`}>
-                        <td className="text-center">
-                          <input type="checkbox" checked={isSel} readOnly className="w-3.5 h-3.5 rounded border-border-main text-accent" />
-                        </td>
-                        <td className="font-bold text-accent italic text-[12px]">{s.order_id}</td>
-                        <td className="text-[12px]">{s.customer}</td>
-                        <td className="text-[11px] text-text-med">{s.lokasi_muat} → {s.lokasi_bongkar}</td>
-                        <td className="text-[12px]">{s.tgl_muat}</td>
-                        <td>{statusBadge(s.status_muatan)}</td>
-                        <td className="text-right font-bold text-[12px] tabular-nums">{fRp(s.total_harga_pajak || 0)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          {/* ── SCROLLABLE SO TABLE ── */}
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', marginTop: '8px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 5, backgroundColor: '#f3f4f6' }}>
+                <tr>
+                  <th style={{ padding: '10px', textAlign: 'center', width: '40px', border: '1px solid #e5e7eb' }}>☐</th>
+                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>No SO</th>
+                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Customer</th>
+                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Rute</th>
+                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Tgl Muat</th>
+                  <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #e5e7eb' }}>Status</th>
+                  <th style={{ padding: '10px', textAlign: 'right', border: '1px solid #e5e7eb' }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSO.length === 0 ? (
+                  <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', fontSize: '12px', color: '#9ca3af' }}>
+                    {invoiceTipe === 'normal' ? 'Tidak ada SO Completed yang belum punya invoice' :
+                     invoiceTipe === 'dp' ? 'Tidak ada SO yang belum punya invoice' :
+                     'Tidak ada SO yang sudah punya Invoice DP'}
+                  </td></tr>
+                ) : filteredSO.map(s => {
+                  const isSel = selectedIds.has(s.id);
+                  return (
+                    <tr key={s.id} onClick={() => toggleSelect(s.id)}
+                      style={{ cursor: 'pointer', backgroundColor: isSel ? 'rgba(255,143,0,0.06)' : undefined }}
+                      onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = '#f9fafb'; }}
+                      onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = ''; }}>
+                      <td style={{ padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                        <input type="checkbox" checked={isSel} readOnly style={{ width: '14px', height: '14px' }} />
+                      </td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontWeight: 'bold', color: '#FF8F00', fontStyle: 'italic', fontSize: '12px' }}>{s.order_id}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '12px' }}>{s.customer}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280' }}>{s.lokasi_muat} → {s.lokasi_bongkar}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '12px' }}>{s.tgl_muat}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6' }}>{statusBadge(s.status_muatan)}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}>{fRp(s.total_harga_pajak || 0)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-          {selectedIds.size > 0 && (
-            <Card className="p-4 bg-slate-50/50 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div className="text-[11px] text-text-med">{selectedIds.size} SO dipilih · {selectedSOList[0]?.customer}</div>
-                {invoiceTipe === 'normal' && (
-                  <div className="font-black text-[16px] mt-0.5">
-                    Total: {fRp(selectedSOList.reduce((s, so) => s + (so.total_harga_pajak || 0), 0))}
-                  </div>
-                )}
-                {invoiceTipe === 'dp' && dpNominal && (
-                  <div className="font-black text-[16px] mt-0.5 text-amber-600">DP: {fRp(parseFloat(dpNominal) || 0)}</div>
-                )}
-              </div>
-              <button onClick={handlePrepareInvoice} disabled={preparing}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                <Icon name="Eye" size={14} />
-                {preparing ? '⏳ Mempersiapkan...' : 'Preview Invoice'}
-              </button>
-            </Card>
-          )}
         </div>
       )}
 
