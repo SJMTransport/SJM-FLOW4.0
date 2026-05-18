@@ -24,12 +24,23 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
     setSaveError(false);
     setSaveSuccess(false);
     try {
+      const payload = {
+        no_polisi: item.no_polisi,
+        no_armada: item.no_armada,
+        jenis: item.jenis,
+        merk: item.merk,
+        tahun: item.tahun,
+        status: item.status,
+        kepemilikan: item.kepemilikan,
+        vendor_id: item.vendor_id || null,
+        keterangan: item.keterangan,
+      };
       if (editing) {
-        await api.updateArmada(editing.id, item);
-        setArmada((prev: any[]) => prev.map(x => x.id === editing.id ? { ...x, ...item } : x));
+        await api.updateArmada(editing.id, payload);
+        setArmada((prev: any[]) => prev.map(x => x.id === editing.id ? { ...x, ...payload } : x));
         logAction(`Update Armada: ${item.no_polisi || editing.no_polisi}`, { id: editing.id });
       } else {
-        const res = await api.addArmada(item);
+        const res = await api.addArmada(payload);
         setArmada((prev: any[]) => [...prev, res]);
         logAction(`Add Armada: ${item.no_polisi}`, { id: res.id });
       }
