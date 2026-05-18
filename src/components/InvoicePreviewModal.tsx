@@ -20,6 +20,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const templateRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleDownloadAndSave = async () => {
     if (!templateRef.current) return;
@@ -83,6 +84,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       // Save to database after PDF is downloaded
       await onConfirm();
       showToast(`Invoice ${invoiceNumber} berhasil diunduh dan disimpan!`, 'success');
+      setSuccess(true);
+      setTimeout(onClose, 2000);
     } catch (err: any) {
       console.error('❌ PDF generation error:', err);
       setError(err.message || 'Gagal generate PDF');
@@ -160,6 +163,22 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* ── Success overlay ── */}
+      {success && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          zIndex: 10001,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: '16px',
+        }}>
+          <div style={{ fontSize: '56px', lineHeight: 1 }}>✅</div>
+          <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '18px' }}>Invoice Berhasil Disimpan!</div>
+          <div style={{ color: '#9ca3af', fontSize: '13px' }}>{invoiceNumber}</div>
+        </div>
+      )}
 
       {/* ── Preview area ── */}
       <div style={{

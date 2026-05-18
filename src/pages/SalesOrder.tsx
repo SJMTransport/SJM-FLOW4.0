@@ -257,6 +257,17 @@ const genSONo = (allSOs: any[]): string => {
   return `SJM.ID-${String(maxNum + 1).padStart(4, "0")}.${yr}`;
 };
 
+const getFriendlyError = (err: any): string => {
+  const msg = err?.message || '';
+  if (msg.includes('duplicate key') || msg.includes('unique')) return 'Data ini sudah ada. Gunakan nomor/kode yang berbeda.';
+  if (msg.includes('foreign key') || msg.includes('violates')) return 'Data tidak dapat disimpan karena terkait dengan data lain.';
+  if (msg.includes('network') || msg.includes('fetch')) return 'Koneksi terputus. Periksa internet dan coba lagi.';
+  if (msg.includes('timeout')) return 'Server terlalu lama merespons. Coba lagi.';
+  if (msg.includes('permission') || msg.includes('not authorized')) return 'Anda tidak memiliki akses untuk melakukan tindakan ini.';
+  if (msg.includes('JWT') || msg.includes('token') || msg.includes('expired')) return 'Sesi Anda telah berakhir. Silakan login kembali.';
+  return 'Terjadi kesalahan. Coba lagi atau hubungi admin.';
+};
+
 export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, currentUser, onSOClick, onArmadaClick, armada, sopir, logAction, pendingEditSO, setPendingEditSO }: any) => {
   const { confirm: confirmModal, Modal: ConfirmModalUI } = useConfirm();
   const { showToast, ToastUI } = useToast();
@@ -265,6 +276,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
   const [saving, setSaving] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
@@ -358,9 +370,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
     if (toPost.length === 0) { showToast("Pilih minimal satu SO berstatus DRAFT untuk diposting.", "error"); return; }
     
+    const toPostItems = toPost.map(id => so.find((x: any) => x.id === id)).filter(Boolean);
+    const soList = toPostItems.slice(0, 5).map((x: any) => `• ${x.order_id}`).join('\n');
+    const extra = toPostItems.length > 5 ? `\n• ... dan ${toPostItems.length - 5} lainnya` : '';
     confirmModal({
       title: "Posting Masal",
-      msg: `Apakah Anda yakin ingin melakukan posting pada ${toPost.length} Sales Order terpilih?`,
+      msg: `Anda akan memposting ${toPost.length} Sales Order:\n\n${soList}${extra}\n\nLanjutkan?`,
       confirmLabel: "Posting",
       confirmColor: C.blue,
       onConfirm: async () => {
@@ -636,14 +651,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
   };
 
-  const submit = async (posted = false) => {
-    setErr("");
-    if (!form.customer) return setErr("Customer wajib diisi");
-    if (!form.lokasi_muat) return setErr("Lokasi muat wajib diisi");
-    if (!form.lokasi_bongkar) return setErr("Lokasi bongkar wajib diisi");
-    if (!form.no_polisi?.trim()) return setErr("No. Polisi wajib diisi");
-    if (!(parseFloat(String(form.harga_pengiriman || 0)) > 0)) return setErr("Harga pengiriman wajib diisi dan harus lebih dari 0");
-
+  const doSave = async (posted: boolean) => {
     setSaving(true);
     setSaveError(false);
     setSaveSuccess(false);
@@ -652,7 +660,6 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       if (posted && !finalOrderId) {
         finalOrderId = genSONo(so);
       }
-
       const payload = { ...form, order_id: finalOrderId, is_posted: posted };
       const afterSnap = { order_id: finalOrderId, customer: payload.customer, tgl_muat: payload.tgl_muat, status_muatan: payload.status_muatan, total_harga: payload.total_harga };
       if (editItem) {
@@ -665,6 +672,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         }));
       } else {
         await api.addSO(payload);
+        setReloading(true);
         const updated = await api.getSO();
         setSo(updated);
         logAction(`Buat Sales Order: ${payload.order_id}`, buildMeta({
@@ -672,7 +680,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           after_data: afterSnap,
         }));
       }
-      showToast(editItem ? "Sales Order berhasil diperbarui!" : "Sales Order berhasil disimpan!");
+      const idLabel = finalOrderId ? ` ${finalOrderId}` : '';
+      showToast(editItem ? `Sales Order${idLabel} berhasil diperbarui!` : `Sales Order${idLabel} berhasil dibuat!`, 'success');
       setSaveSuccess(true);
       setTimeout(() => {
         setTab("list"); setEditItem(null);
@@ -680,11 +689,37 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       }, 1000);
     } catch (e: any) {
         console.error('simpan SO error:', e);
-        setErr("Gagal menyimpan data. Periksa koneksi dan coba lagi.");
+        setErr(getFriendlyError(e));
         setSaveError(true);
         setTimeout(() => setSaveError(false), 2000);
+    } finally {
+      setSaving(false);
+      setReloading(false);
     }
-    setSaving(false);
+  };
+
+  const submit = async (posted = false) => {
+    setErr("");
+    if (!form.customer) return setErr("Customer wajib diisi");
+    if (!form.lokasi_muat) return setErr("Lokasi muat wajib diisi");
+    if (!form.lokasi_bongkar) return setErr("Lokasi bongkar wajib diisi");
+
+    const warnings: string[] = [];
+    if (!form.no_polisi?.trim()) warnings.push('No. Polisi belum diisi — kolom Armada di invoice akan kosong');
+    if (!form.jenis_truk?.trim()) warnings.push('Jenis Truk belum dipilih — kolom Armada di invoice akan kosong');
+    if (!(parseFloat(String(form.harga_pengiriman || 0)) > 0)) warnings.push('Harga Pengiriman = Rp 0 — invoice akan bernilai nol');
+    if (!form.pic_cust?.trim()) warnings.push('PIC Customer belum diisi — kolom Telepon di invoice akan kosong');
+
+    if (warnings.length > 0) {
+      confirmModal({
+        title: "Perhatian — Data Belum Lengkap",
+        msg: `Beberapa field penting belum diisi:\n• ${warnings.join('\n• ')}\n\nData tetap akan disimpan. Lanjutkan?`,
+        confirmLabel: "Ya, Simpan",
+        onConfirm: async () => { await doSave(posted); }
+      });
+      return;
+    }
+    await doSave(posted);
   };
 
   const filtered = useMemo(() => {
@@ -793,6 +828,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             ))}
           </div>
 
+          {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
           <div className="table-container max-h-[calc(100vh-380px)]">
             <table className="w-full border-collapse">
               <thead>
