@@ -250,22 +250,48 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   }, [invoices, filterInvCustomer, filterInvTipe, filterInvStatus]);
 
   const handleReprint = (invoice: any) => {
-    const soData = so.filter(s => invoice.so_order_ids?.includes(s.order_id));
-    const items: InvoiceTemplateProps['items'] = soData.map((s, i) => ({
-      rowNo: i + 1, tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
-      noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
-      muatan: s.muatan || '-', sn: s.sn || '-',
-      lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
-      hargaPengiriman: invoice.tipe !== 'normal' ? invoice.total_sebelum_pajak : Number(s.harga_pengiriman) || 0,
-      nilaiPajak: Number(s.nilai_pajak) || 0,
-      hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
-      total: invoice.tipe !== 'normal' ? invoice.total_setelah_pajak : Number(s.total_harga_pajak) || 0,
-    }));
+    const soOrderIds: string[] = invoice.so_order_ids || [];
+    const totalPerItem = soOrderIds.length > 0 ? (invoice.total_setelah_pajak || 0) / soOrderIds.length : 0;
+    const subPerItem = soOrderIds.length > 0 ? (invoice.total_sebelum_pajak || 0) / soOrderIds.length : 0;
+
+    const items: InvoiceTemplateProps['items'] = soOrderIds.map((soId, idx) => {
+      const s = so.find(x => x.order_id === soId);
+      if (!s) {
+        // SO not in memory — distribute invoice total evenly as fallback
+        return {
+          rowNo: idx + 1, tglMuat: '-', tglTiba: '-',
+          noSO: soId, armada: '-', noPol: '-', muatan: '-', sn: '-',
+          lokasiMuat: '-', lokasiTujuan: '-',
+          hargaPengiriman: invoice.tipe !== 'normal' ? (invoice.total_sebelum_pajak || 0) : subPerItem,
+          nilaiPajak: 0, hargaAsuransi: null,
+          total: invoice.tipe !== 'normal' ? (invoice.total_setelah_pajak || 0) : totalPerItem,
+        };
+      }
+      return {
+        rowNo: idx + 1,
+        tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
+        noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
+        muatan: s.muatan || '-', sn: s.sn || '-',
+        lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
+        hargaPengiriman: invoice.tipe !== 'normal'
+          ? (invoice.total_sebelum_pajak || 0)
+          : (Number(s.harga_pengiriman) || Number(s.total_harga) || subPerItem),
+        nilaiPajak: Number(s.nilai_pajak) || 0,
+        hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
+        total: invoice.tipe !== 'normal'
+          ? (invoice.total_setelah_pajak || 0)
+          : (Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || totalPerItem),
+      };
+    });
+
     setReprintData({
       invoiceNumber: invoice.no_invoice, invoiceDate: fmtDate(invoice.tgl_invoice),
       customer: invoice.customer, picCust: invoice.pic_cust || '-',
-      items, subTotal: invoice.total_sebelum_pajak, ppn: invoice.ppn,
-      total: invoice.total_setelah_pajak, keterangan: invoice.keterangan_invoice || '',
+      items,
+      subTotal: invoice.total_sebelum_pajak || 0,
+      ppn: invoice.ppn || 0,
+      total: invoice.total_setelah_pajak || 0,
+      keterangan: invoice.keterangan_invoice || '',
     });
     setReprintNo(invoice.no_invoice);
     setShowReprint(true);
