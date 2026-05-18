@@ -570,7 +570,7 @@ export const api = {
     keterangan_invoice?: string;
     [key: string]: any;
   }) => {
-    const { data: res, error } = await supabaseManual.from("invoices").insert([{
+    const { data: res, error } = await supabase.from("invoices").insert([{
       no_invoice:          invoice.no_invoice,
       tgl_invoice:         invoice.tgl_invoice,
       customer:            invoice.customer,
@@ -626,7 +626,7 @@ export const api = {
     return data;
   },
   updateSOInvoiceCount: async (soId: string, count: number) => {
-    const { error } = await supabaseManual
+    const { error } = await supabase
       .from('sales_order')
       .update({ invoice_count: count })
       .eq('id', soId);
@@ -644,7 +644,7 @@ export const api = {
     };
   },
   updateInvoiceStatus: async (id: string, statusBayar: string, totalTerbayar: number) => {
-    const { error } = await supabaseManual
+    const { error } = await supabase
       .from('invoices')
       .update({ status_bayar: statusBayar, total_terbayar: totalTerbayar })
       .eq('id', id);
