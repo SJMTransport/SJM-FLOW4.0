@@ -86,6 +86,23 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
     setLoading(false);
   };
 
+  const deleteArmada = (r: any) => {
+    confirmModal({
+      title: "Hapus Armada",
+      msg: `Hapus unit ${r.no_polisi}${r.no_armada ? ` (${r.no_armada})` : ""}? Tindakan ini tidak dapat dibatalkan.`,
+      confirmLabel: "Hapus",
+      confirmColor: C.red,
+      onConfirm: async () => {
+        try {
+          await api.deleteArmada(r.id);
+          setArmada((prev: any[]) => prev.filter(x => x.id !== r.id));
+          logAction(`Hapus Armada: ${r.no_polisi}`, { id: r.id });
+          showToast(`Armada ${r.no_polisi} berhasil dihapus`);
+        } catch (e: any) { showToast("Gagal hapus armada: " + e.message, "error"); }
+      }
+    });
+  };
+
   const deleteDoc = async (id: string) => {
     confirmModal({
       title: "Hapus Dokumen",
@@ -358,9 +375,14 @@ export const ArmadaPage = ({ activeSub, armada, setArmada, dokumen, setDokumen, 
                             </td>
                             <td className="text-center">{statusBadge(r.status || "Aktif")}</td>
                             <td className="text-right">
-                                <button className="p-1.5 hover:bg-slate-100 text-text-med rounded-lg transition-colors opacity-40 group-hover:opacity-100" onClick={() => { setEditing(r); setItem(r); setShowModal(true); }}>
-                                    <Icon name="Edit3" size={14} />
-                                </button>
+                                <div className="flex justify-end gap-1">
+                                    <button className="p-1.5 hover:bg-slate-100 text-text-med rounded-lg transition-colors opacity-40 group-hover:opacity-100" onClick={() => { setEditing(r); setItem(r); setShowModal(true); }}>
+                                        <Icon name="Edit3" size={14} />
+                                    </button>
+                                    <button className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onClick={() => deleteArmada(r)}>
+                                        <Icon name="Trash2" size={14} />
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         ))
