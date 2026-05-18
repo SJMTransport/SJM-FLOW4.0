@@ -52,7 +52,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   // ── Tab 2 state
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
-  const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
   const [filterInvCustomer, setFilterInvCustomer] = useState('');
   const [filterInvTipe, setFilterInvTipe] = useState('all');
   const [filterInvStatus, setFilterInvStatus] = useState('all');
@@ -510,6 +509,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <th>No Invoice</th>
                     <th>Tgl Invoice</th>
                     <th>Customer</th>
+                    <th>Sales Order</th>
                     <th>Tipe</th>
                     <th className="text-right">Total</th>
                     <th>Status Bayar</th>
@@ -518,81 +518,71 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </thead>
                 <tbody className="divide-y divide-border-main/20">
                   {filteredInvoices.length === 0 ? (
-                    <EmptyState colSpan={7} />
+                    <EmptyState colSpan={8} />
                   ) : filteredInvoices.map(inv => (
-                    <React.Fragment key={inv.id}>
-                      <tr
-                        onClick={() => setExpandedInvoice(expandedInvoice === inv.id ? null : inv.id)}
-                        className={`cursor-pointer transition-colors group ${expandedInvoice === inv.id ? 'bg-accent/5' : 'hover:bg-slate-50'}`}
-                      >
-                        <td>
-                          <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{inv.no_invoice}</div>
-                          <div className="text-[9px] text-text-light opacity-60">{inv.so_order_ids?.length || 0} SO</div>
-                        </td>
-                        <td className="tabular-nums text-[11px] font-bold text-text-med italic">{fmtDate(inv.tgl_invoice)}</td>
-                        <td>
-                          <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{inv.customer}</div>
-                        </td>
-                        <td>
-                          <span className={`badge text-[8px] ${
-                            inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' :
-                            inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' :
-                            'bg-blue-50 text-blue-700'
-                          }`}>
-                            {inv.tipe === 'normal' ? 'Normal' : inv.tipe === 'dp' ? 'DP' : 'Pelunasan'}
-                          </span>
-                        </td>
-                        <td className="text-right font-black text-[12px] tabular-nums">{fRp(inv.total_setelah_pajak || 0)}</td>
-                        <td>
-                          <span className="badge text-[8px]" style={{
-                            backgroundColor: (STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666') + '20',
-                            color: STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666',
-                          }}>
-                            {inv.status_bayar || 'Belum Bayar'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex gap-0.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
-                            <button
-                              className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors"
-                              onClick={e => { e.stopPropagation(); handleReprint(inv); }}
-                              title="Preview & Reprint"
-                            >
-                              <Icon name="Eye" size={12} />
-                            </button>
-                            <button
-                              className="p-1.5 rounded-lg hover:bg-blue-brand/10 text-blue-brand transition-colors"
-                              onClick={e => { e.stopPropagation(); handleReprint(inv); }}
-                              title="Download"
-                            >
-                              <Icon name="Download" size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedInvoice === inv.id && (
-                        <tr>
-                          <td colSpan={7} className="bg-slate-50/80 border-b border-border-main/30">
-                            <div className="px-4 py-3 space-y-2">
-                              <div className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 mb-1">Sales Order Terkait</div>
-                              <div className="flex gap-2 flex-wrap">
-                                {(inv.so_order_ids || []).map((soId: string) => (
-                                  <span key={soId} className="px-2 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[11px] font-bold text-accent">{soId}</span>
-                                ))}
-                              </div>
-                              {inv.keterangan_invoice && (
-                                <div className="text-[11px] text-text-med">Keterangan: <strong>{inv.keterangan_invoice}</strong></div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
+                    <tr key={inv.id} className="transition-colors group hover:bg-slate-50">
+                      <td>
+                        <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{inv.no_invoice}</div>
+                        {inv.keterangan_invoice && (
+                          <div className="text-[9px] text-text-light opacity-60 italic">{inv.keterangan_invoice}</div>
+                        )}
+                      </td>
+                      <td className="tabular-nums text-[11px] font-bold text-text-med italic">{fmtDate(inv.tgl_invoice)}</td>
+                      <td>
+                        <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{inv.customer}</div>
+                      </td>
+                      <td className="max-w-[220px]">
+                        <div className="flex gap-1 flex-wrap">
+                          {(inv.so_order_ids || []).map((soId: string) => (
+                            <span key={soId} className="px-1.5 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[9px] font-bold text-accent whitespace-nowrap">{soId}</span>
+                          ))}
+                          {(!inv.so_order_ids || inv.so_order_ids.length === 0) && (
+                            <span className="text-[10px] text-text-light italic opacity-50">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge text-[8px] ${
+                          inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' :
+                          inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' :
+                          'bg-blue-50 text-blue-700'
+                        }`}>
+                          {inv.tipe === 'normal' ? 'Normal' : inv.tipe === 'dp' ? 'DP' : 'Pelunasan'}
+                        </span>
+                      </td>
+                      <td className="text-right font-black text-[12px] tabular-nums">{fRp(inv.total_setelah_pajak || 0)}</td>
+                      <td>
+                        <span className="badge text-[8px]" style={{
+                          backgroundColor: (STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666') + '20',
+                          color: STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666',
+                        }}>
+                          {inv.status_bayar || 'Belum Bayar'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-0.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors"
+                            onClick={() => handleReprint(inv)}
+                            title="Preview & Reprint"
+                          >
+                            <Icon name="Eye" size={12} />
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-blue-brand/10 text-blue-brand transition-colors"
+                            onClick={() => handleReprint(inv)}
+                            title="Download"
+                          >
+                            <Icon name="Download" size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
-                    <td colSpan={4} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Invoice Terfilter</td>
+                    <td colSpan={5} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Invoice Terfilter</td>
                     <td className="py-3 px-4 text-right text-[12px] font-black text-accent tabular-nums">
                       {fRp(filteredInvoices.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0))}
                     </td>
