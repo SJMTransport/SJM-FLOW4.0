@@ -616,6 +616,24 @@ export const api = {
       .eq('id', soId);
     if (error) throw new Error(error.message || "Gagal update invoice count");
   },
+  getPaymentStatus: async (soOrderIds: string[]) => {
+    const { data, error } = await supabase.rpc(
+      'get_invoice_payment_status',
+      { p_so_order_ids: soOrderIds }
+    );
+    if (error) throw new Error(error.message || "Gagal cek status pembayaran");
+    return data?.[0] || {
+      total_invoiced: 0, total_paid: 0, total_remaining: 0,
+      status: 'Belum Bayar', is_overpaid: false,
+    };
+  },
+  updateInvoiceStatus: async (id: string, statusBayar: string, totalTerbayar: number) => {
+    const { error } = await supabaseManual
+      .from('invoices')
+      .update({ status_bayar: statusBayar, total_terbayar: totalTerbayar })
+      .eq('id', id);
+    if (error) throw new Error(error.message || "Gagal update status invoice");
+  },
 };
 
 export const authActions = {

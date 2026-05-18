@@ -20,6 +20,7 @@ import { ApprovalPage } from "@/src/pages/ApprovalPage";
 import { KontakPage } from "@/src/pages/Kontak";
 import { LaporanPage } from "@/src/pages/Laporan";
 import { ArmadaPage } from "@/src/pages/Armada";
+import { InvoicePage } from "@/src/pages/InvoicePage";
 import { MasterPage } from "@/src/pages/Master";
 import { Loader2, LogOut, Plus, ChevronRight, ChevronLeft, Search, User, Power, AlertCircle } from "lucide-react";
 
@@ -1175,7 +1176,8 @@ export default function App() {
                 <>
                   {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
                   {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} />}
-                  {["quotation", "invoice"].includes(activeSub) && (
+                  {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} />}
+                  {activeSub === "quotation" && (
                     <OperasionalPage activeSub={activeSub} so={so} />
                   )}
                 </>
