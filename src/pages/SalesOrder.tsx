@@ -539,6 +539,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
   const statusCount: any = { "Order Confirmed": 0, Loading: 0, "On Going": 0, Arrived: 0, Completed: 0, Cancelled: 0 };
   filtered.forEach((x: any) => { if (statusCount[x.status_muatan] !== undefined) statusCount[x.status_muatan]++; });
+  const totalBiaya = filtered.reduce((sum: number, s: any) => sum + (Number(s.total_harga_pajak) || 0), 0);
 
   return (
     <PageShell>
@@ -663,12 +664,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                     <th>Customer</th>
                     <th>Unit / Sopir</th>
                     <th>Status</th>
+                    <th className="text-right">Biaya</th>
                     <th>Invoice</th>
                     <th className="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/20">
-                  {filtered.length === 0 ? <EmptyState colSpan={9} /> :
+                  {filtered.length === 0 ? <EmptyState colSpan={canEdit ? 10 : 9} /> :
                     filtered.map((s: any) => (
                       <tr key={s.id} className="cursor-pointer transition-colors group" onClick={(e) => {
                         if ((e.target as HTMLElement).tagName === "BUTTON" || (e.target as HTMLElement).tagName === "INPUT") return;
@@ -722,6 +724,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                            <div className="text-[10px] text-text-light font-medium">{s.nama_sopir}</div>
                         </td>
                         <td>{statusBadge(s.status_muatan)}</td>
+                        <td className="text-right tabular-nums">
+                          <div className="text-[11px] font-black text-text-main">{fmt(s.total_harga_pajak || 0)}</div>
+                          {Number(s.nilai_pajak) > 0 && (
+                            <div className="text-[9px] text-text-light opacity-60 italic">+PPN {fmt(s.nilai_pajak)}</div>
+                          )}
+                        </td>
                         <td>
                           {s.no_invoice ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-lg whitespace-nowrap">
@@ -753,6 +761,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <tfoot>
                   <tr className="bg-slate-50 text-text-main font-black border-t-2 border-border-main">
                     <td colSpan={canEdit ? 7 : 6} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">Total Muatan Terfilter</td>
+                    <td className="py-3 px-4 text-right text-[11px] font-black text-accent tabular-nums">{fmt(totalBiaya)}</td>
                     <td colSpan={2} className="py-3 px-4 text-center text-[12px] font-black text-accent">{filtered.length} Records</td>
                   </tr>
                 </tfoot>
