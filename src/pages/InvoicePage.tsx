@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '@/src/api';
 import { generateInvoiceNo } from '@/src/utils/invoiceGenerator';
 import InvoicePreviewModal from '@/src/components/InvoicePreviewModal';
-import type { InvoiceTemplateProps } from '@/src/components/InvoiceTemplate';
+import type { InvoiceData } from '@/src/utils/generateInvoicePDF';
 import { Card, SectionHeader, StatCard, useToast, Icon, PageShell, statusBadge, KPIGrid, EmptyState } from '@/src/components/SJMComponents';
 import { buildMeta } from '@/src/lib/activityLogger';
 
@@ -43,7 +43,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [dpKeterangan, setDpKeterangan] = useState('');
   const [tglInvoice, setTglInvoice] = useState(new Date().toISOString().split('T')[0]);
   const [showPreview, setShowPreview] = useState(false);
-  const [previewData, setPreviewData] = useState<InvoiceTemplateProps | null>(null);
+  const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [pendingInvoiceNo, setPendingInvoiceNo] = useState('');
   const [pendingTipe, setPendingTipe] = useState<InvoiceTipe>('normal');
   const [pendingKeterangan, setPendingKeterangan] = useState('');
@@ -55,7 +55,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [filterInvCustomer, setFilterInvCustomer] = useState('');
   const [filterInvTipe, setFilterInvTipe] = useState('all');
   const [filterInvStatus, setFilterInvStatus] = useState('all');
-  const [reprintData, setReprintData] = useState<InvoiceTemplateProps | null>(null);
+  const [reprintData, setReprintData] = useState<InvoiceData | null>(null);
   const [reprintNo, setReprintNo] = useState('');
   const [showReprint, setShowReprint] = useState(false);
 
@@ -146,7 +146,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       const firstSO = selectedSOList[0];
       const invDateStr = fmtDate(tglInvoice);
 
-      let items: InvoiceTemplateProps['items'];
+      let items: InvoiceData['items'];
       let subTotal = 0, ppn = 0, total = 0;
       let keteranganInv = '';
 
@@ -255,7 +255,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     const totalPerItem = soOrderIds.length > 0 ? (invoice.total_setelah_pajak || 0) / soOrderIds.length : 0;
     const subPerItem = soOrderIds.length > 0 ? (invoice.total_sebelum_pajak || 0) / soOrderIds.length : 0;
 
-    const items: InvoiceTemplateProps['items'] = soOrderIds.map((soId, idx) => {
+    const items: InvoiceData['items'] = soOrderIds.map((soId, idx) => {
       const s = so.find(x => x.order_id === soId);
       if (!s) {
         // SO not in memory — distribute invoice total evenly as fallback

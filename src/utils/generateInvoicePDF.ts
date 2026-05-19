@@ -1,290 +1,204 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { terbilang } from './terbilang';
-import { SJM_LOGO_B64 } from './sjmLogo';
 
-const ORANGE: [number, number, number] = [245, 166, 35];
-const BLACK:  [number, number, number] = [0,   0,   0];
-const WHITE:  [number, number, number] = [255, 255, 255];
-const DARK:   [number, number, number] = [40,  40,  40];
-
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function groupDigits(n: number, sep: string): string {
-  const s = Math.round(Math.abs(n)).toString();
-  const out: string[] = [];
-  for (let i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 === 0) out.push(sep);
-    out.push(s[i]);
-  }
-  return out.join('');
+export interface InvoiceItem {
+  rowNo: number;
+  tglMuat: string;
+  tglTiba: string;
+  noSO: string;
+  armada: string;
+  noPol: string;
+  muatan: string;
+  sn: string;
+  lokasiMuat: string;
+  lokasiTujuan: string;
+  hargaPengiriman: number;
+  nilaiPajak: number;
+  hargaAsuransi: number | null;
+  total: number;
 }
 
-// All monetary values: Rp.13.847.676,00
-function fmtRow(n: number): string {
-  return 'Rp.' + groupDigits(n, '.') + ',00';
+export interface InvoiceData {
+  invoiceNumber: string;
+  invoiceDate: string;
+  customer: string;
+  picCust: string;
+  items: InvoiceItem[];
+  subTotal: number;
+  ppn: number;
+  total: number;
+  catatan?: string;
 }
 
-function fmtTotal(n: number): string {
-  return 'Rp.' + groupDigits(n, '.') + ',00';
-}
+const fRp = (n: number) =>
+  'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
-// Date: 14-Apr-2026
-function fmtDate(d: string | null | undefined): string {
-  if (!d) return '-';
-  const dt = new Date(d.includes('T') ? d : d + 'T00:00:00');
-  if (isNaN(dt.getTime())) return String(d);
-  return `${String(dt.getDate()).padStart(2, '0')}-${MONTHS[dt.getMonth()]}-${dt.getFullYear()}`;
-}
+const AMBER  = [255, 143, 0]   as [number, number, number];
+const YELLOW = [255, 200, 64]  as [number, number, number];
+const BLACK  = [0, 0, 0]       as [number, number, number];
+const WHITE  = [255, 255, 255] as [number, number, number];
+const DGRAY  = [51, 51, 51]    as [number, number, number];
 
-export interface SOItem {
-  order_id?: string;
-  lokasi_muat?: string;
-  lokasi_bongkar?: string;
-  jenis_truk?: string;
-  no_polisi?: string;
-  tgl_muat?: string;
-  tgl_bongkar?: string;
-  muatan?: string;
-  unit_muatan?: string;
-  harga_pengiriman?: number;
-  harga_asuransi?: number;
-  total_harga?: number;
-  nilai_pajak?: number;
-  total_harga_pajak?: number;
-  sn?: string;
-}
+export function generateInvoicePDF(data: InvoiceData): jsPDF {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = 215.9;
+  const mL = 20, mR = 20;
+  let y = 20;
 
-export function generateInvoicePDF(
-  invoiceNo: string,
-  invoiceDate: Date,
-  customer: string,
-  picCust: string,
-  noPic: string,
-  items: SOItem[],
-  fileName?: string
-): void {
-  const doc = new jsPDF('p', 'mm', 'a4');
-  const W  = doc.internal.pageSize.getWidth();  // 210 mm
-  const H  = doc.internal.pageSize.getHeight(); // 297 mm
-  const ML = 10;
-  const MR = 10;
+  // LOGO BOX
+  doc.setFillColor(...AMBER);
+  doc.roundedRect(mL, y, 22, 22, 2, 2, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5);
+  doc.text('PT. SUGIARTO', mL + 11, y + 6, { align: 'center' });
+  doc.text('JAYA MANDIRI', mL + 11, y + 9, { align: 'center' });
+  doc.setFontSize(11);
+  doc.text('SJM', mL + 11, y + 17, { align: 'center' });
 
-  // Logo dimensions (square, left side)
-  const LX = 11, LY = 8, LS = 28;
-  const HEADER_BOTTOM = LY + LS + 6; // ~42 mm
-
-  // Footer height — payment info strip at very bottom of every page
-  const FOOTER_H  = 16;
-  const FOOTER_Y  = H - FOOTER_H - 4; // ~277 mm
-
-  // ── drawHeader ────────────────────────────────────────────────────────────
-  const drawHeader = () => {
-    // Real SJM logo image
-    doc.addImage(SJM_LOGO_B64, 'JPEG', LX, LY, LS, LS);
-
-    // Company name (orange bold)
-    const TX = LX + LS + 5; // x ≈ 44
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(...ORANGE);
-    doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', TX, LY + 7);
-
-    // Address / contact lines
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...DARK);
-    doc.text('Jl Raya Kemang Parung No.168A Kab.Bogor',  TX, LY + 13);
-    doc.text('Phone  : 0811751027',                      TX, LY + 18.5);
-    doc.text('Email    : sugiartojayamandiri@gmail.com',  TX, LY + 24);
-
-    // INVOICE badge (top-right)
-    const BX = W - MR - 34, BY = LY, BW = 34, BH = 11;
-    doc.setFillColor(...ORANGE);
-    doc.rect(BX, BY, BW, BH, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(...WHITE);
-    doc.text('INVOICE', BX + BW / 2, BY + 7.5, { align: 'center' });
-
-    // Thick black separator (full width)
-    const SEP = LY + LS + 2;
-    doc.setDrawColor(...BLACK);
-    doc.setLineWidth(0.7);
-    doc.line(ML, SEP, W - MR, SEP);
-
-    // Short orange accent bar (right-aligned, below separator)
-    doc.setFillColor(...ORANGE);
-    doc.rect(W - MR - 65, SEP + 1.5, 65, 2.5, 'F');
-  };
-
-  // ── drawFooter ────────────────────────────────────────────────────────────
-  // Runs on EVERY page via didDrawPage
-  const drawFooter = () => {
-    doc.setDrawColor(...BLACK);
-    doc.setLineWidth(0.4);
-    doc.line(ML, FOOTER_Y - 2, W - MR, FOOTER_Y - 2);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...DARK);
-    doc.text('Pembayaran:', ML, FOOTER_Y + 4);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text('Mandiri  1330026272567  -  a/n PT Sugiarto Jaya Mandiri', ML, FOOTER_Y + 9.5);
-  };
-
-  // Draw header & footer for page 1
-  drawHeader();
-  drawFooter();
-
-  // ── Invoice info (page 1 only) ────────────────────────────────────────────
-  const IY  = HEADER_BOTTOM + 6;
-  const LBX = ML + 2;
-  const CX  = LBX + 22;
-  const VX  = CX + 3;
-
-  const invDateFmt = `${String(invoiceDate.getDate()).padStart(2, '0')}-${MONTHS[invoiceDate.getMonth()]}-${invoiceDate.getFullYear()}`;
-  const telepon    = [picCust, noPic].filter(Boolean).join(' ');
-
+  // COMPANY INFO
+  doc.setTextColor(...AMBER);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', mL + 26, y + 6);
+  doc.setTextColor(...DGRAY);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...DARK);
+  doc.text('Jl Raya Kemang Parung No.168A Kab.Bogor', mL + 26, y + 11);
+  doc.text('Phone  : 0811751027', mL + 26, y + 15);
+  doc.text('Email   : sugiartojayamandiri@gmail.com', mL + 26, y + 19);
 
-  [
-    ['No Invoice', invoiceNo],
-    ['Tgl Invoice', invDateFmt],
-    ['Penyewa',     customer || '-'],
-    ['Telepon',     telepon  || '-'],
-  ].forEach(([lbl, val], i) => {
-    const y = IY + i * 5.8;
-    doc.text(lbl, LBX, y);
-    doc.text(':',  CX,  y);
-    doc.text(val,  VX,  y);
+  // INVOICE BADGE
+  doc.setFillColor(...AMBER);
+  doc.rect(pageW - mR - 28, y, 28, 10, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('INVOICE', pageW - mR - 14, y + 7, { align: 'center' });
+
+  y += 24;
+
+  // DOUBLE LINES
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(1.0);
+  doc.line(mL, y, pageW - mR, y);
+  y += 1.5;
+  doc.setDrawColor(...YELLOW);
+  doc.setLineWidth(0.5);
+  doc.line(pageW - mR - 50, y, pageW - mR, y);
+  y += 7;
+
+  // INVOICE INFO
+  doc.setTextColor(...BLACK);
+  doc.setFontSize(9);
+  const info: [string, string, boolean][] = [
+    ['No Invoice',  data.invoiceNumber, true],
+    ['Tgl Invoice', data.invoiceDate,   false],
+    ['Penyewa',     data.customer,      false],
+    ['Telepon',     data.picCust || '-', false],
+  ];
+  info.forEach(([label, val, bold]) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.text(String(label), mL, y);
+    doc.text(':', mL + 22, y);
+    doc.text(String(val), mL + 25, y);
+    y += 5;
   });
+  y += 3;
 
-  // ── Table ─────────────────────────────────────────────────────────────────
-  const TABLE_Y = IY + 4 * 5.8 + 5;
-
-  // Data rows
-  const dataRows = items.map((s, i) => {
-    const dm = fmtDate(s.tgl_muat);
-    const db = fmtDate(s.tgl_bongkar);
-    const tanggal = `${dm}\n-\n${db !== '-' ? db : dm}`;
-    const armada  = [s.jenis_truk, s.no_polisi ? `(${s.no_polisi})` : ''].filter(Boolean).join('\n');
-
-    const descParts: string[] = [];
-    if (s.muatan)         descParts.push(`Muatan :\n${s.muatan}${s.unit_muatan ? ' ' + s.unit_muatan : ''}`);
-    if (s.sn)             descParts.push(`SN :\n${s.sn}`);
-    if (s.lokasi_muat)    descParts.push(`Lokasi Muat :\n${s.lokasi_muat}`);
-    if (s.lokasi_bongkar) descParts.push(`Lokasi Tujuan :\n${s.lokasi_bongkar}`);
-
-    const asuransi = (s.harga_asuransi || 0) > 0
-      ? fmtRow(s.harga_asuransi!)
-      : 'Tidak termasuk\nasuransi';
-
+  // TABLE BODY
+  const body = data.items.map(item => {
+    const tgl = item.tglMuat + (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
+    const armada = item.armada + (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
+    const desk = [
+      'Muatan :\n' + (item.muatan || '-'),
+      item.sn ? 'SN :\n' + item.sn : '',
+      'Lokasi Muat :\n' + (item.lokasiMuat || '-'),
+      'Lokasi Tujuan :\n' + (item.lokasiTujuan || '-'),
+    ].filter(Boolean).join('\n');
     return [
-      String(i + 1),
-      tanggal,
-      s.order_id || '-',
-      armada || '-',
-      descParts.join('\n\n') || '-',
-      fmtRow(Number(s.harga_pengiriman) || 0),
-      asuransi,
-      fmtRow(Number(s.total_harga) || 0),
+      String(item.rowNo), tgl, item.noSO, armada, desk,
+      fRp(item.hargaPengiriman),
+      item.hargaAsuransi ? fRp(item.hargaAsuransi) : 'Tidak termasuk\nasuransi',
+      fRp(item.total),
     ];
   });
 
-  // Totals
-  const totalDPP   = items.reduce((s, x) => s + (x.total_harga             || 0), 0);
-  const totalPPN   = items.reduce((s, x) => s + (x.nilai_pajak              || 0), 0);
-  const grandTotal = items.reduce((s, x) => s + (x.total_harga_pajak || x.total_harga || 0), 0);
-
-  // Summary rows appended to table body
-  const summaryRows: any[] = [
-    [
-      { content: 'Catatan :', colSpan: 6, styles: { fontStyle: 'bold', halign: 'left' as const } },
-      { content: 'Sub Total', styles: { fontStyle: 'bold', halign: 'right' as const } },
-      { content: fmtTotal(totalDPP), styles: { halign: 'right' as const } },
-    ],
+  const foot: any[] = [
+    ['', '', '', '', '', '', 'Sub Total', fRp(data.subTotal)],
+    ['', '', '', '', '', '', 'PPN (1,1%)', fRp(data.ppn)],
+    ['', '', '', '', '', '', 'Total', fRp(data.total)],
+    [{ content: 'Terbilang: ' + terbilang(data.total) + ' Rupiah', colSpan: 8, styles: { fontStyle: 'bold', fontSize: 8 } }],
   ];
 
-  if (totalPPN > 0) {
-    summaryRows.push([
-      { content: '', colSpan: 6 },
-      { content: 'PPN (1,1%)', styles: { fontStyle: 'bold', halign: 'right' as const } },
-      { content: fmtTotal(totalPPN), styles: { halign: 'right' as const } },
-    ]);
-  }
-
-  summaryRows.push([
-    { content: '', colSpan: 6 },
-    { content: 'Total', styles: { fontStyle: 'bold', halign: 'right' as const } },
-    { content: fmtTotal(grandTotal), styles: { fontStyle: 'bold', halign: 'right' as const } },
-  ]);
-
-  summaryRows.push([
-    {
-      content: `Terbilang: ${terbilang(grandTotal)}`,
-      colSpan: 8,
-      styles: { fontStyle: 'bold', halign: 'left' as const },
-    },
-  ]);
-
-  // Column widths sum: 10+22+26+20+34+26+24+28 = 190 = W - ML - MR ✓
   autoTable(doc, {
-    head: [['No.', 'Tanggal', 'No SO', 'Armada', 'Deskripsi', 'Biaya Pengiriman', 'Biaya Asuransi', 'Jumlah']],
-    body: [...dataRows, ...summaryRows],
-    startY: TABLE_Y,
-    margin: { left: ML, right: MR, top: HEADER_BOTTOM + 2, bottom: FOOTER_H + 8 },
-    styles: {
-      fontSize: 7.5,
-      cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
-      lineWidth: 0.2,
-      lineColor: BLACK,
-      textColor: DARK,
-      valign: 'top',
-      overflow: 'linebreak',
-    },
-    headStyles: {
-      fillColor: ORANGE,
-      textColor: DARK,
-      fontStyle: 'bold',
-      fontSize: 8,
-      halign: 'center',
-    },
-    bodyStyles:         { fillColor: WHITE },
-    alternateRowStyles: { fillColor: WHITE },
+    startY: y,
+    head: [[
+      { content: 'No.',              styles: { halign: 'center' } },
+      { content: 'Tanggal',          styles: { halign: 'center' } },
+      { content: 'No SO',            styles: { halign: 'center' } },
+      { content: 'Armada',           styles: { halign: 'center' } },
+      { content: 'Deskripsi',        styles: { halign: 'center' } },
+      { content: 'Biaya Pengiriman', styles: { halign: 'center' } },
+      { content: 'Biaya Asuransi',   styles: { halign: 'center' } },
+      { content: 'Jumlah',           styles: { halign: 'center' } },
+    ]],
+    body,
+    foot,
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2, lineColor: BLACK, lineWidth: 0.3, textColor: BLACK, valign: 'top' },
+    headStyles: { fillColor: YELLOW, textColor: BLACK, fontStyle: 'bold', fontSize: 8, halign: 'center' },
+    footStyles: { fillColor: WHITE, textColor: BLACK, fontSize: 8 },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 10 },
-      1: { halign: 'center', cellWidth: 22 },
-      2: { cellWidth: 26 },
-      3: { cellWidth: 20 },
-      4: { cellWidth: 34 },
-      5: { halign: 'right',  cellWidth: 26 },
-      6: { halign: 'right',  cellWidth: 24 },
-      7: { halign: 'right',  cellWidth: 28 },
+      0: { cellWidth: 8,      halign: 'center' },
+      1: { cellWidth: 22,     halign: 'center' },
+      2: { cellWidth: 28 },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 'auto' },
+      5: { cellWidth: 28,     halign: 'right' },
+      6: { cellWidth: 25,     halign: 'center' },
+      7: { cellWidth: 28,     halign: 'right' },
     },
-    showHead: 'everyPage',
-    didDrawPage: (data) => {
-      if (data.pageNumber > 1) drawHeader();
-      drawFooter();
-    },
+    margin: { left: mL, right: mR },
+    showFoot: 'lastPage',
   });
 
-  // ── Signature (last page, after table) ────────────────────────────────────
-  const finalY = (doc as any).lastAutoTable.finalY;
-  const SX = W / 2 + 15;
-  const SY = finalY + 12;
+  const finalY = (doc as any).lastAutoTable.finalY + 10;
 
-  // Only draw signature if it fits above the footer
-  if (SY + 30 < FOOTER_Y - 5) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(...DARK);
-    doc.text('Hormat Kami,', SX, SY);
-    doc.text('(Muhammad Naufal Sugiarto)', SX, SY + 28);
-  }
+  // TTD — kanan
+  const ttdX = pageW - mR - 45;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...BLACK);
+  doc.text('Hormat Kami,', ttdX + 22, finalY, { align: 'center' });
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(0.3);
+  doc.line(ttdX, finalY + 30, ttdX + 45, finalY + 30);
+  doc.text('(Muhammad Naufal Sugiarto)', ttdX + 22, finalY + 34, { align: 'center' });
 
-  doc.save(fileName ?? `Invoice_${invoiceNo.replace(/\//g, '_')}.pdf`);
+  // PEMBAYARAN — bawah
+  const payY = finalY + 42;
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(mL, payY - 3, pageW - mR, payY - 3);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Pembayaran:', mL, payY + 2);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL, payY + 7);
+
+  return doc;
+}
+
+function terbilang(n: number): string {
+  const s = ['','Satu','Dua','Tiga','Empat','Lima','Enam','Tujuh','Delapan','Sembilan','Sepuluh','Sebelas'];
+  if (n < 12)   return s[Math.round(n)];
+  if (n < 20)   return (terbilang(n - 10) + ' Belas').trim();
+  if (n < 100)  return (terbilang(Math.floor(n/10)) + ' Puluh ' + terbilang(n%10)).trim();
+  if (n < 200)  return ('Seratus ' + terbilang(n-100)).trim();
+  if (n < 1000) return (terbilang(Math.floor(n/100)) + ' Ratus ' + terbilang(n%100)).trim();
+  if (n < 2000) return ('Seribu ' + terbilang(n-1000)).trim();
+  if (n < 1e6)  return (terbilang(Math.floor(n/1000)) + ' Ribu ' + terbilang(n%1000)).trim();
+  if (n < 1e9)  return (terbilang(Math.floor(n/1e6)) + ' Juta ' + terbilang(n%1e6)).trim();
+  return '';
 }
