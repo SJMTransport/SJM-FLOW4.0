@@ -59,7 +59,6 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
   ({ invoiceNumber, invoiceDate, customer, picCust, items, subTotal, ppn, total, catatan = '' }, ref) => (
       <div ref={ref} style={{
         width: '794px',
-        minHeight: '1123px',
         padding: '36px 40px',
         fontFamily: 'Arial, Helvetica, sans-serif',
         fontSize: '10px',

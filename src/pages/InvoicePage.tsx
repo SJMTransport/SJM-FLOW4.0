@@ -189,11 +189,11 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           hargaPengiriman: Number(s.harga_pengiriman) || 0,
           nilaiPajak: Number(s.nilai_pajak) || 0,
           hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
-          total: Number(s.total_harga_pajak) || 0,
+          total: Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0,
         }));
-        subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman, 0);
+        subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman + (i.hargaAsuransi || 0), 0);
         ppn = items.reduce((acc, i) => acc + (i.nilaiPajak || 0), 0);
-        total = items.reduce((acc, i) => acc + i.total, 0);
+        total = subTotal + ppn;
       }
 
       setPreviewData({
