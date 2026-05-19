@@ -109,15 +109,24 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   y += 4;
 
   // TABLE
-  const body = data.items.map(item => {
+  // deskripsiStructured dipakai di didDrawCell untuk render bold label + normal value
+  const deskripsiStructured = data.items.map(item => {
+    const parts: Array<{ label: string; value: string }> = [
+      { label: 'Muatan :', value: item.muatan || '-' },
+    ];
+    if (item.sn) parts.push({ label: 'SN :', value: item.sn });
+    parts.push({ label: 'Lokasi Muat :', value: item.lokasiMuat || '-' });
+    parts.push({ label: 'Lokasi Tujuan :', value: item.lokasiTujuan || '-' });
+    return parts;
+  });
+
+  const body = data.items.map((item, idx) => {
     const tgl = item.tglMuat + (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
     const armada = item.armada + (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
-    const desk = [
-      'Muatan : ' + (item.muatan || '-'),
-      item.sn ? 'SN : ' + item.sn : '',
-      'Lokasi Muat : ' + (item.lokasiMuat || '-'),
-      'Lokasi Tujuan : ' + (item.lokasiTujuan || '-'),
-    ].filter(Boolean).join('\n');
+    // desk string menentukan tinggi baris — label di atas, nilai di bawah (sesuai render)
+    const desk = deskripsiStructured[idx]
+      .map(p => p.label + '\n' + p.value)
+      .join('\n');
     return [
       String(item.rowNo),
       tgl,
@@ -196,6 +205,36 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     },
     margin: { left: mL, right: mR, bottom: 20 },
     showFoot: 'lastPage',
+    didDrawCell: (hookData: any) => {
+      if (hookData.section !== 'body' || hookData.column.index !== 4) return;
+      const { cell, row } = hookData;
+      const parts = deskripsiStructured[row.index];
+      if (!parts) return;
+
+      // Hapus teks yang sudah digambar autoTable, jaga border tetap
+      doc.setFillColor(255, 255, 255);
+      doc.rect(cell.x + 0.2, cell.y + 0.2, cell.width - 0.4, cell.height - 0.4, 'F');
+
+      const pL = 3;
+      const lineH = 4.2;
+      const textX = cell.x + pL;
+      let ty = cell.y + 3.5;
+      const maxW = cell.width - pL * 2;
+
+      doc.setFontSize(8.5);
+      parts.forEach(({ label, value }, i) => {
+        // Bold label
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text(label, textX, ty);
+        ty += lineH;
+        // Normal value (wrap kalau panjang)
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(value, maxW);
+        doc.text(lines, textX, ty);
+        ty += lineH * lines.length + (i < parts.length - 1 ? 2 : 0);
+      });
+    },
   });
 
   // FOOTER — halaman terakhir saja
