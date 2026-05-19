@@ -33,13 +33,16 @@ export interface InvoiceTemplateProps {
 const fRp = (n: number): string =>
   'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
+// FIX 6: Updated th with correct font size, color, vertical align, padding
 const th: React.CSSProperties = {
   backgroundColor: '#FFC840',
   border: '1px solid #000',
-  padding: '5px 4px',
+  padding: '6px 4px',
   textAlign: 'center',
   fontWeight: 'bold',
-  fontSize: '9px',
+  fontSize: '8.5px',
+  color: '#000',
+  verticalAlign: 'middle',
 };
 
 const td: React.CSSProperties = {
@@ -111,9 +114,9 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
           </div>
         </div>
 
-        {/* FIX 2: Full-width black line + short right-aligned orange accent */}
-        <div style={{ height: '2px', backgroundColor: '#000', margin: '6px 0 2px' }} />
-        <div style={{ height: '2.5px', backgroundColor: '#FF8F00', marginBottom: '10px', width: '42%', marginLeft: 'auto' }} />
+        {/* FIX 3: Double orange lines */}
+        <div style={{ height: '2.5px', backgroundColor: '#FF8F00', width: '100%', marginTop: '8px' }} />
+        <div style={{ height: '1.5px', backgroundColor: '#FFC107', width: '180px', marginLeft: 'auto', marginTop: '2px', marginBottom: '14px' }} />
 
         {/* ── INVOICE INFO ── */}
         <div style={{
@@ -138,17 +141,18 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
         </div>
 
         {/* ── ITEMS TABLE ── */}
+        {/* FIX 5: Updated column widths */}
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px', border: '2px solid #000' }}>
           <thead>
             <tr>
-              <th style={{ ...th, width: '26px' }}>No.</th>
-              <th style={{ ...th, width: '72px' }}>Tanggal</th>
-              <th style={{ ...th, width: '88px' }}>No SO</th>
-              <th style={{ ...th, width: '72px' }}>Armada</th>
+              <th style={{ ...th, width: '28px' }}>No.</th>
+              <th style={{ ...th, width: '70px' }}>Tanggal</th>
+              <th style={{ ...th, width: '85px' }}>No SO</th>
+              <th style={{ ...th, width: '75px' }}>Armada</th>
               <th style={th}>Deskripsi</th>
-              <th style={{ ...th, width: '92px' }}>Biaya Pengiriman</th>
-              <th style={{ ...th, width: '84px' }}>Biaya Asuransi</th>
-              <th style={{ ...th, width: '88px' }}>Jumlah</th>
+              <th style={{ ...th, width: '90px' }}>Biaya Pengiriman</th>
+              <th style={{ ...th, width: '80px' }}>Biaya Asuransi</th>
+              <th style={{ ...th, width: '85px' }}>Jumlah</th>
             </tr>
           </thead>
           <tbody>
@@ -163,7 +167,6 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                   <div>{item.armada}</div>
                   {item.noPol && item.noPol !== '-' && <div>({item.noPol})</div>}
                 </td>
-                {/* FIX 3: Explicit div wrappers for all deskripsi fields */}
                 <td style={td}>
                   {item.muatan && (
                     <div style={{ marginBottom: '6px' }}>
@@ -202,7 +205,6 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
               <td colSpan={2} style={{ ...tdR, fontWeight: 'bold' }}>Sub Total</td>
               <td style={tdR}><strong>{fRp(subTotal)}</strong></td>
             </tr>
-            {/* FIX 4: Always show PPN row */}
             <tr>
               <td colSpan={5} style={{ border: '1px solid #000' }} />
               <td colSpan={2} style={tdR}>PPN (1,1%)</td>
@@ -213,23 +215,26 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
               <td colSpan={2} style={{ ...tdR, fontWeight: 'bold' }}>Total</td>
               <td style={tdR}><strong>{fRp(total)}</strong></td>
             </tr>
+            {/* FIX 7: Terbilang inside tfoot */}
+            <tr>
+              <td colSpan={8} style={{ border: '1px solid #000', borderTop: 'none', padding: '5px 8px', fontSize: '9px' }}>
+                <strong>Terbilang:</strong> {terbilang(total)}
+              </td>
+            </tr>
           </tfoot>
         </table>
 
-        {/* ── TERBILANG ── */}
-        <div style={{ border: '2px solid #000', padding: '5px 8px', fontSize: '9px', borderTop: 'none' }}>
-          <strong>Terbilang:</strong> {terbilang(total)}
-        </div>
-
-        {/* ── FOOTER ── */}
-        <div style={{ borderTop: '1px solid #000', marginTop: '24px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        {/* FIX 4: Footer — side-by-side payment info + centered signature block */}
+        <div style={{ borderTop: '1px solid #000', marginTop: '24px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ fontSize: '9px' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Pembayaran:</div>
             <div>Mandiri &nbsp;1330026272567 &nbsp;— &nbsp;a/n PT Sugiarto Jaya Mandiri</div>
           </div>
-          <div style={{ textAlign: 'right', fontSize: '10px' }}>
+          <div style={{ textAlign: 'center', fontSize: '10px' }}>
             <div>Hormat Kami,</div>
-            <div style={{ marginTop: '46px' }}>(Muhammad Naufal Sugiarto)</div>
+            <div style={{ marginTop: '46px', borderTop: '1px solid #000', paddingTop: '4px', minWidth: '140px' }}>
+              (Muhammad Naufal Sugiarto)
+            </div>
           </div>
         </div>
       </div>
