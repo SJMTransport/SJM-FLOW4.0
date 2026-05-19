@@ -539,7 +539,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
   const statusCount: any = { "Order Confirmed": 0, Loading: 0, "On Going": 0, Arrived: 0, Completed: 0, Cancelled: 0 };
   filtered.forEach((x: any) => { if (statusCount[x.status_muatan] !== undefined) statusCount[x.status_muatan]++; });
-  const totalBiaya = filtered.reduce((sum: number, s: any) => sum + (Number(s.total_harga_pajak) || 0), 0);
+  const totalBiaya = filtered.reduce((sum: number, s: any) => sum + (Number(s.total_harga_pajak) || Number(s.total_harga) || 0), 0);
 
   return (
     <PageShell>
@@ -725,7 +725,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         </td>
                         <td>{statusBadge(s.status_muatan)}</td>
                         <td className="text-right tabular-nums">
-                          <div className="text-[11px] font-black text-text-main">{fmt(s.total_harga_pajak || 0)}</div>
+                          <div className="text-[11px] font-black text-text-main">{fmt(s.total_harga_pajak || s.total_harga || 0)}</div>
                           {Number(s.nilai_pajak) > 0 && (
                             <div className="text-[9px] text-text-light opacity-60 italic">+PPN {fmt(s.nilai_pajak)}</div>
                           )}
@@ -979,7 +979,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <div className="absolute top-0 right-0 w-32 h-full bg-white/5 -skew-x-12 translate-x-8 transition-transform group-hover:translate-x-4" />
                 <div className="flex flex-col gap-0 relative z-10">
                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest italic">Total Billable Amount</span>
-                   <span className="text-2xl font-black text-white tabular-nums tracking-tighter">{fmt(form.total_harga_pajak)}</span>
+                   <span className="text-2xl font-black text-white tabular-nums tracking-tighter">{fmt(form.total_harga_pajak || form.total_harga || 0)}</span>
                 </div>
                 <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
                    <Icon name={isPajakApply(form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
