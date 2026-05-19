@@ -62,6 +62,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   // ── Tab 3 state
   const [paymentData, setPaymentData] = useState<any[]>([]);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [selectedPaymentInv, setSelectedPaymentInv] = useState<any>(null);
 
   // ── Load all invoices
   const loadInvoices = async () => {
@@ -645,6 +646,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <th>No Invoice</th>
                     <th>Customer</th>
                     <th>Tipe</th>
+                    <th>Sales Order</th>
                     <th className="text-right">Total Invoice</th>
                     <th className="text-right">Terbayar</th>
                     <th className="text-right">Sisa</th>
@@ -653,14 +655,22 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </thead>
                 <tbody className="divide-y divide-border-main/20">
                   {paymentData.length === 0 ? (
-                    <EmptyState colSpan={7} />
+                    <EmptyState colSpan={8} />
                   ) : paymentData.map(inv => {
                     const ps = inv.paymentStatus;
                     const sc = STATUS_COLOR[ps?.status || 'Belum Bayar'] || '#666';
                     return (
-                      <tr key={inv.id} className="transition-colors hover:bg-slate-50">
+                      <tr key={inv.id} className="transition-colors hover:bg-slate-50 group">
                         <td>
-                          <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{inv.no_invoice}</div>
+                          <button
+                            className="font-black text-accent italic text-[11px] uppercase tracking-tight hover:underline text-left"
+                            onClick={() => setSelectedPaymentInv({ ...inv, paymentStatus: ps })}
+                          >
+                            {inv.no_invoice}
+                          </button>
+                          {inv.keterangan_invoice && (
+                            <div className="text-[9px] text-text-light opacity-60 italic">{inv.keterangan_invoice}</div>
+                          )}
                         </td>
                         <td>
                           <div className="text-[12px] font-bold text-text-main">{inv.customer}</div>
@@ -671,6 +681,19 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                             inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' :
                             'bg-blue-50 text-blue-700'
                           }`}>{inv.tipe}</span>
+                        </td>
+                        <td>
+                          <div className="flex gap-1 flex-wrap max-w-[200px]">
+                            {(inv.so_order_ids || []).slice(0, 3).map((soId: string) => (
+                              <span key={soId} className="px-1.5 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[9px] font-bold text-accent whitespace-nowrap">{soId}</span>
+                            ))}
+                            {(inv.so_order_ids || []).length > 3 && (
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-text-light rounded-full text-[9px] font-bold">+{inv.so_order_ids.length - 3}</span>
+                            )}
+                            {(!inv.so_order_ids || inv.so_order_ids.length === 0) && (
+                              <span className="text-[10px] text-text-light italic opacity-50">—</span>
+                            )}
+                          </div>
                         </td>
                         <td className="text-right tabular-nums text-[12px] font-bold">{fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0)}</td>
                         <td className="text-right tabular-nums text-[12px] font-bold text-green-600">{fRp(ps?.total_paid || 0)}</td>
@@ -689,6 +712,112 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           )}
         </div>
       )}
+
+      {/* ── Invoice Detail Modal (Tab 3 click) ── */}
+      {selectedPaymentInv && (() => {
+        const inv = selectedPaymentInv;
+        const ps = inv.paymentStatus;
+        const sc = STATUS_COLOR[ps?.status || 'Belum Bayar'] || '#666';
+        const soOrderIds: string[] = inv.so_order_ids || [];
+        const soDetails = soOrderIds.map((soId: string) => so.find(x => x.order_id === soId) || { order_id: soId, _notFound: true });
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedPaymentInv(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col mx-4" onClick={e => e.stopPropagation()}>
+
+              {/* Header */}
+              <div className="flex items-start justify-between p-5 border-b border-border-main">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[15px] font-black text-accent uppercase tracking-tight">{inv.no_invoice}</span>
+                    <span className={`badge text-[8px] ${inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' : inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>{inv.tipe}</span>
+                    <span className="badge text-[8px]" style={{ backgroundColor: sc + '20', color: sc }}>{ps?.status || 'Belum Bayar'}</span>
+                  </div>
+                  <div className="text-[11px] text-text-med mt-1">{inv.customer} · {fmtDate(inv.tgl_invoice)}</div>
+                  {inv.keterangan_invoice && <div className="text-[10px] text-text-light italic opacity-60 mt-0.5">{inv.keterangan_invoice}</div>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="btn-ghost h-8 px-3 text-[11px] flex items-center gap-1.5"
+                    onClick={() => { setSelectedPaymentInv(null); handleReprint(inv); }}
+                  >
+                    <Icon name="Eye" size={13} /> Lihat PDF
+                  </button>
+                  <button className="p-2 rounded-full hover:bg-slate-100 transition-colors" onClick={() => setSelectedPaymentInv(null)}>
+                    <Icon name="X" size={18} className="text-text-med" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment summary */}
+              <div className="grid grid-cols-4 gap-0 border-b border-border-main">
+                {[
+                  { label: 'Total Invoice', value: fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0), color: 'text-text-main' },
+                  { label: 'Terbayar', value: fRp(ps?.total_paid || 0), color: 'text-green-600' },
+                  { label: 'Sisa Tagihan', value: fRp(ps?.total_remaining || 0), color: 'text-red-500' },
+                  { label: 'Sub-total (DPP)', value: fRp(inv.total_sebelum_pajak || 0), color: 'text-text-med' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="p-4 border-r border-border-main last:border-r-0">
+                    <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-60 mb-1">{label}</div>
+                    <div className={`text-[13px] font-black tabular-nums ${color}`}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* SO Details table */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-60 mb-3">
+                  Detail Sales Order ({soOrderIds.length} SO)
+                </div>
+                <div className="table-container max-h-[none]">
+                  <table className="w-full border-collapse text-[11px]">
+                    <thead>
+                      <tr>
+                        <th>No SO</th>
+                        <th>Customer</th>
+                        <th>Rute</th>
+                        <th>Tgl Muat</th>
+                        <th>Armada / No Pol</th>
+                        <th>Status</th>
+                        <th className="text-right">Total Biaya</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-main/20">
+                      {soDetails.length === 0 ? (
+                        <EmptyState colSpan={7} />
+                      ) : soDetails.map((s: any) => (
+                        <tr key={s.order_id} className="hover:bg-slate-50 transition-colors">
+                          <td>
+                            <span className="font-black text-accent uppercase tracking-tight">{s.order_id}</span>
+                          </td>
+                          {s._notFound ? (
+                            <td colSpan={6} className="text-text-light italic opacity-50 text-[10px]">Data SO tidak tersedia di memori</td>
+                          ) : (
+                            <>
+                              <td className="font-bold text-text-main">{s.customer}</td>
+                              <td className="max-w-[160px]">
+                                <div className="font-bold text-text-main truncate" title={s.lokasi_muat}>{s.lokasi_muat || '-'}</div>
+                                <div className="text-[10px] text-text-light italic truncate" title={s.lokasi_bongkar}>→ {s.lokasi_bongkar || '-'}</div>
+                              </td>
+                              <td className="tabular-nums text-text-med italic">{s.tgl_muat || '-'}</td>
+                              <td>
+                                <div className="font-bold text-text-main">{s.jenis_truk || '-'}</div>
+                                <div className="text-[10px] text-text-light">{s.no_polisi || '-'}</div>
+                              </td>
+                              <td>{statusBadge(s.status_muatan)}</td>
+                              <td className="text-right font-black tabular-nums">{fRp(s.total_harga_pajak || 0)}</td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
       {/* New invoice preview */}
       {showPreview && previewData && (
