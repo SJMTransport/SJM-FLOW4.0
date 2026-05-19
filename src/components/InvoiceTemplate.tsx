@@ -60,6 +60,7 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
       <div ref={ref} style={{
         width: '794px',
         padding: '36px 40px',
+        paddingBottom: '0',
         fontFamily: 'Arial, Helvetica, sans-serif',
         fontSize: '10px',
         color: '#000',
