@@ -114,9 +114,9 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
           </div>
         </div>
 
-        {/* FIX 3: Double orange lines */}
-        <div style={{ height: '2.5px', backgroundColor: '#FF8F00', width: '100%', marginTop: '8px' }} />
-        <div style={{ height: '1.5px', backgroundColor: '#FFC107', width: '180px', marginLeft: 'auto', marginTop: '2px', marginBottom: '14px' }} />
+        {/* Garis header: hitam tebal full-width + kuning tipis right-aligned */}
+        <div style={{ height: '3px', backgroundColor: '#000', width: '100%', marginTop: '8px' }} />
+        <div style={{ height: '2px', backgroundColor: '#FFC840', width: '200px', marginLeft: 'auto', marginTop: '2px', marginBottom: '14px' }} />
 
         {/* ── INVOICE INFO ── */}
         <div style={{
@@ -224,17 +224,21 @@ const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateProps>(
           </tfoot>
         </table>
 
-        {/* FIX 4: Footer — side-by-side payment info + centered signature block */}
-        <div style={{ borderTop: '1px solid #000', marginTop: '24px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: '9px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Pembayaran:</div>
-            <div>Mandiri &nbsp;1330026272567 &nbsp;— &nbsp;a/n PT Sugiarto Jaya Mandiri</div>
-          </div>
-          <div style={{ textAlign: 'center', fontSize: '10px' }}>
-            <div>Hormat Kami,</div>
-            <div style={{ marginTop: '46px', borderTop: '1px solid #000', paddingTop: '4px', minWidth: '140px' }}>
-              (Muhammad Naufal Sugiarto)
+        {/* FOOTER */}
+        <div style={{ marginTop: '20px' }}>
+          {/* TTD block — kanan */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <div style={{ textAlign: 'center', fontSize: '10px', minWidth: '160px' }}>
+              <div>Hormat Kami,</div>
+              <div style={{ marginTop: '70px', borderTop: '1px solid #000', paddingTop: '4px' }}>
+                (Muhammad Naufal Sugiarto)
+              </div>
             </div>
+          </div>
+          {/* Garis pemisah */}
+          <div style={{ borderTop: '1px solid #ccc', marginTop: '8px', paddingTop: '8px' }}>
+            <div style={{ fontSize: '9px', fontWeight: 'bold', marginBottom: '2px' }}>Pembayaran:</div>
+            <div style={{ fontSize: '9px' }}>Mandiri &nbsp;1330026272567 &nbsp;— &nbsp;a/n PT Sugiarto Jaya Mandiri</div>
           </div>
         </div>
       </div>

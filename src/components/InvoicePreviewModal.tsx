@@ -53,26 +53,34 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
       // Convert canvas → PDF (A4 in points)
       const pdf = new jsPDF('portrait', 'pt', 'a4');
-      const pdfW = pdf.internal.pageSize.getWidth();
-      const pdfH = pdf.internal.pageSize.getHeight();
-      const cW = canvas.width;
+      const pdfW = pdf.internal.pageSize.getWidth();   // 595.28 pt
+      const pdfH = pdf.internal.pageSize.getHeight();  // 841.89 pt
+      const cW = canvas.width;   // sudah di-scale 2x
       const cH = canvas.height;
-      const ratio = cW / pdfW;
-      // Subtract small epsilon to prevent floating-point rounding from creating a blank final page
-      const totalPages = Math.max(1, Math.ceil(cH / (pdfH * ratio) - 0.01));
 
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) pdf.addPage();
-        const srcY = page * pdfH * ratio;
-        const srcH = Math.min(pdfH * ratio, cH - srcY);
+      // Hitung tinggi konten dalam pt (bukan px)
+      // canvas di-scale 2, jadi 1pt = 2px
+      const contentHeightPt = (cH / cW) * pdfW;
 
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = cW;
-        pageCanvas.height = srcH;
-        pageCanvas.getContext('2d')!.drawImage(canvas, 0, srcY, cW, srcH, 0, 0, cW, srcH);
-
-        // JPEG is ~3× smaller than PNG and faster to embed
-        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, srcH / ratio);
+      // Kalau konten muat dalam 1 halaman, tidak perlu pagination
+      if (contentHeightPt <= pdfH * 1.05) {
+        // Single page — fit seluruh konten
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, contentHeightPt);
+      } else {
+        // Multi page — potong per halaman
+        const pageHeightPx = Math.floor((pdfH / pdfW) * cW);
+        const totalPages = Math.ceil(cH / pageHeightPx);
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) pdf.addPage();
+          const srcY = page * pageHeightPx;
+          const srcH = Math.min(pageHeightPx, cH - srcY);
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = cW;
+          pageCanvas.height = srcH;
+          pageCanvas.getContext('2d')!.drawImage(canvas, 0, srcY, cW, srcH, 0, 0, cW, srcH);
+          const imgH = (srcH / cW) * pdfW;
+          pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, imgH);
+        }
       }
 
       const filename = `Invoice_${invoiceNumber.replace(/\//g, '_')}.pdf`;
