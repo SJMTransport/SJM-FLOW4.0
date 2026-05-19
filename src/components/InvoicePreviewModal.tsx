@@ -31,8 +31,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       console.log('📸 Starting html2canvas capture...');
 
       const captureEl = templateRef.current;
-      // Use offsetHeight to avoid capturing trailing whitespace that creates a blank page 2
-      const captureHeight = Math.max(captureEl.offsetHeight, captureEl.scrollHeight);
+      const captureHeight = captureEl.scrollHeight;
       const canvasPromise = html2canvas(captureEl, {
         scale: 2,
         useCORS: false,
