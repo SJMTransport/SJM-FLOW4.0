@@ -150,44 +150,44 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     headStyles: { fillColor: YELLOW, textColor: BLACK, fontStyle: 'bold', fontSize: 8, halign: 'center' },
     footStyles: { fillColor: WHITE, textColor: BLACK, fontSize: 8 },
     columnStyles: {
-      0: { cellWidth: 8,      halign: 'center' },
-      1: { cellWidth: 22,     halign: 'center' },
-      2: { cellWidth: 28 },
-      3: { cellWidth: 22 },
+      0: { cellWidth: 8,  halign: 'center' },
+      1: { cellWidth: 20, halign: 'center' },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 20 },
       4: { cellWidth: 'auto' },
-      5: { cellWidth: 28,     halign: 'right' },
-      6: { cellWidth: 25,     halign: 'center' },
-      7: { cellWidth: 28,     halign: 'right' },
+      5: { cellWidth: 24, halign: 'right' },
+      6: { cellWidth: 22, halign: 'center' },
+      7: { cellWidth: 24, halign: 'right' },
     },
-    margin: { left: mL, right: mR, bottom: 45 },
+    margin: { left: mL, right: mR, bottom: 20 },
     showFoot: 'lastPage',
-    didDrawPage: () => {
-      const pageH = doc.internal.pageSize.getHeight();
-      const footerY = pageH - 35;
-
-      // Garis pemisah footer
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.2);
-      doc.line(mL, footerY, pageW - mR, footerY);
-
-      // TTD kanan
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...BLACK);
-      doc.text('Hormat Kami,', pageW - mR - 22, footerY + 5, { align: 'center' });
-      doc.setDrawColor(...BLACK);
-      doc.setLineWidth(0.3);
-      doc.line(pageW - mR - 45, footerY + 20, pageW - mR, footerY + 20);
-      doc.text('(Muhammad Naufal Sugiarto)', pageW - mR - 22, footerY + 24, { align: 'center' });
-
-      // Pembayaran kiri
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Pembayaran:', mL, footerY + 5);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL, footerY + 10);
-    },
   });
+
+  // Footer hanya di halaman terakhir
+  const finalY = (doc as any).lastAutoTable.finalY;
+  doc.setPage(doc.getNumberOfPages());
+
+  // TTD — kanan, langsung setelah tabel
+  const ttdY = finalY + 8;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...BLACK);
+  doc.text('Hormat Kami,', pageW - mR - 22, ttdY, { align: 'center' });
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(0.3);
+  doc.line(pageW - mR - 45, ttdY + 25, pageW - mR, ttdY + 25);
+  doc.text('(Muhammad Naufal Sugiarto)', pageW - mR - 22, ttdY + 29, { align: 'center' });
+
+  // Pembayaran — kiri, di bawah TTD
+  const payY = ttdY + 38;
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(mL, payY - 2, pageW - mR, payY - 2);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Pembayaran:', mL, payY + 3);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL, payY + 8);
 
   return doc;
 }
