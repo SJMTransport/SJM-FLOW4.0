@@ -37,11 +37,16 @@ const AMBER  = [255, 143, 0]   as [number, number, number];
 const YELLOW = [255, 200, 64]  as [number, number, number];
 const BLACK  = [0, 0, 0]       as [number, number, number];
 const WHITE  = [255, 255, 255] as [number, number, number];
-const DGRAY  = [80, 80, 80]    as [number, number, number];
+
+const PAD_TOP  = 2.5;
+const PAD_LR   = 3.0;
+const FONT_PT  = 9;
+const LH       = 4.0;   // line-height in mm at 9pt
 
 export function generateInvoicePDF(data: InvoiceData): jsPDF {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
+  const pageH = 297;
   const mL = 10;
   const mR = 10;
   let y = 14;
@@ -52,7 +57,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setTextColor(...WHITE);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6);
-  doc.text('PT. SUGIARTO', mL + 13, y + 8, { align: 'center' });
+  doc.text('PT. SUGIARTO', mL + 13, y + 8,  { align: 'center' });
   doc.text('JAYA MANDIRI', mL + 13, y + 12, { align: 'center' });
   doc.setFontSize(14);
   doc.text('SJM', mL + 13, y + 22, { align: 'center' });
@@ -62,11 +67,11 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', mL + 30, y + 8);
-  doc.setTextColor(...DGRAY);
+  doc.setTextColor(...BLACK);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Jl Raya Kemang Parung No.168A Kab.Bogor', mL + 30, y + 14);
-  doc.text('Phone  : 0811751027', mL + 30, y + 19);
+  doc.text('Phone  : 0811751027',                     mL + 30, y + 19);
   doc.text('Email   : sugiartojayamandiri@gmail.com', mL + 30, y + 24);
 
   // ── INVOICE BADGE ──
@@ -79,7 +84,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
 
   y += 30;
 
-  // ── GARIS HEADER ──
+  // ── SEPARATOR LINES ──
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(1.2);
   doc.line(mL, y, pageW - mR, y);
@@ -93,9 +98,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setTextColor(...BLACK);
   doc.setFontSize(10);
   const info: [string, string, boolean][] = [
-    ['No Invoice',  data.invoiceNumber, true],
-    ['Tgl Invoice', data.invoiceDate,   false],
-    ['Penyewa',     data.customer,      false],
+    ['No Invoice',  data.invoiceNumber,  true],
+    ['Tgl Invoice', data.invoiceDate,    false],
+    ['Penyewa',     data.customer,       false],
     ['Telepon',     data.picCust || '-', false],
   ];
   info.forEach(([label, val, bold]) => {
@@ -114,11 +119,13 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       + (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
     const armada = item.armada
       + (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
+    // desk string drives cell-height; rendered in WHITE (invisible) so
+    // didDrawCell can re-draw with bold labels + normal values
     const desk = [
       'Muatan :\n' + (item.muatan || '-'),
       item.sn ? 'SN :\n' + item.sn : null,
-      'Lokasi Muat :\n' + (item.lokasiMuat || '-'),
-      'Lokasi Tujuan :\n' + (item.lokasiTujuan || '-'),
+      'Lokasi Muat :\n'    + (item.lokasiMuat   || '-'),
+      'Lokasi Tujuan :\n'  + (item.lokasiTujuan || '-'),
     ].filter(Boolean).join('\n');
     const asuransi = item.hargaAsuransi
       ? fRp(item.hargaAsuransi)
@@ -128,7 +135,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       tgl,
       item.noSO,
       armada,
-      desk,
+      { content: desk, styles: { textColor: WHITE } },
       fRp(item.hargaPengiriman),
       asuransi,
       fRp(item.total),
@@ -149,7 +156,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     ],
     [
       { content: 'PPN (1,1%)', styles: { halign: 'right', fontSize: 9 } },
-      { content: fRp(data.ppn), styles: { halign: 'right', fontSize: 9 } },
+      { content: fRp(data.ppn),  styles: { halign: 'right', fontSize: 9 } },
     ],
     [
       { content: 'Total', styles: { halign: 'right', fontStyle: 'bold', fontSize: 9 } },
@@ -179,8 +186,8 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     foot,
     theme: 'grid',
     styles: {
-      fontSize: 9,
-      cellPadding: { top: 2.5, right: 3, bottom: 2.5, left: 3 },
+      fontSize: FONT_PT,
+      cellPadding: { top: PAD_TOP, right: PAD_LR, bottom: PAD_TOP, left: PAD_LR },
       lineColor: BLACK,
       lineWidth: 0.3,
       textColor: BLACK,
@@ -192,9 +199,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       fillColor: YELLOW,
       textColor: BLACK,
       fontStyle: 'bold',
-      fontSize: 9,
+      fontSize: FONT_PT,
       halign: 'center',
-      cellPadding: 3,
+      cellPadding: PAD_LR,
     },
     footStyles: {
       fillColor: WHITE,
@@ -210,37 +217,67 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       6: { cellWidth: 24,  halign: 'center' },
       7: { cellWidth: 28,  halign: 'right' },
     },
-    margin: { left: mL, right: mR, bottom: 20 },
+    // 70 mm reserved at bottom of each page for TTD + signature gap
+    margin: { left: mL, right: mR, bottom: 70 },
     showFoot: 'lastPage',
+
+    // Re-draw Deskripsi cells with bold labels + normal values
+    didDrawCell: (hookData) => {
+      if (hookData.section !== 'body' || hookData.column.index !== 4) return;
+      const item = data.items[hookData.row.index];
+      if (!item) return;
+
+      const { x, y: cellY, width } = hookData.cell;
+      const maxW = width - PAD_LR * 2;
+      // baseline of first line: top of cell + top-padding + approx ascent for 9pt
+      let ty = cellY + PAD_TOP + FONT_PT * 0.3528 * 0.75;
+
+      doc.setFontSize(FONT_PT);
+      doc.setTextColor(...BLACK);
+
+      const parts: Array<{ label: string; value: string }> = [
+        { label: 'Muatan :',       value: item.muatan       || '-' },
+        ...(item.sn ? [{ label: 'SN :',  value: item.sn }] : []),
+        { label: 'Lokasi Muat :',  value: item.lokasiMuat   || '-' },
+        { label: 'Lokasi Tujuan :', value: item.lokasiTujuan || '-' },
+      ];
+
+      for (const { label, value } of parts) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(label, x + PAD_LR, ty);
+        ty += LH;
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(value, maxW);
+        for (const line of lines) {
+          doc.text(line, x + PAD_LR, ty);
+          ty += LH;
+        }
+      }
+    },
   });
 
-  // ── FOOTER: halaman terakhir saja ──
+  // ── FOOTER: last page only ──
   doc.setPage(doc.getNumberOfPages());
   const finalY = (doc as any).lastAutoTable.finalY;
 
-  // TTD kanan
+  // TTD block — right side, just below table
   const ttdCX = pageW - mR - 32;
-  doc.setFontSize(9);
+  doc.setFontSize(FONT_PT);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...BLACK);
   doc.text('Hormat Kami,', ttdCX, finalY + 8, { align: 'center' });
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(0.3);
-  doc.line(ttdCX - 32, finalY + 30, ttdCX + 32, finalY + 30);
-  doc.setFontSize(9);
-  doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 35, { align: 'center' });
+  doc.line(ttdCX - 32, finalY + 36, ttdCX + 32, finalY + 36);
+  doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 41, { align: 'center' });
 
-  // Pembayaran kiri — di bawah TTD
-  const payY = finalY + 44;
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.2);
-  doc.line(mL, payY - 2, pageW - mR, payY - 2);
-  doc.setFontSize(9);
+  // Pembayaran — fixed near bottom of last page
+  const payY = pageH - 22;
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...BLACK);
-  doc.text('Pembayaran:', mL, payY + 4);
+  doc.text('Pembayaran:', mL, payY);
   doc.setFont('helvetica', 'normal');
-  doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL, payY + 10);
+  doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL, payY + 6);
 
   return doc;
 }
