@@ -30,18 +30,21 @@ export interface InvoiceData {
   catatan?: string;
 }
 
+// No trailing ",00" — keeps values short enough to fit in narrow columns
 const fRp = (n: number) =>
-  'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
+  'Rp.' + Math.round(n).toLocaleString('id-ID');
 
 const AMBER  = [255, 143, 0]   as [number, number, number];
 const YELLOW = [255, 200, 64]  as [number, number, number];
 const BLACK  = [0, 0, 0]       as [number, number, number];
 const WHITE  = [255, 255, 255] as [number, number, number];
 
-const PAD_TOP  = 2.5;
-const PAD_LR   = 3.0;
-const FONT_PT  = 9;
-const LH       = 4.0;   // line-height in mm at 9pt
+const PAD_TOP = 2.5;
+const PAD_LR  = 3.0;
+const FONT_PT = 9;
+// Must match jspdf-autotable's internal line-height for 9pt:
+//   lineHeightFactor(1.15) * fontSize(9) / scaleFactor(2.8346) ≈ 3.65 mm
+const LH = 3.65;
 
 export function generateInvoicePDF(data: InvoiceData): jsPDF {
   const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -114,18 +117,18 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   y += 4;
 
   // ── TABLE BODY ──
+  // Desk content is rendered WHITE (invisible) so autoTable calculates row
+  // height correctly, then didDrawCell re-draws with bold labels + normal values.
   const body = data.items.map(item => {
     const tgl = item.tglMuat
       + (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
     const armada = item.armada
       + (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
-    // desk string drives cell-height; rendered in WHITE (invisible) so
-    // didDrawCell can re-draw with bold labels + normal values
     const desk = [
-      'Muatan :\n' + (item.muatan || '-'),
+      'Muatan :\n'       + (item.muatan       || '-'),
       item.sn ? 'SN :\n' + item.sn : null,
-      'Lokasi Muat :\n'    + (item.lokasiMuat   || '-'),
-      'Lokasi Tujuan :\n'  + (item.lokasiTujuan || '-'),
+      'Lokasi Muat :\n'  + (item.lokasiMuat   || '-'),
+      'Lokasi Tujuan :\n'+ (item.lokasiTujuan || '-'),
     ].filter(Boolean).join('\n');
     const asuransi = item.hargaAsuransi
       ? fRp(item.hargaAsuransi)
@@ -169,7 +172,8 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     }],
   ];
 
-  // ── AUTOTABLE ──
+  // Column widths (fixed total = 152 mm → auto Deskripsi = 38 mm)
+  //   No.(10) + Tgl(16) + NoSO(28) + Armada(18) + BiayaKirim(30) + Asuransi(20) + Jumlah(30)
   autoTable(doc, {
     startY: y,
     head: [[
@@ -201,54 +205,60 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       fontStyle: 'bold',
       fontSize: FONT_PT,
       halign: 'center',
-      cellPadding: PAD_LR,
+      // 2 mm L/R padding so "No." (≈4.5 mm) fits in the 10 mm column
+      cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
     },
     footStyles: {
       fillColor: WHITE,
       textColor: BLACK,
     },
     columnStyles: {
-      0: { cellWidth: 8,   halign: 'center' },
-      1: { cellWidth: 20,  halign: 'center' },
-      2: { cellWidth: 26 },
-      3: { cellWidth: 20 },
+      0: { cellWidth: 10,  halign: 'center' },
+      1: { cellWidth: 16,  halign: 'center' },
+      2: { cellWidth: 28 },
+      3: { cellWidth: 18 },
       4: { cellWidth: 'auto' },
-      5: { cellWidth: 28,  halign: 'right' },
-      6: { cellWidth: 24,  halign: 'center' },
-      7: { cellWidth: 28,  halign: 'right' },
+      5: { cellWidth: 30,  halign: 'right' },
+      6: { cellWidth: 20,  halign: 'center' },
+      7: { cellWidth: 30,  halign: 'right' },
     },
-    // 70 mm reserved at bottom of each page for TTD + signature gap
+    // Reserve 70 mm at page bottom for signature block
     margin: { left: mL, right: mR, bottom: 70 },
     showFoot: 'lastPage',
+    // Never split a row across pages — avoids didDrawCell double-render issues
+    rowPageBreak: 'avoid',
 
-    // Re-draw Deskripsi cells with bold labels + normal values
     didDrawCell: (hookData) => {
       if (hookData.section !== 'body' || hookData.column.index !== 4) return;
       const item = data.items[hookData.row.index];
       if (!item) return;
 
-      const { x, y: cellY, width } = hookData.cell;
-      const maxW = width - PAD_LR * 2;
-      // baseline of first line: top of cell + top-padding + approx ascent for 9pt
-      let ty = cellY + PAD_TOP + FONT_PT * 0.3528 * 0.75;
+      const { x, y: cellY, width, height } = hookData.cell;
+      const maxW  = width - PAD_LR * 2;
+      // Baseline of first line: top of cell + top-padding + ~80% of font-height (ascent)
+      let ty = cellY + PAD_TOP + FONT_PT * 0.3528 * 0.8;
+      // Hard floor: don't draw below the cell (safety net for edge cases)
+      const maxY = cellY + height - 1;
 
       doc.setFontSize(FONT_PT);
       doc.setTextColor(...BLACK);
 
       const parts: Array<{ label: string; value: string }> = [
-        { label: 'Muatan :',       value: item.muatan       || '-' },
-        ...(item.sn ? [{ label: 'SN :',  value: item.sn }] : []),
-        { label: 'Lokasi Muat :',  value: item.lokasiMuat   || '-' },
+        { label: 'Muatan :',        value: item.muatan       || '-' },
+        ...(item.sn ? [{ label: 'SN :',   value: item.sn }]  : []),
+        { label: 'Lokasi Muat :',   value: item.lokasiMuat   || '-' },
         { label: 'Lokasi Tujuan :', value: item.lokasiTujuan || '-' },
       ];
 
       for (const { label, value } of parts) {
+        if (ty > maxY) break;
         doc.setFont('helvetica', 'bold');
         doc.text(label, x + PAD_LR, ty);
         ty += LH;
+
         doc.setFont('helvetica', 'normal');
-        const lines = doc.splitTextToSize(value, maxW);
-        for (const line of lines) {
+        for (const line of doc.splitTextToSize(value, maxW)) {
+          if (ty > maxY) break;
           doc.text(line, x + PAD_LR, ty);
           ty += LH;
         }
@@ -260,7 +270,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setPage(doc.getNumberOfPages());
   const finalY = (doc as any).lastAutoTable.finalY;
 
-  // TTD block — right side, just below table
+  // TTD block — right side
   const ttdCX = pageW - mR - 32;
   doc.setFontSize(FONT_PT);
   doc.setFont('helvetica', 'normal');
