@@ -30,29 +30,29 @@ export interface InvoiceData {
   catatan?: string;
 }
 
-// No trailing ",00" — keeps values short enough to fit in narrow columns
 const fRp = (n: number) =>
-  'Rp.' + Math.round(n).toLocaleString('id-ID');
+  'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
 const AMBER  = [255, 143, 0]   as [number, number, number];
 const YELLOW = [255, 200, 64]  as [number, number, number];
 const BLACK  = [0, 0, 0]       as [number, number, number];
 const WHITE  = [255, 255, 255] as [number, number, number];
 
-const PAD_TOP = 2.5;
-const PAD_LR  = 3.0;
-const FONT_PT = 9;
-// Must match jspdf-autotable's internal line-height for 9pt:
-//   lineHeightFactor(1.15) * fontSize(9) / scaleFactor(2.8346) ≈ 3.65 mm
+const PAD_TOP   = 2.5;
+const PAD_BODY  = 3.0;   // standard body L/R padding (cols 0–3)
+const PAD_WIDE  = 2.0;   // reduced L/R padding for wide cols (4–7)
+const FONT_PT   = 9;
+// Match jspdf-autotable internal line-height: 1.15 × 9 / 2.8346 ≈ 3.65 mm
 const LH = 3.65;
 
 export function generateInvoicePDF(data: InvoiceData): jsPDF {
   const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const pageH = 297;
-  const mL = 10;
-  const mR = 10;
-  let y = 14;
+  // Tight margins — maximise printable area
+  const mL = 5;
+  const mR = 5;
+  let y = 12;
 
   // ── LOGO BOX ──
   doc.setFillColor(...AMBER);
@@ -117,18 +117,18 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   y += 4;
 
   // ── TABLE BODY ──
-  // Desk content is rendered WHITE (invisible) so autoTable calculates row
-  // height correctly, then didDrawCell re-draws with bold labels + normal values.
+  // Column 4 (Deskripsi): content rendered WHITE so autoTable calculates row
+  // height, then didDrawCell re-draws with bold labels + normal values.
   const body = data.items.map(item => {
     const tgl = item.tglMuat
       + (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
     const armada = item.armada
       + (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
     const desk = [
-      'Muatan :\n'       + (item.muatan       || '-'),
+      'Muatan :\n'        + (item.muatan       || '-'),
       item.sn ? 'SN :\n' + item.sn : null,
-      'Lokasi Muat :\n'  + (item.lokasiMuat   || '-'),
-      'Lokasi Tujuan :\n'+ (item.lokasiTujuan || '-'),
+      'Lokasi Muat :\n'   + (item.lokasiMuat   || '-'),
+      'Lokasi Tujuan :\n' + (item.lokasiTujuan || '-'),
     ].filter(Boolean).join('\n');
     const asuransi = item.hargaAsuransi
       ? fRp(item.hargaAsuransi)
@@ -172,8 +172,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     }],
   ];
 
-  // Column widths (fixed total = 152 mm → auto Deskripsi = 38 mm)
-  //   No.(10) + Tgl(16) + NoSO(28) + Armada(18) + BiayaKirim(30) + Asuransi(20) + Jumlah(30)
+  // Column layout (mL=5, mR=5 → table width = 200 mm)
+  // Fixed cols: 10+16+28+18 + 33+33+33 = 171 mm  →  auto (Deskripsi) = 29 mm
+  // Cols 4-7 use PAD_WIDE (2 mm L/R) → content: Desk≈25 mm, currency≈29 mm
   autoTable(doc, {
     startY: y,
     head: [[
@@ -191,7 +192,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     theme: 'grid',
     styles: {
       fontSize: FONT_PT,
-      cellPadding: { top: PAD_TOP, right: PAD_LR, bottom: PAD_TOP, left: PAD_LR },
+      cellPadding: { top: PAD_TOP, right: PAD_BODY, bottom: PAD_TOP, left: PAD_BODY },
       lineColor: BLACK,
       lineWidth: 0.3,
       textColor: BLACK,
@@ -205,7 +206,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       fontStyle: 'bold',
       fontSize: FONT_PT,
       halign: 'center',
-      // 2 mm L/R padding so "No." (≈4.5 mm) fits in the 10 mm column
+      // 2 mm L/R so "No." (≈4.5 mm) fits inside the 10 mm column
       cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
     },
     footStyles: {
@@ -213,19 +214,33 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       textColor: BLACK,
     },
     columnStyles: {
-      0: { cellWidth: 10,  halign: 'center' },
-      1: { cellWidth: 16,  halign: 'center' },
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 16, halign: 'center' },
       2: { cellWidth: 28 },
       3: { cellWidth: 18 },
-      4: { cellWidth: 'auto' },
-      5: { cellWidth: 30,  halign: 'right' },
-      6: { cellWidth: 20,  halign: 'center' },
-      7: { cellWidth: 30,  halign: 'right' },
+      // Deskripsi & currency cols: tighter L/R padding to maximise content
+      4: {
+        cellWidth: 'auto',
+        cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
+      },
+      5: {
+        cellWidth: 33,
+        halign: 'right',
+        cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
+      },
+      6: {
+        cellWidth: 33,
+        halign: 'center',
+        cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
+      },
+      7: {
+        cellWidth: 33,
+        halign: 'right',
+        cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
+      },
     },
-    // Reserve 70 mm at page bottom for signature block
     margin: { left: mL, right: mR, bottom: 70 },
     showFoot: 'lastPage',
-    // Never split a row across pages — avoids didDrawCell double-render issues
     rowPageBreak: 'avoid',
 
     didDrawCell: (hookData) => {
@@ -234,10 +249,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       if (!item) return;
 
       const { x, y: cellY, width, height } = hookData.cell;
-      const maxW  = width - PAD_LR * 2;
-      // Baseline of first line: top of cell + top-padding + ~80% of font-height (ascent)
+      // Use the column's actual L/R padding (PAD_WIDE = 2 mm)
+      const maxW = width - PAD_WIDE * 2;
       let ty = cellY + PAD_TOP + FONT_PT * 0.3528 * 0.8;
-      // Hard floor: don't draw below the cell (safety net for edge cases)
       const maxY = cellY + height - 1;
 
       doc.setFontSize(FONT_PT);
@@ -245,7 +259,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
 
       const parts: Array<{ label: string; value: string }> = [
         { label: 'Muatan :',        value: item.muatan       || '-' },
-        ...(item.sn ? [{ label: 'SN :',   value: item.sn }]  : []),
+        ...(item.sn ? [{ label: 'SN :', value: item.sn }]   : []),
         { label: 'Lokasi Muat :',   value: item.lokasiMuat   || '-' },
         { label: 'Lokasi Tujuan :', value: item.lokasiTujuan || '-' },
       ];
@@ -253,13 +267,13 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       for (const { label, value } of parts) {
         if (ty > maxY) break;
         doc.setFont('helvetica', 'bold');
-        doc.text(label, x + PAD_LR, ty);
+        doc.text(label, x + PAD_WIDE, ty);
         ty += LH;
 
         doc.setFont('helvetica', 'normal');
         for (const line of doc.splitTextToSize(value, maxW)) {
           if (ty > maxY) break;
-          doc.text(line, x + PAD_LR, ty);
+          doc.text(line, x + PAD_WIDE, ty);
           ty += LH;
         }
       }
