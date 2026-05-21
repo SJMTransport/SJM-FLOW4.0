@@ -34,7 +34,7 @@ const fRp = (n: number) =>
   'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
 const AMBER  = [255, 143, 0]   as [number, number, number];
-const YELLOW = [255, 200, 64]  as [number, number, number];
+const YELLOW = [249, 172, 61]  as [number, number, number];
 const BLACK  = [0, 0, 0]       as [number, number, number];
 const WHITE  = [255, 255, 255] as [number, number, number];
 
@@ -70,19 +70,19 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   let y = 14;
 
   // ── LOGO ──
-  doc.addImage(logoDataUrl, 'PNG', mL, y, 26, 26);
+  doc.addImage(logoDataUrl, 'PNG', mL, y, 32, 32);
 
   // ── COMPANY INFO ──
   doc.setTextColor(...YELLOW);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', mL + 30, y + 8);
+  doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', mL + 36, y + 8);
   doc.setTextColor(...BLACK);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Jl Raya Kemang Parung No.168A Kab.Bogor', mL + 30, y + 14);
-  doc.text('Phone  : 0811751027',                     mL + 30, y + 19);
-  doc.text('Email   : sugiartojayamandiri@gmail.com', mL + 30, y + 24);
+  doc.text('Jl Raya Kemang Parung No.168A Kab.Bogor', mL + 36, y + 14);
+  doc.text('Phone  : 0811751027',                     mL + 36, y + 19);
+  doc.text('Email   : sugiartojayamandiri@gmail.com', mL + 36, y + 24);
 
   // ── INVOICE BADGE ──
   doc.setFillColor(...YELLOW);
@@ -92,7 +92,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   doc.setFont('helvetica', 'bold');
   doc.text('INVOICE', pageW - mR - 16, y + 9, { align: 'center' });
 
-  y += 28;
+  y += 34;
 
   // ── SEPARATOR LINES ──
   doc.setDrawColor(...BLACK);
@@ -246,7 +246,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
     },
-    margin: { left: mL, right: mR, top: 18, bottom: 55 },
+    margin: { left: mL, right: mR, top: 18, bottom: 48 },
     showFoot: 'lastPage',
     rowPageBreak: 'avoid',
 
@@ -286,6 +286,18 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
     },
   });
 
+  // ── NOMOR HALAMAN (semua halaman, hanya jika > 1 halaman) ──
+  const totalPages = doc.getNumberOfPages();
+  if (totalPages > 1) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...BLACK);
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.text(`${i} / ${totalPages}`, pageW - mR, 292, { align: 'right' });
+    }
+  }
+
   // ── FOOTER: last page only ──
   doc.setPage(doc.getNumberOfPages());
   const finalY = (doc as any).lastAutoTable.finalY;
@@ -298,11 +310,11 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   doc.text('Hormat Kami,', ttdCX, finalY + 8, { align: 'center' });
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(0.3);
-  doc.line(ttdCX - 32, finalY + 36, ttdCX + 32, finalY + 36);
-  doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 41, { align: 'center' });
+  doc.line(ttdCX - 32, finalY + 44, ttdCX + 32, finalY + 44);
+  doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 49, { align: 'center' });
 
   // Pembayaran — placed just below TTD, highlighted with yellow left accent
-  const payY = finalY + 53;
+  const payY = finalY + 61;
   doc.setFillColor(...YELLOW);
   doc.rect(mL, payY - 4, 2, 14, 'F');                       // amber left bar
   doc.setFontSize(11);
