@@ -45,23 +45,32 @@ const FONT_PT  = 9;
 // Must match jspdf-autotable internal line-height: 1.15×9/2.8346 ≈ 3.65 mm
 const LH = 3.65;
 
-export function generateInvoicePDF(data: InvoiceData): jsPDF {
+async function loadImageAsDataUrl(src: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width  = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
+  const logoDataUrl = await loadImageAsDataUrl('/logo-sjm.png');
+
   const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const mL = 5;
   const mR = 5;
   let y = 14;
 
-  // ── LOGO BOX ──
-  doc.setFillColor(...AMBER);
-  doc.roundedRect(mL, y, 26, 26, 2, 2, 'F');
-  doc.setTextColor(...WHITE);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6);
-  doc.text('PT. SUGIARTO', mL + 13, y + 8,  { align: 'center' });
-  doc.text('JAYA MANDIRI', mL + 13, y + 12, { align: 'center' });
-  doc.setFontSize(14);
-  doc.text('SJM', mL + 13, y + 22, { align: 'center' });
+  // ── LOGO ──
+  doc.addImage(logoDataUrl, 'PNG', mL, y, 26, 26);
 
   // ── COMPANY INFO ──
   doc.setTextColor(...YELLOW);
