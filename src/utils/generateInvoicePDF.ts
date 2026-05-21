@@ -38,21 +38,19 @@ const YELLOW = [255, 200, 64]  as [number, number, number];
 const BLACK  = [0, 0, 0]       as [number, number, number];
 const WHITE  = [255, 255, 255] as [number, number, number];
 
-const PAD_TOP   = 2.5;
-const PAD_BODY  = 3.0;   // standard body L/R padding (cols 0–3)
-const PAD_WIDE  = 2.0;   // reduced L/R padding for wide cols (4–7)
-const FONT_PT   = 9;
-// Match jspdf-autotable internal line-height: 1.15 × 9 / 2.8346 ≈ 3.65 mm
+const PAD_TOP  = 2.5;
+const PAD_BODY = 3.0;   // L/R padding cols 0–2
+const PAD_WIDE = 2.0;   // L/R padding cols 3–6 (Deskripsi + currency)
+const FONT_PT  = 9;
+// Must match jspdf-autotable internal line-height: 1.15×9/2.8346 ≈ 3.65 mm
 const LH = 3.65;
 
 export function generateInvoicePDF(data: InvoiceData): jsPDF {
   const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
-  const pageH = 297;
-  // Tight margins — maximise printable area
   const mL = 5;
   const mR = 5;
-  let y = 12;
+  let y = 10;
 
   // ── LOGO BOX ──
   doc.setFillColor(...AMBER);
@@ -85,7 +83,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.text('INVOICE', pageW - mR - 16, y + 9, { align: 'center' });
 
-  y += 30;
+  y += 28;
 
   // ── SEPARATOR LINES ──
   doc.setDrawColor(...BLACK);
@@ -95,7 +93,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setDrawColor(...YELLOW);
   doc.setLineWidth(1.5);
   doc.line(pageW - mR - 60, y, pageW - mR, y);
-  y += 8;
+  y += 7;
 
   // ── INVOICE INFO ──
   doc.setTextColor(...BLACK);
@@ -112,45 +110,50 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     doc.text(':', mL + 26, y);
     doc.setFont('helvetica', bold ? 'bold' : 'normal');
     doc.text(val, mL + 29, y);
-    y += 6;
+    y += 5.5;
   });
-  y += 4;
+  y += 3;
 
-  // ── TABLE BODY ──
-  // Column 4 (Deskripsi): content rendered WHITE so autoTable calculates row
-  // height, then didDrawCell re-draws with bold labels + normal values.
+  // ── TABLE BODY (7 columns — No SO & Armada merged) ──
+  // Col 3 (Deskripsi): rendered WHITE for height calc; didDrawCell redraws
+  // with bold labels + normal values.
   const body = data.items.map(item => {
-    const tgl = item.tglMuat
-      + (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
-    const armada = item.armada
+    // Merged: SO number, blank gap, then vehicle type + plate
+    const soArmada = item.noSO
+      + '\n\n'
+      + item.armada
       + (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
+
     const desk = [
       'Muatan :\n'        + (item.muatan       || '-'),
       item.sn ? 'SN :\n' + item.sn : null,
       'Lokasi Muat :\n'   + (item.lokasiMuat   || '-'),
       'Lokasi Tujuan :\n' + (item.lokasiTujuan || '-'),
     ].filter(Boolean).join('\n');
+
     const asuransi = item.hargaAsuransi
       ? fRp(item.hargaAsuransi)
       : 'Tidak termasuk\nasuransi';
+
     return [
-      String(item.rowNo),
-      tgl,
-      item.noSO,
-      armada,
-      { content: desk, styles: { textColor: WHITE } },
-      fRp(item.hargaPengiriman),
-      asuransi,
-      fRp(item.total),
+      String(item.rowNo),                                    // 0 No.
+      item.tglMuat + (item.tglTiba && item.tglTiba !== '-'  // 1 Tanggal
+        ? '\n—\n' + item.tglTiba : ''),
+      soArmada,                                              // 2 No SO / Armada
+      { content: desk, styles: { textColor: WHITE } },       // 3 Deskripsi
+      fRp(item.hargaPengiriman),                            // 4 Biaya Pengiriman
+      asuransi,                                              // 5 Biaya Asuransi
+      fRp(item.total),                                       // 6 Jumlah
     ];
   });
 
   // ── TABLE FOOT ──
+  // Catatan spans cols 0–4 (5 cols) across 3 rows; Sub Total/PPN/Total in cols 5–6
   const foot: any[] = [
     [
       {
         content: data.catatan ? 'Catatan : ' + data.catatan : 'Catatan :',
-        colSpan: 6,
+        colSpan: 5,
         rowSpan: 3,
         styles: { valign: 'top', fontSize: 9 },
       },
@@ -167,21 +170,20 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     ],
     [{
       content: 'Terbilang: ' + terbilang(data.total) + ' Rupiah',
-      colSpan: 8,
+      colSpan: 7,
       styles: { fontStyle: 'bold', fontSize: 9 },
     }],
   ];
 
-  // Column layout (mL=5, mR=5 → table width = 200 mm)
-  // Fixed cols: 10+16+28+18 + 33+33+33 = 171 mm  →  auto (Deskripsi) = 29 mm
-  // Cols 4-7 use PAD_WIDE (2 mm L/R) → content: Desk≈25 mm, currency≈29 mm
+  // Table width = 200 mm  (mL=5, mR=5)
+  // Fixed: No.(10) + Tgl(16) + NoSO/Armada(32) + BiayaKirim(29) + Asuransi(29) + Jumlah(30) = 146
+  // Auto (Deskripsi) = 200 − 146 = 54 mm  →  content 54−4 = 50 mm
   autoTable(doc, {
     startY: y,
     head: [[
       { content: 'No.',              styles: { halign: 'center' } },
       { content: 'Tanggal',          styles: { halign: 'center' } },
-      { content: 'No SO',            styles: { halign: 'center' } },
-      { content: 'Armada',           styles: { halign: 'center' } },
+      { content: 'No SO / Armada',   styles: { halign: 'center' } },
       { content: 'Deskripsi',        styles: { halign: 'center' } },
       { content: 'Biaya Pengiriman', styles: { halign: 'center' } },
       { content: 'Biaya Asuransi',   styles: { halign: 'center' } },
@@ -206,7 +208,6 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       fontStyle: 'bold',
       fontSize: FONT_PT,
       halign: 'center',
-      // 2 mm L/R so "No." (≈4.5 mm) fits inside the 10 mm column
       cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
     },
     footStyles: {
@@ -216,40 +217,38 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
       1: { cellWidth: 16, halign: 'center' },
-      2: { cellWidth: 28 },
-      3: { cellWidth: 18 },
-      // Deskripsi & currency cols: tighter L/R padding to maximise content
-      4: {
+      2: { cellWidth: 32 },
+      3: {
         cellWidth: 'auto',
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
-      5: {
-        cellWidth: 33,
+      4: {
+        cellWidth: 29,
         halign: 'right',
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
-      6: {
-        cellWidth: 33,
+      5: {
+        cellWidth: 29,
         halign: 'center',
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
-      7: {
-        cellWidth: 33,
+      6: {
+        cellWidth: 30,
         halign: 'right',
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
     },
-    margin: { left: mL, right: mR, bottom: 70 },
+    margin: { left: mL, right: mR, bottom: 65 },
     showFoot: 'lastPage',
     rowPageBreak: 'avoid',
 
+    // Re-draw Deskripsi (col 3) with bold labels + normal values
     didDrawCell: (hookData) => {
-      if (hookData.section !== 'body' || hookData.column.index !== 4) return;
+      if (hookData.section !== 'body' || hookData.column.index !== 3) return;
       const item = data.items[hookData.row.index];
       if (!item) return;
 
       const { x, y: cellY, width, height } = hookData.cell;
-      // Use the column's actual L/R padding (PAD_WIDE = 2 mm)
       const maxW = width - PAD_WIDE * 2;
       let ty = cellY + PAD_TOP + FONT_PT * 0.3528 * 0.8;
       const maxY = cellY + height - 1;
@@ -269,7 +268,6 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
         doc.setFont('helvetica', 'bold');
         doc.text(label, x + PAD_WIDE, ty);
         ty += LH;
-
         doc.setFont('helvetica', 'normal');
         for (const line of doc.splitTextToSize(value, maxW)) {
           if (ty > maxY) break;
@@ -295,13 +293,17 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.line(ttdCX - 32, finalY + 36, ttdCX + 32, finalY + 36);
   doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 41, { align: 'center' });
 
-  // Pembayaran — fixed near bottom of last page
-  const payY = pageH - 22;
+  // Pembayaran — placed just below TTD, highlighted with amber left accent
+  const payY = finalY + 53;
+  doc.setFillColor(...AMBER);
+  doc.rect(mL, payY - 4, 2, 14, 'F');                       // amber left bar
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...BLACK);
-  doc.text('Pembayaran:', mL, payY);
+  doc.text('Pembayaran:', mL + 5, payY + 2);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL, payY + 6);
+  doc.text('Mandiri  1330026272567  —  a/n PT Sugiarto Jaya Mandiri', mL + 5, payY + 9);
 
   return doc;
 }
