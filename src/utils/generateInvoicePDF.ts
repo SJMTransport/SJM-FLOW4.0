@@ -50,7 +50,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   const pageW = 210;
   const mL = 5;
   const mR = 5;
-  let y = 10;
+  let y = 14;
 
   // ── LOGO BOX ──
   doc.setFillColor(...AMBER);
@@ -64,7 +64,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.text('SJM', mL + 13, y + 22, { align: 'center' });
 
   // ── COMPANY INFO ──
-  doc.setTextColor(...AMBER);
+  doc.setTextColor(...YELLOW);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', mL + 30, y + 8);
@@ -76,9 +76,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.text('Email   : sugiartojayamandiri@gmail.com', mL + 30, y + 24);
 
   // ── INVOICE BADGE ──
-  doc.setFillColor(...AMBER);
+  doc.setFillColor(...YELLOW);
   doc.rect(pageW - mR - 32, y, 32, 13, 'F');
-  doc.setTextColor(...WHITE);
+  doc.setTextColor(...BLACK);
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.text('INVOICE', pageW - mR - 16, y + 9, { align: 'center' });
@@ -237,7 +237,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
     },
-    margin: { left: mL, right: mR, bottom: 65 },
+    margin: { left: mL, right: mR, top: 12, bottom: 65 },
     showFoot: 'lastPage',
     rowPageBreak: 'avoid',
 
@@ -292,9 +292,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.line(ttdCX - 32, finalY + 36, ttdCX + 32, finalY + 36);
   doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 41, { align: 'center' });
 
-  // Pembayaran — placed just below TTD, highlighted with amber left accent
+  // Pembayaran — placed just below TTD, highlighted with yellow left accent
   const payY = finalY + 53;
-  doc.setFillColor(...AMBER);
+  doc.setFillColor(...YELLOW);
   doc.rect(mL, payY - 4, 2, 14, 'F');                       // amber left bar
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
