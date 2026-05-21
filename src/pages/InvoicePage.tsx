@@ -22,6 +22,7 @@ const STATUS_COLOR: Record<string, string> = {
   'Parsial': '#f59e0b',
   'Lunas': '#22c55e',
   'Lebih Bayar': '#3b82f6',
+  'Perlu Verifikasi': '#8b5cf6',
 };
 
 interface InvoicePageProps {
@@ -52,6 +53,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   // ── Daftar Invoice state
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [paymentStatusMap, setPaymentStatusMap] = useState<Record<string, any>>({});
+  const [loadingStatus, setLoadingStatus] = useState(false);
   const [filterInvCustomer, setFilterInvCustomer] = useState('');
   const [filterInvTipe, setFilterInvTipe] = useState('all');
   const [filterInvStatus, setFilterInvStatus] = useState('all');
@@ -66,7 +69,18 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const loadInvoices = async () => {
     setLoadingInvoices(true);
     try {
-      setInvoices(await api.getInvoices());
+      const list = await api.getInvoices();
+      setInvoices(list);
+      const noInvoices = list.map((inv: any) => inv.no_invoice).filter(Boolean);
+      if (noInvoices.length > 0) {
+        setLoadingStatus(true);
+        try {
+          const map = await api.getPaymentStatusBatch(noInvoices);
+          setPaymentStatusMap(map);
+        } catch { /* silent */ } finally {
+          setLoadingStatus(false);
+        }
+      }
     } catch (err: any) {
       showToast('Gagal memuat invoice: ' + err.message, 'error');
     } finally {
@@ -292,25 +306,38 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     setShowReprint(true);
   };
 
+  const getInvStatus = (inv: any) => {
+    const ps = paymentStatusMap[inv.no_invoice];
+    return ps?.status || inv.status_bayar || 'Belum Bayar';
+  };
+  const getInvTotalPaid = (inv: any) => {
+    const ps = paymentStatusMap[inv.no_invoice];
+    return ps?.total_paid ?? 0;
+  };
+  const getInvRemaining = (inv: any) => {
+    const ps = paymentStatusMap[inv.no_invoice];
+    return ps?.total_remaining ?? (inv.total_setelah_pajak || 0);
+  };
+
   const filteredInvoices = useMemo(() => {
     return invoices.filter(inv => {
       const matchCustomer = !filterInvCustomer || inv.customer?.toLowerCase().includes(filterInvCustomer.toLowerCase());
       const matchTipe = filterInvTipe === 'all' || inv.tipe === filterInvTipe;
-      const matchStatus = filterInvStatus === 'all' || inv.status_bayar === filterInvStatus;
+      const matchStatus = filterInvStatus === 'all' || getInvStatus(inv) === filterInvStatus;
       const matchStart = !filterPeriodStart || inv.tgl_invoice >= filterPeriodStart;
       const matchEnd = !filterPeriodEnd || inv.tgl_invoice <= filterPeriodEnd;
       return matchCustomer && matchTipe && matchStatus && matchStart && matchEnd;
     });
-  }, [invoices, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
+  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
 
   const kpiData = useMemo(() => ({
     total: invoices.length,
-    lunas: invoices.filter(i => i.status_bayar === 'Lunas').length,
-    belumBayar: invoices.filter(i => !i.status_bayar || i.status_bayar === 'Belum Bayar').length,
-    parsial: invoices.filter(i => i.status_bayar === 'Parsial').length,
-    lebihBayar: invoices.filter(i => i.status_bayar === 'Lebih Bayar').length,
-    outstanding: invoices.filter(i => i.status_bayar !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
-  }), [invoices]);
+    lunas: invoices.filter(i => getInvStatus(i) === 'Lunas').length,
+    belumBayar: invoices.filter(i => getInvStatus(i) === 'Belum Bayar').length,
+    parsial: invoices.filter(i => getInvStatus(i) === 'Parsial').length,
+    perluVerifikasi: invoices.filter(i => getInvStatus(i) === 'Perlu Verifikasi').length,
+    outstanding: invoices.filter(i => getInvStatus(i) !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
+  }), [invoices, paymentStatusMap]);
 
   // ── RENDER
   return (
@@ -339,12 +366,13 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-6 gap-3">
             {[
               { label: 'Total Invoice', value: kpiData.total, color: 'text-text-main', bg: 'bg-white' },
               { label: 'Lunas', value: kpiData.lunas, color: 'text-green-600', bg: 'bg-green-50' },
               { label: 'Belum Bayar', value: kpiData.belumBayar, color: 'text-red-500', bg: 'bg-red-50' },
               { label: 'Parsial', value: kpiData.parsial, color: 'text-amber-600', bg: 'bg-amber-50' },
+              { label: 'Perlu Verifikasi', value: kpiData.perluVerifikasi, color: 'text-purple-600', bg: 'bg-purple-50' },
               { label: 'Outstanding', value: fRp(kpiData.outstanding), color: 'text-accent', bg: 'bg-accent/5' },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`${bg} rounded-xl border border-border-main p-4`}>
@@ -377,10 +405,16 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               <option value="Parsial">Parsial</option>
               <option value="Lunas">Lunas</option>
               <option value="Lebih Bayar">Lebih Bayar</option>
+              <option value="Perlu Verifikasi">Perlu Verifikasi</option>
             </select>
             <button onClick={loadInvoices} disabled={loadingInvoices} className="btn-ghost h-8 px-3 text-[11px] flex items-center gap-1.5">
               <Icon name="RefreshCw" size={12} /> {loadingInvoices ? 'Memuat...' : 'Refresh'}
             </button>
+            {loadingStatus && (
+              <span className="text-[10px] text-purple-500 italic flex items-center gap-1">
+                <Icon name="Loader" size={10} className="animate-spin" /> Cek status...
+              </span>
+            )}
             <span className="text-[11px] text-text-light ml-auto">{filteredInvoices.length} invoice ditemukan</span>
           </div>
 
@@ -406,7 +440,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   {filteredInvoices.length === 0 ? (
                     <tr><td colSpan={8}><EmptyState colSpan={8} /></td></tr>
                   ) : filteredInvoices.map(inv => {
-                    const sc = STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666';
+                    const sc = STATUS_COLOR[getInvStatus(inv)] || '#666';
                     return (
                       <tr
                         key={inv.id}
@@ -443,7 +477,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span className="badge text-[8px]" style={{ backgroundColor: sc + '20', color: sc }}>
-                            {inv.status_bayar || 'Belum Bayar'}
+                            {getInvStatus(inv)}
                           </span>
                         </td>
                         <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
@@ -627,8 +661,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       {/* ══════════════════════════════════ */}
       {selectedPaymentInv && (() => {
         const inv = selectedPaymentInv;
-        const ps = inv.paymentStatus;
-        const sc = STATUS_COLOR[ps?.status || inv.status_bayar || 'Belum Bayar'] || '#666';
+        const ps = paymentStatusMap[inv.no_invoice] || inv.paymentStatus;
+        const sc = STATUS_COLOR[ps?.status || getInvStatus(inv)] || '#666';
         const soOrderIds: string[] = inv.so_order_ids || [];
         const soDetails = soOrderIds.map((soId: string) => so.find(x => x.order_id === soId) || { order_id: soId, _notFound: true });
         return (
@@ -660,8 +694,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               <div className="grid grid-cols-4 gap-0 border-b border-border-main">
                 {[
                   { label: 'Total Invoice', value: fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0), color: 'text-text-main' },
-                  { label: 'Terbayar', value: fRp(ps?.total_paid || 0), color: 'text-green-600' },
-                  { label: 'Sisa Tagihan', value: fRp(ps?.total_remaining || 0), color: 'text-red-500' },
+                  { label: 'Terbayar', value: fRp(getInvTotalPaid(inv)), color: 'text-green-600' },
+                  { label: 'Sisa Tagihan', value: fRp(getInvRemaining(inv)), color: 'text-red-500' },
                   { label: 'DPP (Sub Total)', value: fRp(inv.total_sebelum_pajak || 0), color: 'text-text-med' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="p-4 border-r border-border-main last:border-r-0">

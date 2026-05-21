@@ -637,6 +637,17 @@ export const api = {
       status: 'Belum Bayar', is_overpaid: false,
     };
   },
+  getPaymentStatusBatch: async (noInvoices: string[]) => {
+    const { data, error } = await supabase.rpc(
+      'get_payment_status_batch',
+      { p_no_invoices: noInvoices }
+    );
+    if (error) throw new Error(error.message || 'Gagal cek status pembayaran batch');
+    // Return sebagai map: no_invoice -> status data
+    const map: Record<string, any> = {};
+    (data || []).forEach((row: any) => { map[row.no_invoice] = row; });
+    return map;
+  },
   updateInvoiceStatus: async (id: string, statusBayar: string, totalTerbayar: number) => {
     const { error } = await supabase
       .from('invoices')
