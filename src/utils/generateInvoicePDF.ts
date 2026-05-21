@@ -237,7 +237,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
     },
-    margin: { left: mL, right: mR, top: 12, bottom: 65 },
+    margin: { left: mL, right: mR, top: 18, bottom: 55 },
     showFoot: 'lastPage',
     rowPageBreak: 'avoid',
 
