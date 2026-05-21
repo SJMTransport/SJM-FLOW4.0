@@ -21,7 +21,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     setError(null);
     setDownloading(true);
     try {
-      const doc = generateInvoicePDF(data);
+      const doc = await generateInvoicePDF(data);
       const filename = `Invoice_${invoiceNumber.replace(/\//g, '_')}.pdf`;
       doc.save(filename);
       await onConfirm();
