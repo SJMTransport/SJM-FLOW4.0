@@ -176,8 +176,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   ];
 
   // Table width = 200 mm  (mL=5, mR=5)
-  // Fixed: No.(10) + Tgl(16) + NoSO/Armada(32) + BiayaKirim(29) + Asuransi(29) + Jumlah(30) = 146
-  // Auto (Deskripsi) = 200 − 146 = 54 mm  →  content 54−4 = 50 mm
+  // No.(10) + Tgl(16) + NoSO/Armada(32) + Deskripsi(46) + BiayaKirim(29) + Asuransi(29) + Jumlah(38) = 200
   autoTable(doc, {
     startY: y,
     head: [[
@@ -219,7 +218,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
       1: { cellWidth: 16, halign: 'center' },
       2: { cellWidth: 32 },
       3: {
-        cellWidth: 'auto',
+        cellWidth: 46,
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
       4: {
@@ -233,7 +232,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
       6: {
-        cellWidth: 30,
+        cellWidth: 38,
         halign: 'right',
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
