@@ -90,17 +90,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
   useEffect(() => { loadInvoices(); }, []);
 
-  const handleOpenDetail = async (inv: any) => {
+  const handleOpenDetail = (inv: any) => {
     setSelectedPaymentInv(inv);
-    try {
-      const soIds = inv.so_order_ids || [];
-      if (soIds.length > 0) {
-        const ps = await api.getPaymentStatus(soIds);
-        setSelectedPaymentInv({ ...inv, paymentStatus: ps });
-      }
-    } catch (err) {
-      // Modal tetap terbuka meski payment status gagal
-    }
   };
 
   // ── Buat Invoice: available SO by tipe
@@ -694,8 +685,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               <div className="grid grid-cols-4 gap-0 border-b border-border-main">
                 {[
                   { label: 'Total Invoice', value: fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0), color: 'text-text-main' },
-                  { label: 'Terbayar', value: fRp(getInvTotalPaid(inv)), color: 'text-green-600' },
-                  { label: 'Sisa Tagihan', value: fRp(getInvRemaining(inv)), color: 'text-red-500' },
+                  { label: 'Terbayar', value: fRp(ps?.total_paid || 0), color: 'text-green-600' },
+                  { label: 'Sisa Tagihan', value: fRp(ps?.total_remaining ?? inv.total_setelah_pajak ?? 0), color: 'text-red-500' },
                   { label: 'DPP (Sub Total)', value: fRp(inv.total_sebelum_pajak || 0), color: 'text-text-med' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="p-4 border-r border-border-main last:border-r-0">
@@ -750,6 +741,52 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     </tbody>
                   </table>
                 </div>
+
+                {/* Riwayat Pembayaran */}
+                {(() => {
+                  const jurnalList = ps?.jurnal_detail || [];
+                  return (
+                    <div className="border-t border-border-main/30 pt-4 mt-4">
+                      <div className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-60 mb-3">
+                        Riwayat Pembayaran dari Jurnal
+                      </div>
+                      {jurnalList.length === 0 ? (
+                        <div className="text-[11px] text-text-light italic opacity-50 py-2">
+                          Belum ada pembayaran tercatat di jurnal
+                        </div>
+                      ) : (
+                        <table className="w-full border-collapse text-[11px]">
+                          <thead>
+                            <tr>
+                              <th className="text-left py-2 px-3 bg-slate-50 border border-border-main/30 text-[10px] font-bold text-text-light uppercase tracking-widest">No Jurnal</th>
+                              <th className="text-left py-2 px-3 bg-slate-50 border border-border-main/30 text-[10px] font-bold text-text-light uppercase tracking-widest">Tanggal</th>
+                              <th className="text-left py-2 px-3 bg-slate-50 border border-border-main/30 text-[10px] font-bold text-text-light uppercase tracking-widest">Keterangan</th>
+                              <th className="text-right py-2 px-3 bg-slate-50 border border-border-main/30 text-[10px] font-bold text-text-light uppercase tracking-widest">Jumlah</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {jurnalList.map((jr: any, idx: number) => (
+                              <tr key={idx} className="border-b border-border-main/20 hover:bg-slate-50">
+                                <td className="py-2 px-3 font-bold text-accent">{jr.no_jurnal}</td>
+                                <td className="py-2 px-3 text-text-med">{fmtDate(jr.tanggal)}</td>
+                                <td className="py-2 px-3 text-text-med">{jr.keterangan}</td>
+                                <td className="py-2 px-3 text-right font-bold text-green-600 tabular-nums">{fRp(jr.kredit)}</td>
+                              </tr>
+                            ))}
+                            {jurnalList.length > 1 && (
+                              <tr className="bg-green-50">
+                                <td colSpan={3} className="py-2 px-3 text-right font-black text-[11px] text-green-700">Total Terbayar</td>
+                                <td className="py-2 px-3 text-right font-black text-green-700 tabular-nums">
+                                  {fRp(jurnalList.reduce((s: number, jr: any) => s + Number(jr.kredit), 0))}
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>
