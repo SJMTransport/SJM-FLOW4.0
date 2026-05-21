@@ -42,12 +42,20 @@ const DGRAY  = [80, 80, 80]    as [number, number, number];
 async function loadImageAsDataUrl(src: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
+      const MAX = 200;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
     };
     img.onerror = reject;
     img.src = src;
@@ -64,7 +72,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   // ── LOGO ──
   try {
     const logoDataUrl = await loadImageAsDataUrl('/logo-sjm.png');
-    doc.addImage(logoDataUrl, 'PNG', mL, y, 26, 26);
+    doc.addImage(logoDataUrl, 'JPEG', mL, y, 26, 26);
   } catch {
     // Fallback box jika logo tidak tersedia
     doc.setFillColor(...AMBER);
