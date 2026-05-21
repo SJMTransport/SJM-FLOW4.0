@@ -246,7 +246,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
         cellPadding: { top: PAD_TOP, right: PAD_WIDE, bottom: PAD_TOP, left: PAD_WIDE },
       },
     },
-    margin: { left: mL, right: mR, top: 18, bottom: 55 },
+    margin: { left: mL, right: mR, top: 18, bottom: 48 },
     showFoot: 'lastPage',
     rowPageBreak: 'avoid',
 
@@ -285,6 +285,18 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       }
     },
   });
+
+  // ── NOMOR HALAMAN (semua halaman, hanya jika > 1 halaman) ──
+  const totalPages = doc.getNumberOfPages();
+  if (totalPages > 1) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...BLACK);
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.text(`${i} / ${totalPages}`, pageW - mR, 292, { align: 'right' });
+    }
+  }
 
   // ── FOOTER: last page only ──
   doc.setPage(doc.getNumberOfPages());
