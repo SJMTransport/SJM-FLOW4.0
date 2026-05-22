@@ -337,7 +337,10 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       const matchStart = !filterPeriodStart || inv.tgl_invoice >= filterPeriodStart;
       const matchEnd = !filterPeriodEnd || inv.tgl_invoice <= filterPeriodEnd;
       return matchCustomer && matchTipe && matchStatus && matchStart && matchEnd;
-    }).sort((a, b) => (b.no_invoice || '').localeCompare(a.no_invoice || ''));
+    }).sort((a, b) => {
+      const extractNum = (s: string) => { const m = (s || '').match(/^(\d+)\//); return m ? parseInt(m[1], 10) : 0; };
+      return extractNum(b.no_invoice) - extractNum(a.no_invoice);
+    });
   }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
 
   const kpiData = useMemo(() => ({
