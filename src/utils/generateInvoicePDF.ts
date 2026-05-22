@@ -246,9 +246,9 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       textColor: BLACK,
     },
     columnStyles: {
-      0: { cellWidth: 8,  halign: 'center' },
+      0: { cellWidth: 12, halign: 'center' },
       1: { cellWidth: 19, halign: 'center' },
-      2: { cellWidth: 28 },
+      2: { cellWidth: 32 },
       3: { cellWidth: 'auto' },
       4: { cellWidth: 32, halign: 'right' },
       5: { cellWidth: 22, halign: 'center' },
