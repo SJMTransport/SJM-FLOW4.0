@@ -209,6 +209,12 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
           total: Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0,
         }));
+        items = items.sort((a, b) => {
+          const da = new Date(a.tglMuat || '').getTime() || 0;
+          const db = new Date(b.tglMuat || '').getTime() || 0;
+          if (da !== db) return da - db;
+          return (a.noSO || '').localeCompare(b.noSO || '');
+        }).map((item, i) => ({ ...item, rowNo: i + 1 }));
         subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman + (i.hargaAsuransi || 0), 0);
         ppn = items.reduce((acc, i) => acc + (i.nilaiPajak || 0), 0);
         total = subTotal + ppn;
@@ -263,7 +269,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     const totalPerItem = soOrderIds.length > 0 ? (invoice.total_setelah_pajak || 0) / soOrderIds.length : 0;
     const subPerItem = soOrderIds.length > 0 ? (invoice.total_sebelum_pajak || 0) / soOrderIds.length : 0;
 
-    const items: InvoiceData['items'] = soOrderIds.map((soId, idx) => {
+    let items: InvoiceData['items'] = soOrderIds.map((soId, idx) => {
       const s = so.find(x => x.order_id === soId);
       if (!s) {
         return {
@@ -291,6 +297,12 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           : (Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || totalPerItem),
       };
     });
+    items = items.sort((a, b) => {
+      const da = new Date(a.tglMuat || '').getTime() || 0;
+      const db = new Date(b.tglMuat || '').getTime() || 0;
+      if (da !== db) return da - db;
+      return (a.noSO || '').localeCompare(b.noSO || '');
+    }).map((item, i) => ({ ...item, rowNo: i + 1 }));
 
     setReprintData({
       invoiceNumber: invoice.no_invoice, invoiceDate: fmtDate(invoice.tgl_invoice),
@@ -326,7 +338,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       const matchStart = !filterPeriodStart || inv.tgl_invoice >= filterPeriodStart;
       const matchEnd = !filterPeriodEnd || inv.tgl_invoice <= filterPeriodEnd;
       return matchCustomer && matchTipe && matchStatus && matchStart && matchEnd;
-    });
+    }).sort((a, b) => (b.no_invoice || '').localeCompare(a.no_invoice || ''));
   }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
 
   const kpiData = useMemo(() => ({
