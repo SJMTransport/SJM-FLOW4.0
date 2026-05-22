@@ -17,6 +17,14 @@ const fmtDate = (d: string) => {
   catch { return d; }
 };
 
+const calcNilaiPajak = (s: any): number => {
+  if (Number(s.nilai_pajak) > 0) return Number(s.nilai_pajak);
+  const tgl = s.tgl_muat || s.tgl_order;
+  if (!tgl) return 0;
+  const isPajak = new Date(tgl) >= new Date('2026-02-01');
+  return isPajak ? Math.round(Number(s.harga_pengiriman) * 0.011) : 0;
+};
+
 const STATUS_COLOR: Record<string, string> = {
   'Belum Bayar': '#ef4444',
   'Parsial': '#f59e0b',
@@ -197,7 +205,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           muatan: s.muatan || '-', sn: s.sn || '-',
           lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
           hargaPengiriman: Number(s.harga_pengiriman) || 0,
-          nilaiPajak: Number(s.nilai_pajak) || 0,
+          nilaiPajak: calcNilaiPajak(s),
           hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
           total: Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0,
         }));
@@ -276,7 +284,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         hargaPengiriman: invoice.tipe !== 'normal'
           ? (invoice.total_sebelum_pajak || 0)
           : (Number(s.harga_pengiriman) || Number(s.total_harga) || subPerItem),
-        nilaiPajak: Number(s.nilai_pajak) || 0,
+        nilaiPajak: calcNilaiPajak(s),
         hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
         total: invoice.tipe !== 'normal'
           ? (invoice.total_setelah_pajak || 0)
