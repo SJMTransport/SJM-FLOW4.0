@@ -655,6 +655,10 @@ export const api = {
       .eq('id', id);
     if (error) throw new Error(error.message || "Gagal update status invoice");
   },
+  deleteInvoice: async (id: string) => {
+    const { error } = await supabase.from('invoices').delete().eq('id', id);
+    if (error) throw new Error(error.message || 'Gagal hapus invoice');
+  },
 };
 
 export const authActions = {
