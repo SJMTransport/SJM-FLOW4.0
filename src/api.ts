@@ -659,6 +659,52 @@ export const api = {
     const { error } = await supabase.from('invoices').delete().eq('id', id);
     if (error) throw new Error(error.message || 'Gagal hapus invoice');
   },
+
+  getQuotations: async () => {
+    const { data, error } = await supabase
+      .from('quotations')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+
+  addQuotation: async (q: any) => {
+    const { data, error } = await supabase
+      .from('quotations')
+      .insert([q])
+      .select();
+    if (error) throw new Error(error.message);
+    return data?.[0];
+  },
+
+  updateQuotation: async (id: string, updates: any) => {
+    const { error } = await supabase
+      .from('quotations')
+      .update(updates)
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  deleteQuotation: async (id: string) => {
+    const { error } = await supabase
+      .from('quotations')
+      .delete()
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  getLastQuotationNo: async (): Promise<number> => {
+    const { data } = await supabase
+      .from('quotations')
+      .select('no_quotation');
+    let max = 0;
+    (data || []).forEach((r: any) => {
+      const m = (r.no_quotation || '').match(/^(\d+)\//);
+      if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
+    });
+    return max;
+  },
 };
 
 export const authActions = {
