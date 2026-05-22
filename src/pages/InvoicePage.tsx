@@ -388,14 +388,26 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     });
   }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
 
-  const kpiData = useMemo(() => ({
-    total: invoices.length,
-    lunas: invoices.filter(i => getInvStatus(i) === 'Lunas').length,
-    belumBayar: invoices.filter(i => getInvStatus(i) === 'Belum Bayar').length,
-    parsial: invoices.filter(i => getInvStatus(i) === 'Parsial').length,
-    perluVerifikasi: invoices.filter(i => getInvStatus(i) === 'Perlu Verifikasi').length,
-    outstanding: invoices.filter(i => getInvStatus(i) !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
-  }), [invoices, paymentStatusMap]);
+  const kpiData = useMemo(() => {
+    const soBelumiInvoice = so.filter(s =>
+      s.status_muatan === 'Completed' &&
+      (s.invoice_count === 0 || !s.invoice_count) &&
+      (!s.no_invoice || s.no_invoice === '')
+    );
+    const nilaiBelumiInvoice = soBelumiInvoice.reduce((sum, s) =>
+      sum + (Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0), 0
+    );
+    return {
+      total: invoices.length,
+      lunas: invoices.filter(i => getInvStatus(i) === 'Lunas').length,
+      belumBayar: invoices.filter(i => getInvStatus(i) === 'Belum Bayar').length,
+      parsial: invoices.filter(i => getInvStatus(i) === 'Parsial').length,
+      perluVerifikasi: invoices.filter(i => getInvStatus(i) === 'Perlu Verifikasi').length,
+      outstanding: invoices.filter(i => getInvStatus(i) !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
+      soBelumiInvoice: soBelumiInvoice.length,
+      nilaiBelumiInvoice,
+    };
+  }, [invoices, paymentStatusMap, so]);
 
   // ── RENDER
   return (
@@ -424,7 +436,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-6 gap-3">
+          <div className="grid grid-cols-7 gap-3">
             {[
               { label: 'Total Invoice', value: kpiData.total, color: 'text-text-main', bg: 'bg-white' },
               { label: 'Lunas', value: kpiData.lunas, color: 'text-green-600', bg: 'bg-green-50' },
@@ -435,9 +447,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`${bg} rounded-xl border border-border-main p-4`}>
                 <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-70 mb-1">{label}</div>
-                <div className={`text-[18px] font-black tabular-nums ${color}`}>{value}</div>
+                <div className={`text-[16px] font-black tabular-nums ${color}`}>{value}</div>
               </div>
             ))}
+            <div
+              className="bg-teal-50 rounded-xl border border-border-main p-4 cursor-pointer hover:border-teal-400 transition-colors"
+              onClick={() => setActiveTab('buat')}
+            >
+              <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-70 mb-1">Belum Diinvoice</div>
+              <div className="text-[16px] font-black tabular-nums text-teal-600">{kpiData.soBelumiInvoice} SO</div>
+              <div className="text-[10px] font-bold tabular-nums text-teal-600 opacity-70 mt-0.5">{fRp(kpiData.nilaiBelumiInvoice)}</div>
+            </div>
           </div>
 
           {/* Filter Bar */}
