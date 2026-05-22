@@ -64,8 +64,8 @@ async function loadImageAsDataUrl(src: string): Promise<string> {
 export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
-  const mL = 10;
-  const mR = 10;
+  const mL = 6;
+  const mR = 6;
   let y = 14;
 
   // ── LOGO ──
@@ -161,7 +161,12 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
 
     // Plain string so autoTable calculates correct row height
-    const desk = deskFormatted[i].map(l => l.t).join('\n');
+    const desk = [
+      'Muatan :\n' + (item.muatan || '-'),
+      item.sn ? '\nSN :\n' + item.sn : '',
+      '\nLokasi Muat :\n' + (item.lokasiMuat || '-'),
+      '\nLokasi Tujuan :\n' + (item.lokasiTujuan || '-'),
+    ].filter(Boolean).join('');
 
     const asuransi = item.hargaAsuransi
       ? fRp(item.hargaAsuransi)
@@ -242,12 +247,12 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
     },
     columnStyles: {
       0: { cellWidth: 8,  halign: 'center' },
-      1: { cellWidth: 20, halign: 'center' },
-      2: { cellWidth: 30 },
+      1: { cellWidth: 19, halign: 'center' },
+      2: { cellWidth: 28 },
       3: { cellWidth: 'auto' },
-      4: { cellWidth: 28, halign: 'right' },
-      5: { cellWidth: 24, halign: 'center' },
-      6: { cellWidth: 28, halign: 'right' },
+      4: { cellWidth: 32, halign: 'right' },
+      5: { cellWidth: 22, halign: 'center' },
+      6: { cellWidth: 32, halign: 'right' },
     },
     margin: { left: mL, right: mR, top: 18, bottom: 55 },
     showFoot: 'lastPage',
@@ -302,11 +307,11 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   doc.text('Hormat Kami,', ttdCX, finalY + 8, { align: 'center' });
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(0.3);
-  doc.line(ttdCX - 32, finalY + 30, ttdCX + 32, finalY + 30);
-  doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 35, { align: 'center' });
+  doc.line(ttdCX - 32, finalY + 38, ttdCX + 32, finalY + 38);
+  doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 43, { align: 'center' });
 
   // Pembayaran kiri
-  const payY = finalY + 44;
+  const payY = finalY + 52;
   doc.setFillColor(...GOLD);
   doc.rect(mL, payY - 3, 2, 12, 'F');
   doc.setFontSize(10);
