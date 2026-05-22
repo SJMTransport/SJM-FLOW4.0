@@ -225,7 +225,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
     theme: 'grid',
     styles: {
       fontSize: 9,
-      cellPadding: { top: 2.5, right: 3, bottom: 2.5, left: 3 },
+      cellPadding: { top: 2, right: 2, bottom: 2, left: 2 },
       lineColor: BLACK,
       lineWidth: 0.3,
       textColor: BLACK,
@@ -239,7 +239,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       fontStyle: 'bold',
       fontSize: 9,
       halign: 'center',
-      cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
+      cellPadding: { top: 2.5, right: 2, bottom: 2.5, left: 2 },
     },
     footStyles: {
       fillColor: WHITE,
@@ -251,8 +251,8 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       2: { cellWidth: 32 },
       3: { cellWidth: 'auto' },
       4: { cellWidth: 32, halign: 'right' },
-      5: { cellWidth: 22, halign: 'center' },
-      6: { cellWidth: 32, halign: 'right' },
+      5: { cellWidth: 28, halign: 'center' },
+      6: { cellWidth: 30, halign: 'right' },
     },
     margin: { left: mL, right: mR, top: 18, bottom: 55 },
     showFoot: 'lastPage',
@@ -262,8 +262,8 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       const lines = deskFormatted[hookData.row.index];
       if (!lines) return;
       const cell = hookData.cell;
-      const padL = 3;
-      const padT = 2.5;
+      const padL = 2;
+      const padT = 2;
       // Clear cell content (0.2mm inside border to avoid erasing grid lines)
       doc.setFillColor(...WHITE);
       doc.rect(cell.x + 0.2, cell.y + 0.2, cell.width - 0.4, cell.height - 0.4, 'F');
