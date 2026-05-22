@@ -33,21 +33,28 @@ export interface InvoiceData {
 const fRp = (n: number) =>
   'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
 
-const AMBER  = [255, 143, 0]   as [number, number, number];
-const YELLOW = [255, 200, 64]  as [number, number, number];
-const BLACK  = [0, 0, 0]       as [number, number, number];
-const WHITE  = [255, 255, 255] as [number, number, number];
-const DGRAY  = [80, 80, 80]    as [number, number, number];
+const GOLD  = [249, 172, 61]  as [number, number, number]; // #f9ac3d
+const BLACK = [0, 0, 0]       as [number, number, number];
+const WHITE = [255, 255, 255] as [number, number, number];
+const DGRAY = [80, 80, 80]    as [number, number, number];
 
 async function loadImageAsDataUrl(src: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
+      const MAX = 200;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
     };
     img.onerror = reject;
     img.src = src;
@@ -64,10 +71,9 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   // ── LOGO ──
   try {
     const logoDataUrl = await loadImageAsDataUrl('/logo-sjm.png');
-    doc.addImage(logoDataUrl, 'PNG', mL, y, 26, 26);
+    doc.addImage(logoDataUrl, 'JPEG', mL, y, 26, 26);
   } catch {
-    // Fallback box jika logo tidak tersedia
-    doc.setFillColor(...AMBER);
+    doc.setFillColor(...GOLD);
     doc.roundedRect(mL, y, 26, 26, 2, 2, 'F');
     doc.setTextColor(...WHITE);
     doc.setFont('helvetica', 'bold');
@@ -76,7 +82,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   }
 
   // ── COMPANY INFO ──
-  doc.setTextColor(...AMBER);
+  doc.setTextColor(...GOLD);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('SUGIARTO JAYA MANDIRI TRANSPORT', mL + 30, y + 8);
@@ -88,7 +94,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   doc.text('Email   : sugiartojayamandiri@gmail.com', mL + 30, y + 24);
 
   // ── INVOICE BADGE ──
-  doc.setFillColor(...AMBER);
+  doc.setFillColor(...GOLD);
   doc.rect(pageW - mR - 32, y, 32, 13, 'F');
   doc.setTextColor(...WHITE);
   doc.setFontSize(13);
@@ -102,7 +108,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   doc.setLineWidth(1.2);
   doc.line(mL, y, pageW - mR, y);
   y += 2;
-  doc.setDrawColor(...YELLOW);
+  doc.setDrawColor(...GOLD);
   doc.setLineWidth(1.5);
   doc.line(pageW - mR - 60, y, pageW - mR, y);
   y += 8;
@@ -126,12 +132,27 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   });
   y += 4;
 
-  // ── TABLE ──
-  // 7 kolom: No | Tanggal | No SO & Armada | Deskripsi | Biaya Pengiriman | Biaya Asuransi | Jumlah
-  // Total content width = 210 - 10 - 10 = 190mm
-  // No(8) + Tgl(20) + SO(30) + Desk(auto) + HP(28) + Asm(24) + Jml(28) = 138 fixed, Desk = 52
+  // ── DESKRIPSI: label bold, nilai normal ──
+  type DeskLine = { t: string; b: boolean };
+  const deskFormatted: DeskLine[][] = data.items.map(item => {
+    const lines: DeskLine[] = [
+      { t: 'Muatan :', b: true },
+      { t: item.muatan || '-', b: false },
+    ];
+    if (item.sn) {
+      lines.push({ t: 'SN :', b: true }, { t: item.sn, b: false });
+    }
+    lines.push(
+      { t: 'Lokasi Muat :', b: true },
+      { t: item.lokasiMuat || '-', b: false },
+      { t: 'Lokasi Tujuan :', b: true },
+      { t: item.lokasiTujuan || '-', b: false },
+    );
+    return lines;
+  });
 
-  const body = data.items.map(item => {
+  // ── TABLE ──
+  const body = data.items.map((item, i) => {
     const tgl = item.tglMuat +
       (item.tglTiba && item.tglTiba !== '-' ? '\n—\n' + item.tglTiba : '');
 
@@ -139,12 +160,8 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       item.armada +
       (item.noPol && item.noPol !== '-' ? '\n(' + item.noPol + ')' : '');
 
-    const desk = [
-      'Muatan : ' + (item.muatan || '-'),
-      item.sn ? 'SN : ' + item.sn : null,
-      'Lokasi Muat : ' + (item.lokasiMuat || '-'),
-      'Lokasi Tujuan : ' + (item.lokasiTujuan || '-'),
-    ].filter(Boolean).join('\n');
+    // Plain string so autoTable calculates correct row height
+    const desk = deskFormatted[i].map(l => l.t).join('\n');
 
     const asuransi = item.hargaAsuransi
       ? fRp(item.hargaAsuransi)
@@ -192,7 +209,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
     head: [[
       { content: 'No.',              styles: { halign: 'center' } },
       { content: 'Tanggal',          styles: { halign: 'center' } },
-      { content: 'No SO & Armada',   styles: { halign: 'center' } },
+      { content: 'No SO / Armada',   styles: { halign: 'center' } },
       { content: 'Deskripsi',        styles: { halign: 'center' } },
       { content: 'Biaya Pengiriman', styles: { halign: 'center' } },
       { content: 'Biaya Asuransi',   styles: { halign: 'center' } },
@@ -212,7 +229,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
       font: 'helvetica',
     },
     headStyles: {
-      fillColor: YELLOW,
+      fillColor: GOLD,
       textColor: BLACK,
       fontStyle: 'bold',
       fontSize: 9,
@@ -235,7 +252,30 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
     margin: { left: mL, right: mR, top: 18, bottom: 55 },
     showFoot: 'lastPage',
     rowPageBreak: 'avoid',
-    // TIDAK ADA didDrawCell — deskripsi dirender langsung oleh autoTable
+    didDrawCell: (hookData) => {
+      if (hookData.column.index !== 3 || hookData.section !== 'body') return;
+      const lines = deskFormatted[hookData.row.index];
+      if (!lines) return;
+      const cell = hookData.cell;
+      const padL = 3;
+      const padT = 2.5;
+      // Clear cell content (0.2mm inside border to avoid erasing grid lines)
+      doc.setFillColor(...WHITE);
+      doc.rect(cell.x + 0.2, cell.y + 0.2, cell.width - 0.4, cell.height - 0.4, 'F');
+      // Re-draw with bold labels / normal values
+      const maxW = cell.width - padL * 2;
+      let ty = cell.y + padT + 3.2;
+      doc.setFontSize(9);
+      doc.setTextColor(...BLACK);
+      for (const line of lines) {
+        doc.setFont('helvetica', line.b ? 'bold' : 'normal');
+        const wrapped = doc.splitTextToSize(line.t, maxW);
+        for (const t of wrapped) {
+          doc.text(t, cell.x + padL, ty);
+          ty += 3.6;
+        }
+      }
+    },
   });
 
   // ── NOMOR HALAMAN ──
@@ -265,9 +305,9 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   doc.line(ttdCX - 32, finalY + 30, ttdCX + 32, finalY + 30);
   doc.text('(Muhammad Naufal Sugiarto)', ttdCX, finalY + 35, { align: 'center' });
 
-  // Pembayaran kiri — di bawah TTD, tidak sejajar
+  // Pembayaran kiri
   const payY = finalY + 44;
-  doc.setFillColor(...YELLOW);
+  doc.setFillColor(...GOLD);
   doc.rect(mL, payY - 3, 2, 12, 'F');
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
