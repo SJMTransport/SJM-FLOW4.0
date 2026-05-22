@@ -74,6 +74,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [reprintNo, setReprintNo] = useState('');
   const [showReprint, setShowReprint] = useState(false);
   const [selectedPaymentInv, setSelectedPaymentInv] = useState<any>(null);
+  const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
 
   // ── Load all invoices
   const loadInvoices = async () => {
@@ -292,6 +294,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     } catch { }
   };
 
+  const handleDeleteInvoice = async (inv: any) => {
+    setDeletingInvoiceId(inv.id);
+    try {
+      await api.deleteInvoice(inv.id);
+      showToast(`Invoice ${inv.no_invoice} berhasil dihapus`, 'success');
+      setConfirmDelete(null);
+      await loadInvoices();
+    } catch (err: any) {
+      showToast('Gagal hapus invoice: ' + err.message, 'error');
+    } finally {
+      setDeletingInvoiceId(null);
+    }
+  };
+
   const handleReprint = (invoice: any) => {
     const soOrderIds: string[] = invoice.so_order_ids || [];
     const totalPerItem = soOrderIds.length > 0 ? (invoice.total_setelah_pajak || 0) / soOrderIds.length : 0;
@@ -372,14 +388,26 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     });
   }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
 
-  const kpiData = useMemo(() => ({
-    total: invoices.length,
-    lunas: invoices.filter(i => getInvStatus(i) === 'Lunas').length,
-    belumBayar: invoices.filter(i => getInvStatus(i) === 'Belum Bayar').length,
-    parsial: invoices.filter(i => getInvStatus(i) === 'Parsial').length,
-    perluVerifikasi: invoices.filter(i => getInvStatus(i) === 'Perlu Verifikasi').length,
-    outstanding: invoices.filter(i => getInvStatus(i) !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
-  }), [invoices, paymentStatusMap]);
+  const kpiData = useMemo(() => {
+    const soBelumiInvoice = so.filter(s =>
+      s.status_muatan === 'Completed' &&
+      (s.invoice_count === 0 || !s.invoice_count) &&
+      (!s.no_invoice || s.no_invoice === '')
+    );
+    const nilaiBelumiInvoice = soBelumiInvoice.reduce((sum, s) =>
+      sum + (Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0), 0
+    );
+    return {
+      total: invoices.length,
+      lunas: invoices.filter(i => getInvStatus(i) === 'Lunas').length,
+      belumBayar: invoices.filter(i => getInvStatus(i) === 'Belum Bayar').length,
+      parsial: invoices.filter(i => getInvStatus(i) === 'Parsial').length,
+      perluVerifikasi: invoices.filter(i => getInvStatus(i) === 'Perlu Verifikasi').length,
+      outstanding: invoices.filter(i => getInvStatus(i) !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
+      soBelumiInvoice: soBelumiInvoice.length,
+      nilaiBelumiInvoice,
+    };
+  }, [invoices, paymentStatusMap, so]);
 
   // ── RENDER
   return (
@@ -408,7 +436,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-6 gap-3">
+          <div className="grid grid-cols-7 gap-3">
             {[
               { label: 'Total Invoice', value: kpiData.total, color: 'text-text-main', bg: 'bg-white' },
               { label: 'Lunas', value: kpiData.lunas, color: 'text-green-600', bg: 'bg-green-50' },
@@ -419,9 +447,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`${bg} rounded-xl border border-border-main p-4`}>
                 <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-70 mb-1">{label}</div>
-                <div className={`text-[18px] font-black tabular-nums ${color}`}>{value}</div>
+                <div className={`text-[16px] font-black tabular-nums ${color}`}>{value}</div>
               </div>
             ))}
+            <div
+              className="bg-teal-50 rounded-xl border border-border-main p-4 cursor-pointer hover:border-teal-400 transition-colors"
+              onClick={() => setActiveTab('buat')}
+            >
+              <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-70 mb-1">Belum Diinvoice</div>
+              <div className="text-[16px] font-black tabular-nums text-teal-600">{kpiData.soBelumiInvoice} SO</div>
+              <div className="text-[10px] font-bold tabular-nums text-teal-600 opacity-70 mt-0.5">{fRp(kpiData.nilaiBelumiInvoice)}</div>
+            </div>
           </div>
 
           {/* Filter Bar */}
@@ -526,10 +562,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                           <div className="flex items-center gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors"
-                              onClick={() => handleReprint(inv)}
+                              onClick={e => { e.stopPropagation(); handleReprint(inv); }}
                               title="Download PDF"
                             >
                               <Icon name="Download" size={13} />
+                            </button>
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                              onClick={e => { e.stopPropagation(); setConfirmDelete(inv); }}
+                              title="Hapus Invoice"
+                            >
+                              <Icon name="Trash2" size={13} />
                             </button>
                           </div>
                         </td>
@@ -646,11 +689,24 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                       {invoiceTipe === 'pelunasan' && 'Lihat preview untuk nominal'}
                     </div>
                   </div>
-                  <button onClick={handlePrepareInvoice} disabled={preparing}
-                    className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <Icon name="Eye" size={14} />
-                    {preparing ? '⏳ Mempersiapkan...' : 'Preview Invoice'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedIds(new Set());
+                        setFilterCustomer('');
+                        setDpNominal('');
+                        setDpKeterangan('');
+                      }}
+                      className="btn-ghost h-9 px-4 text-[12px] flex items-center gap-2"
+                      disabled={preparing}
+                    >
+                      <Icon name="X" size={14} /> Batal
+                    </button>
+                    <button onClick={handlePrepareInvoice} disabled={preparing || selectedIds.size === 0}
+                      className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                      {preparing ? '⏳ Mempersiapkan...' : '👁 Preview Invoice'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -710,6 +766,46 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             </table>
           </div>
 
+        </div>
+      )}
+
+      {/* ══════════════════════════════════ */}
+      {/* MODAL KONFIRMASI DELETE INVOICE    */}
+      {/* ══════════════════════════════════ */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <Icon name="Trash2" size={18} className="text-red-500" />
+              </div>
+              <div>
+                <div className="font-black text-text-main text-[14px]">Hapus Invoice</div>
+                <div className="text-[11px] text-text-med mt-0.5">Tindakan ini tidak bisa dibatalkan</div>
+              </div>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3 mb-5">
+              <div className="text-[11px] font-bold text-accent">{confirmDelete.no_invoice}</div>
+              <div className="text-[11px] text-text-med mt-0.5">{confirmDelete.customer}</div>
+              <div className="text-[12px] font-black text-text-main mt-1">{fRp(confirmDelete.total_setelah_pajak || 0)}</div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 btn-ghost h-9 text-[12px]"
+                disabled={deletingInvoiceId === confirmDelete.id}
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => handleDeleteInvoice(confirmDelete)}
+                className="flex-1 h-9 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[12px] font-bold transition-colors disabled:opacity-50"
+                disabled={deletingInvoiceId === confirmDelete.id}
+              >
+                {deletingInvoiceId === confirmDelete.id ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
