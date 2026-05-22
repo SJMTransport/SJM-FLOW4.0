@@ -212,7 +212,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             hargaPengiriman: Number(s.harga_pengiriman) || 0,
             nilaiPajak: calcNilaiPajak(s),
             hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
-            total: Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0,
+            total: (Number(s.harga_pengiriman) || 0) + (Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : 0),
           }));
         subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman + (i.hargaAsuransi || 0), 0);
         ppn = items.reduce((acc, i) => acc + (i.nilaiPajak || 0), 0);
@@ -300,7 +300,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
         total: invoice.tipe !== 'normal'
           ? (invoice.total_setelah_pajak || 0)
-          : (Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || totalPerItem),
+          : (Number(s.harga_pengiriman) || 0) + (Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : 0),
       };
     });
     setReprintData({
