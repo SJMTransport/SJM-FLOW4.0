@@ -51,6 +51,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [dpNominal, setDpNominal] = useState('');
   const [dpKeterangan, setDpKeterangan] = useState('');
   const [tglInvoice, setTglInvoice] = useState(new Date().toISOString().split('T')[0]);
+  const [manualInvoiceNo, setManualInvoiceNo] = useState('');
+  const [loadingInvoiceNo, setLoadingInvoiceNo] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [pendingInvoiceNo, setPendingInvoiceNo] = useState('');
@@ -97,6 +99,18 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   };
 
   useEffect(() => { loadInvoices(); }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'buat') return;
+    const suggest = async () => {
+      setLoadingInvoiceNo(true);
+      try {
+        const no = await generateInvoiceNo(new Date(tglInvoice));
+        setManualInvoiceNo(no);
+      } catch { } finally { setLoadingInvoiceNo(false); }
+    };
+    suggest();
+  }, [activeTab, tglInvoice]);
 
   const handleOpenDetail = (inv: any) => {
     setSelectedPaymentInv(inv);
@@ -158,7 +172,18 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     if (err) { showToast(err, 'error'); return; }
     setPreparing(true);
     try {
-      const invoiceNo = await generateInvoiceNo(new Date(tglInvoice));
+      const invoiceNo = manualInvoiceNo.trim();
+      if (!invoiceNo) {
+        showToast('No Invoice tidak boleh kosong', 'error');
+        setPreparing(false);
+        return;
+      }
+      const existing = invoices.find((inv: any) => inv.no_invoice === invoiceNo);
+      if (existing) {
+        showToast(`No Invoice ${invoiceNo} sudah digunakan`, 'error');
+        setPreparing(false);
+        return;
+      }
       setPendingInvoiceNo(invoiceNo);
       setPendingTipe(invoiceTipe);
       const firstSO = selectedSOList[0];
@@ -261,6 +286,10 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     setDpNominal('');
     setDpKeterangan('');
     await loadInvoices();
+    try {
+      const newNo = await generateInvoiceNo(new Date(tglInvoice));
+      setManualInvoiceNo(newNo);
+    } catch { }
   };
 
   const handleReprint = (invoice: any) => {
@@ -551,6 +580,21 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   {label}
                 </button>
               ))}
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-bold text-text-light opacity-60 uppercase tracking-widest whitespace-nowrap">No Invoice</label>
+                <div className="relative">
+                  <input
+                    value={manualInvoiceNo}
+                    onChange={e => setManualInvoiceNo(e.target.value)}
+                    placeholder={loadingInvoiceNo ? 'Memuat...' : 'xxxx/INV-SJM/MM/YYYY'}
+                    className="input-field h-8 text-[11px] w-52 font-mono"
+                    disabled={loadingInvoiceNo}
+                  />
+                  {loadingInvoiceNo && (
+                    <span className="absolute right-2 top-1.5 text-[10px] text-text-light">...</span>
+                  )}
+                </div>
+              </div>
               <div className="ml-auto flex items-center gap-2">
                 <label className="text-[10px] font-bold text-text-light opacity-60 uppercase tracking-widest whitespace-nowrap">Tgl Invoice</label>
                 <input type="date" value={tglInvoice} onChange={e => setTglInvoice(e.target.value)}
