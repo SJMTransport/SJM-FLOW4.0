@@ -199,22 +199,21 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       } else {
         keteranganInv = '';
         setPendingKeterangan('');
-        items = selectedSOList.map((s, i) => ({
-          rowNo: i + 1, tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
-          noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
-          muatan: s.muatan || '-', sn: s.sn || '-',
-          lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
-          hargaPengiriman: Number(s.harga_pengiriman) || 0,
-          nilaiPajak: calcNilaiPajak(s),
-          hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
-          total: Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0,
-        }));
-        items = items.sort((a, b) => {
-          const da = new Date(a.tglMuat || '').getTime() || 0;
-          const db = new Date(b.tglMuat || '').getTime() || 0;
-          if (da !== db) return da - db;
-          return (a.noSO || '').localeCompare(b.noSO || '');
-        }).map((item, i) => ({ ...item, rowNo: i + 1 }));
+        items = [...selectedSOList]
+          .sort((a, b) => {
+            const cmp = (a.tgl_muat || '').localeCompare(b.tgl_muat || '');
+            return cmp !== 0 ? cmp : (a.order_id || '').localeCompare(b.order_id || '');
+          })
+          .map((s, i) => ({
+            rowNo: i + 1, tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
+            noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
+            muatan: s.muatan || '-', sn: s.sn || '-',
+            lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
+            hargaPengiriman: Number(s.harga_pengiriman) || 0,
+            nilaiPajak: calcNilaiPajak(s),
+            hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
+            total: Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || 0,
+          }));
         subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman + (i.hargaAsuransi || 0), 0);
         ppn = items.reduce((acc, i) => acc + (i.nilaiPajak || 0), 0);
         total = subTotal + ppn;
@@ -269,7 +268,14 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     const totalPerItem = soOrderIds.length > 0 ? (invoice.total_setelah_pajak || 0) / soOrderIds.length : 0;
     const subPerItem = soOrderIds.length > 0 ? (invoice.total_sebelum_pajak || 0) / soOrderIds.length : 0;
 
-    let items: InvoiceData['items'] = soOrderIds.map((soId, idx) => {
+    const sortedSoIds = [...soOrderIds].sort((aId, bId) => {
+      const a = so.find(x => x.order_id === aId);
+      const b = so.find(x => x.order_id === bId);
+      const cmp = (a?.tgl_muat || '').localeCompare(b?.tgl_muat || '');
+      return cmp !== 0 ? cmp : aId.localeCompare(bId);
+    });
+
+    let items: InvoiceData['items'] = sortedSoIds.map((soId, idx) => {
       const s = so.find(x => x.order_id === soId);
       if (!s) {
         return {
@@ -297,13 +303,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           : (Number(s.total_harga_pajak) || Number(s.total_harga) || Number(s.harga_pengiriman) || totalPerItem),
       };
     });
-    items = items.sort((a, b) => {
-      const da = new Date(a.tglMuat || '').getTime() || 0;
-      const db = new Date(b.tglMuat || '').getTime() || 0;
-      if (da !== db) return da - db;
-      return (a.noSO || '').localeCompare(b.noSO || '');
-    }).map((item, i) => ({ ...item, rowNo: i + 1 }));
-
     setReprintData({
       invoiceNumber: invoice.no_invoice, invoiceDate: fmtDate(invoice.tgl_invoice),
       customer: invoice.customer, picCust: invoice.pic_cust || '-',
