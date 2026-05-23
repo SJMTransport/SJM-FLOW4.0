@@ -29,7 +29,10 @@ async function loadImageAsDataUrl(src: string): Promise<string> {
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
       resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
     img.onerror = reject;

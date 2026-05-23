@@ -293,101 +293,116 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
 
       {/* VIEW: BUAT / EDIT */}
       {activeTab === 'buat' && (
-        <div className="max-w-2xl space-y-5">
+        <div className="max-w-2xl space-y-4">
           <div className="text-[13px] font-black text-text-main">
             {editItem ? `Edit Quotation — ${editItem.no_quotation}` : 'Buat Quotation Baru'}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">No Quotation</label>
-              <input value={form.no_quotation} onChange={e => setF('no_quotation', e.target.value)}
-                placeholder={loadingNo ? 'Memuat...' : 'xxxx/QTN-SJM/MM/YYYY'}
-                className="input w-full text-[12px] font-mono" disabled={loadingNo} />
+          {/* Section 1: Info Dokumen */}
+          <div className="bg-white rounded-2xl border border-border-main p-4 space-y-3">
+            <div className="text-[9px] font-black text-text-light uppercase tracking-widest">Info Dokumen</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">No Quotation</label>
+                <input value={form.no_quotation} onChange={e => setF('no_quotation', e.target.value)}
+                  placeholder={loadingNo ? 'Memuat...' : 'xxxx/QTN-SJM/MM/YYYY'}
+                  className="input w-full text-[12px] font-mono" disabled={loadingNo} />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Tgl Quotation</label>
+                <input type="date" value={form.tgl_quotation} onChange={e => setF('tgl_quotation', e.target.value)} className="input w-full text-[12px]" />
+              </div>
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Tgl Quotation</label>
-              <input type="date" value={form.tgl_quotation} onChange={e => setF('tgl_quotation', e.target.value)} className="input w-full text-[12px]" />
-            </div>
+            {editItem && (
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Status</label>
+                <select value={form.status} onChange={e => setF('status', e.target.value)} className="input w-full text-[12px]">
+                  <option value="Draft">Draft</option>
+                  <option value="Terkirim">Terkirim</option>
+                  <option value="Diterima">Diterima</option>
+                  <option value="Ditolak">Ditolak</option>
+                </select>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Customer *</label>
-            <input value={form.customer} onChange={e => setF('customer', e.target.value)} placeholder="Nama perusahaan customer" className="input w-full text-[12px]" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          {/* Section 2: Data Customer */}
+          <div className="bg-white rounded-2xl border border-border-main p-4 space-y-3">
+            <div className="text-[9px] font-black text-text-light uppercase tracking-widest">Data Customer</div>
             <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">PIC</label>
-              <input value={form.pic} onChange={e => setF('pic', e.target.value)} placeholder="Nama PIC" className="input w-full text-[12px]" />
+              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Customer *</label>
+              <input value={form.customer} onChange={e => setF('customer', e.target.value)} placeholder="Nama perusahaan customer" className="input w-full text-[12px]" />
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">No Telepon</label>
-              <input value={form.no_tlp} onChange={e => setF('no_tlp', e.target.value)} placeholder="08xxxxxxxxxx" className="input w-full text-[12px]" />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Jenis Kendaraan</label>
-            <input value={form.jenis_kendaraan} onChange={e => setF('jenis_kendaraan', e.target.value)} placeholder="Selfloader, Towing, dll" className="input w-full text-[12px]" />
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Muatan</label>
-            <input value={form.muatan} onChange={e => setF('muatan', e.target.value)} placeholder="Jenis alat berat / muatan" className="input w-full text-[12px]" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Lokasi Muat</label>
-              <input value={form.lokasi_muat} onChange={e => setF('lokasi_muat', e.target.value)} placeholder="Lokasi penjemputan" className="input w-full text-[12px]" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Lokasi Tujuan</label>
-              <input value={form.lokasi_tujuan} onChange={e => setF('lokasi_tujuan', e.target.value)} placeholder="Tujuan pengiriman" className="input w-full text-[12px]" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">PIC</label>
+                <input value={form.pic} onChange={e => setF('pic', e.target.value)} placeholder="Nama PIC" className="input w-full text-[12px]" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">No Telepon</label>
+                <input value={form.no_tlp} onChange={e => setF('no_tlp', e.target.value)} placeholder="08xxxxxxxxxx" className="input w-full text-[12px]" />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Harga (Rp) *</label>
-            <input type="number" value={form.harga} onChange={e => setF('harga', e.target.value)} placeholder="15000000" className="input w-full text-[12px]" />
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Term of Payment</label>
-            <input value={form.term_of_payment} onChange={e => setF('term_of_payment', e.target.value)} placeholder="Contoh: 14 hari setelah invoice" className="input w-full text-[12px]" />
-          </div>
-
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.include_pph} onChange={e => setF('include_pph', e.target.checked)} className="w-4 h-4 accent-accent" />
-              <span className="text-[12px] text-text-main">Sudah Termasuk PPh</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.include_asuransi} onChange={e => setF('include_asuransi', e.target.checked)} className="w-4 h-4 accent-accent" />
-              <span className="text-[12px] text-text-main">Sudah Termasuk Asuransi</span>
-            </label>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Keterangan Tambahan</label>
-            <textarea value={form.keterangan} onChange={e => setF('keterangan', e.target.value)}
-              placeholder="Catatan tambahan..." rows={3} className="input w-full text-[12px] resize-none" />
-          </div>
-
-          {editItem && (
-            <div>
-              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Status</label>
-              <select value={form.status} onChange={e => setF('status', e.target.value)} className="input w-full text-[12px]">
-                <option value="Draft">Draft</option>
-                <option value="Terkirim">Terkirim</option>
-                <option value="Diterima">Diterima</option>
-                <option value="Ditolak">Ditolak</option>
-              </select>
+          {/* Section 3: Detail Pengiriman */}
+          <div className="bg-white rounded-2xl border border-border-main p-4 space-y-3">
+            <div className="text-[9px] font-black text-text-light uppercase tracking-widest">Detail Pengiriman</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Jenis Kendaraan</label>
+                <input value={form.jenis_kendaraan} onChange={e => setF('jenis_kendaraan', e.target.value)} placeholder="Selfloader, Towing, dll" className="input w-full text-[12px]" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Muatan</label>
+                <input value={form.muatan} onChange={e => setF('muatan', e.target.value)} placeholder="Jenis alat berat / muatan" className="input w-full text-[12px]" />
+              </div>
             </div>
-          )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Lokasi Muat</label>
+                <input value={form.lokasi_muat} onChange={e => setF('lokasi_muat', e.target.value)} placeholder="Lokasi penjemputan" className="input w-full text-[12px]" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Lokasi Tujuan</label>
+                <input value={form.lokasi_tujuan} onChange={e => setF('lokasi_tujuan', e.target.value)} placeholder="Tujuan pengiriman" className="input w-full text-[12px]" />
+              </div>
+            </div>
+          </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          {/* Section 4: Harga & Ketentuan */}
+          <div className="bg-white rounded-2xl border border-border-main p-4 space-y-3">
+            <div className="text-[9px] font-black text-text-light uppercase tracking-widest">Harga &amp; Ketentuan</div>
+            <div>
+              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Harga (Rp) *</label>
+              <input type="number" value={form.harga} onChange={e => setF('harga', e.target.value)} placeholder="15000000" className="input w-full text-[12px]" />
+              {form.harga && Number(form.harga) > 0 && (
+                <div className="text-[10px] text-text-light mt-1 px-1">= {fRp(Number(form.harga))}</div>
+              )}
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Term of Payment</label>
+              <input value={form.term_of_payment} onChange={e => setF('term_of_payment', e.target.value)} placeholder="Contoh: 14 hari setelah invoice" className="input w-full text-[12px]" />
+            </div>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.include_pph} onChange={e => setF('include_pph', e.target.checked)} className="w-4 h-4 accent-accent" />
+                <span className="text-[12px] text-text-main">Sudah Termasuk PPh</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.include_asuransi} onChange={e => setF('include_asuransi', e.target.checked)} className="w-4 h-4 accent-accent" />
+                <span className="text-[12px] text-text-main">Sudah Termasuk Asuransi</span>
+              </label>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Keterangan Tambahan</label>
+              <textarea value={form.keterangan} onChange={e => setF('keterangan', e.target.value)}
+                placeholder="Catatan tambahan..." rows={3} className="input w-full text-[12px] resize-none" />
+            </div>
+          </div>
+
+          {/* Tombol Aksi */}
+          <div className="flex items-center gap-3 pt-1">
             <button onClick={() => { setForm({ ...EMPTY_FORM }); setEditItem(null); setActiveTab('daftar'); }}
               className="btn-ghost h-9 px-4 text-[12px] flex items-center gap-2" disabled={saving}>
               <Icon name="X" size={14} /> Batal
