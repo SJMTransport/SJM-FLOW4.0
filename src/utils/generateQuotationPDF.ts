@@ -59,6 +59,13 @@ export interface QuotationData {
 
 export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  doc.setProperties({
+    title: 'Quotation - PT Sugiarto Jaya Mandiri Transport',
+    subject: 'Quotation',
+    author: 'SJM Flow',
+    creator: 'SJM Flow',
+    keywords: 'quotation, sjm, transport',
+  });
   const pageW = 210;
   const mL = 20;
   const mR = 20;
