@@ -22,6 +22,21 @@ const BLACK  = [0, 0, 0]      as [number, number, number];
 const WHITE  = [255, 255, 255] as [number, number, number];
 const DGRAY  = [80, 80, 80]   as [number, number, number];
 
+async function loadImageAsDataUrl(src: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
 export interface QuotationData {
   noQuotation: string;
   tglQuotation: string;
@@ -48,23 +63,18 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
 
   // LOGO
   try {
-    const img = new Image();
-    await new Promise<void>((res, rej) => {
-      img.onload = () => res();
-      img.onerror = () => rej();
-      img.src = '/logo-sjm.png';
-    });
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width; canvas.height = img.height;
-    canvas.getContext('2d')!.drawImage(img, 0, 0);
-    doc.addImage(canvas.toDataURL('image/png'), 'PNG', mL, y, 26, 26);
+    const logoDataUrl = await loadImageAsDataUrl('/logo-sjm.png');
+    doc.addImage(logoDataUrl, 'JPEG', mL, y, 26, 26);
   } catch {
     doc.setFillColor(...AMBER);
     doc.roundedRect(mL, y, 26, 26, 2, 2, 'F');
     doc.setTextColor(...WHITE);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('SJM', mL + 13, y + 17, { align: 'center' });
+    doc.setFontSize(6);
+    doc.text('PT. SUGIARTO', mL + 13, y + 8, { align: 'center' });
+    doc.text('JAYA MANDIRI', mL + 13, y + 12, { align: 'center' });
+    doc.setFontSize(13);
+    doc.text('SJM', mL + 13, y + 21, { align: 'center' });
   }
 
   // COMPANY INFO
@@ -134,21 +144,16 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   y += 10;
 
   // Body tabel
-  const deskripsi = [
-    `Mobilisasi :`,
-    `Jenis Kendaraan : ${data.jenisKendaraan || '-'}`,
-    ``,
-    `Muatan :`,
-    `${data.muatan || '-'}`,
-    ``,
-    `Lokasi Penjemputan :`,
-    `${data.lokasiMuat || '-'}`,
-    ``,
-    `Tujuan :`,
-    `${data.lokasiTujuan || '-'}`,
+  const descParts = [
+    { label: 'Mobilisasi :', value: `Jenis Kendaraan : ${data.jenisKendaraan || '-'}` },
+    { label: 'Muatan :', value: data.muatan || '-' },
+    { label: 'Lokasi Penjemputan :', value: data.lokasiMuat || '-' },
+    { label: 'Lokasi Tujuan :', value: data.lokasiTujuan || '-' },
   ];
 
-  const rowH = deskripsi.length * 5 + 10;
+  const lineH = 4.5;
+  const rowH = descParts.length * lineH * 2 + 8;
+
   doc.setFillColor(...WHITE);
   doc.rect(mL, y, contentW, rowH, 'F');
   doc.setDrawColor(...BLACK);
@@ -157,18 +162,21 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   doc.line(mL + col1W, y, mL + col1W, y + rowH);
   doc.line(mL + col1W + col2W, y, mL + col1W + col2W, y + rowH);
 
-  doc.setTextColor(...BLACK);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  let ty = y + 6;
-  deskripsi.forEach(line => {
-    if (line) doc.text(line, mL + 3, ty);
-    ty += 5;
+  let ty = y + 5;
+  descParts.forEach(({ label, value }) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...BLACK);
+    doc.text(label, mL + 3, ty);
+    ty += lineH;
+    doc.setFont('helvetica', 'normal');
+    doc.text(value, mL + 3, ty);
+    ty += lineH + 1;
   });
 
-  // Harga dan Total di tengah vertikal
   const midY = y + rowH / 2;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
   doc.text(fRp(data.harga), mL + col1W + col2W/2, midY, { align: 'center' });
   doc.text(fRp(data.harga), mL + col1W + col2W + col3W/2, midY, { align: 'center' });
   y += rowH;
