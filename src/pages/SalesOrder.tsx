@@ -521,7 +521,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const filtered = useMemo(() => {
     const base = filterByPeriod(so, period, "tgl_muat")
       .filter((s: any) => {
-        if (invoiceFilter === 'uninvoiced') return !s.no_invoice;
+        if (invoiceFilter === 'uninvoiced') return s.status_muatan === 'Completed' && !s.no_invoice;
         if (invoiceFilter === 'invoiced') return !!s.no_invoice;
         return true;
       })
@@ -547,7 +547,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const periodBase = filterByPeriod(so, period, "tgl_muat");
   const kpiCount: any = { "On Going": 0, Loading: 0, Completed: 0, Cancelled: 0 };
   periodBase.forEach((x: any) => { if (kpiCount[x.status_muatan] !== undefined) kpiCount[x.status_muatan]++; });
-  const kpiBelumInvoice = periodBase.filter((s: any) => !s.no_invoice).length;
+  const kpiBelumInvoice = periodBase.filter((s: any) =>
+    s.status_muatan === 'Completed' && !s.no_invoice
+  ).length;
+  const kpiMasihBerjalan = periodBase.filter((s: any) =>
+    ['On Going', 'Loading', 'Order Confirmed'].includes(s.status_muatan)
+  ).length;
 
   return (
     <PageShell>
@@ -621,6 +626,11 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 >
                   <span className="kpi-card-label">{label}</span>
                   <span className="kpi-card-value" style={{ color }}>{value}</span>
+                  {key === '__belum__' && (
+                    <div className="kpi-card-sub" style={{ color: '#64748b' }}>
+                      +{kpiMasihBerjalan} SO masih berjalan
+                    </div>
+                  )}
                 </div>
               );
             })}
