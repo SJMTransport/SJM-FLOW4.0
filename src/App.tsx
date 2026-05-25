@@ -196,10 +196,13 @@ const ArmadaPositionForm = ({ armadaDetail, setGlobalArmadaDetail, setArmada, lo
 };
 
 // ─── DETAIL MODALS ──────────────────────────────────────────────────────────
-const SODetailModal = ({ data, onClose, coa, jurnal, currentUser, handleNav, setPendingEditSO, onJurnalClick, onArmadaClick }: any) => {
+const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, handleNav, setPendingEditSO, onJurnalClick, onArmadaClick }: any) => {
   if (!data) return null;
-  const relatedJurnals = (jurnal || []).filter((j: any) => 
+  const relatedJurnals = (jurnal || []).filter((j: any) =>
     String(j.no_so || "").split(",").map((s: string) => s.trim()).includes(data.order_id)
+  );
+  const relatedInvoices = (invoices || []).filter((inv: any) =>
+    (inv.so_order_ids || []).includes(data.order_id)
   );
 
   return (
@@ -308,6 +311,103 @@ const SODetailModal = ({ data, onClose, coa, jurnal, currentUser, handleNav, set
                   </div>
               </div>
             )}
+        </div>
+
+        {/* Invoice & Dokumen */}
+        <div className="pt-4 border-t border-border-main/50">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-brand" />
+            <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Invoice &amp; Dokumen</h4>
+          </div>
+
+          {relatedInvoices.length === 0 ? (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <div>
+                <div className="text-[10px] font-bold text-amber-700">Belum ada invoice</div>
+                <div className="text-[9px] text-amber-600 opacity-70 mt-0.5">SO ini belum dibuatkan invoice</div>
+              </div>
+              {data.status_muatan === 'Completed' && (
+                <button
+                  onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
+                  className="h-7 px-3 bg-accent text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-accent/90 transition-colors shrink-0"
+                >
+                  + Buat Invoice
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {relatedInvoices.map((inv: any) => {
+                const STATUS_COLOR: Record<string, string> = {
+                  'Belum Bayar':       '#B85450',
+                  'Parsial':           '#C4914A',
+                  'Lunas':             '#6B8E23',
+                  'Lebih Bayar':       '#4A6FA5',
+                  'Perlu Verifikasi':  '#8b5cf6',
+                };
+                const sc = STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666';
+                return (
+                  <div key={inv.id} className="p-3.5 rounded-xl bg-white border border-border-main space-y-3">
+                    {/* Header invoice */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] font-black text-accent uppercase tracking-tight">{inv.no_invoice}</div>
+                        <div className="text-[9px] text-text-light mt-0.5">
+                          {inv.tgl_invoice ? new Date(inv.tgl_invoice).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-[12px] font-black text-text-main tabular-nums">{fmt(inv.total_setelah_pajak || 0)}</div>
+                        <span className="px-2 py-0.5 rounded-full text-[8px] font-bold" style={{ backgroundColor: sc + '20', color: sc }}>
+                          {inv.status_bayar || 'Belum Bayar'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Dokumen fisik */}
+                    {(inv.gdrive_url || inv.no_resi || inv.status_dokumen) && (
+                      <div className="pt-2 border-t border-border-main/30 space-y-1.5">
+                        {inv.status_dokumen && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-text-light w-16 shrink-0">Status</span>
+                            <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${
+                              inv.status_dokumen === 'Diterima Customer' ? 'bg-success/10 text-success' :
+                              inv.status_dokumen === 'Terkirim'          ? 'bg-info/10 text-info' :
+                              'bg-slate-100 text-slate-500'
+                            }`}>{inv.status_dokumen}</span>
+                          </div>
+                        )}
+                        {inv.gdrive_url && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-text-light w-16 shrink-0">Scan</span>
+                            <a href={inv.gdrive_url} target="_blank" rel="noopener noreferrer"
+                              className="text-[9px] font-bold text-accent hover:underline flex items-center gap-1">
+                              <Icon name="FileText" size={10} /> Buka Drive
+                              <Icon name="ExternalLink" size={9} />
+                            </a>
+                          </div>
+                        )}
+                        {inv.no_resi && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-text-light w-16 shrink-0">Resi</span>
+                            <span className="text-[9px] font-mono text-text-main">{inv.ekspedisi} {inv.no_resi}</span>
+                            <a
+                              href={`https://www.google.com/search?q=lacak+resi+${encodeURIComponent(inv.ekspedisi || '')}+${inv.no_resi}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[8px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full hover:bg-accent/20 transition-colors"
+                            >
+                              Lacak
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {relatedJurnals.length > 0 && (
@@ -660,12 +760,18 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [saldoAwal, setSaldoAwal] = useState([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [activeModals, setActiveModals] = useState<any[]>([]);
   const [pendingEditSO, setPendingEditSO] = useState<string | null>(null);
   const [hpPrefill, setHpPrefill] = useState<any>(null);
   const [jurnalPrefill, setJurnalPrefill] = useState<any>(null);
   const [globalSearch, setGlobalSearch] = useState("");
   const [showQuickMenu, setShowQuickMenu] = useState(false);
+
+  // Load invoices on mount
+  useEffect(() => {
+    api.getInvoices().then(setInvoices).catch(() => {});
+  }, []);
 
   const pushModal = useCallback((type: string, data: any) => {
     setActiveModals(prev => {
@@ -1240,6 +1346,7 @@ export default function App() {
                           {...props}
                           coa={coa}
                           jurnal={jurnal}
+                          invoices={invoices}
                           currentUser={currentUser}
                           handleNav={handleNav}
                           setPendingEditSO={setPendingEditSO}
