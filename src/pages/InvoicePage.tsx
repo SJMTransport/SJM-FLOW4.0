@@ -132,7 +132,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const getTrackingUrl = (ekspedisi: string, no_resi: string): string => {
     const e = (ekspedisi || '').toLowerCase().trim();
     const r = no_resi || '';
-    if (e.includes('tiki'))     return `https://tiki.id/track?awb=${r}`;
+    if (e.includes('tiki'))     return `https://tiki.id/id/track/${r}`;
     if (e.includes('jne'))      return `https://www.jne.co.id/id/tracking/trace/${r}`;
     if (e.includes('sicepat'))  return `https://sicepat.com/checkAwb/${r}`;
     if (e.includes('anteraja')) return `https://anteraja.id/tracking/${r}`;
