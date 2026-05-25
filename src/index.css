@@ -456,6 +456,8 @@
   .kpi-grid-3 { @apply sm:grid-cols-3; }
   .kpi-grid-4 { @apply sm:grid-cols-2 lg:grid-cols-4; }
   .kpi-grid-5 { @apply sm:grid-cols-3 lg:grid-cols-5; }
+  .kpi-grid-6 { @apply sm:grid-cols-6; }
+  .kpi-grid-7 { @apply sm:grid-cols-7; }
 
   /* KPI Card */
   .kpi-card {

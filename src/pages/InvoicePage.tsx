@@ -438,7 +438,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards */}
-          <KPIGrid cols={7}>
+          <div className="grid grid-cols-7 gap-4 mb-6">
             <StatCard
               label="Total Invoice"
               value={String(kpiData.total)}
@@ -484,71 +484,67 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               <div className="kpi-card-value" style={{ color: '#0d9488' }}>{kpiData.soBelumiInvoice} SO</div>
               <div className="kpi-card-sub" style={{ color: '#0d9488' }}>{fRp(kpiData.nilaiBelumiInvoice)}</div>
             </div>
-          </KPIGrid>
+          </div>
 
           {/* Filter Bar */}
-          <ActionBar
-            left={
-              <>
-                <input
-                  placeholder="Cari customer..."
-                  value={filterInvCustomer}
-                  onChange={e => setFilterInvCustomer(e.target.value)}
-                  className="input h-9 text-[12px] w-48"
-                />
-                <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input h-9 text-[12px] w-36" />
-                <span className="text-text-light text-[11px]">–</span>
-                <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input h-9 text-[12px] w-36" />
-                <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)} className="input h-9 text-[12px] w-28">
-                  <option value="all">Semua Tipe</option>
-                  <option value="normal">Normal</option>
-                  <option value="dp">DP</option>
-                  <option value="pelunasan">Pelunasan</option>
-                </select>
-                <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input h-9 text-[12px] w-36">
-                  <option value="all">Semua Status</option>
-                  <option value="Belum Bayar">Belum Bayar</option>
-                  <option value="Parsial">Parsial</option>
-                  <option value="Lunas">Lunas</option>
-                  <option value="Lebih Bayar">Lebih Bayar</option>
-                  <option value="Perlu Verifikasi">Perlu Verifikasi</option>
-                </select>
-              </>
-            }
-            right={
-              <>
-                {loadingStatus && (
-                  <span className="text-[11px] text-text-light italic flex items-center gap-1">
-                    <Icon name="Loader2" size={11} className="animate-spin" /> Cek status...
-                  </span>
-                )}
-                <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
-                <button onClick={loadInvoices} disabled={loadingInvoices} className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
-                  <Icon name="RefreshCw" size={13} /> Refresh
-                </button>
-              </>
-            }
-          />
+          <div className="bg-white border border-border-main rounded-xl px-4 py-3 flex items-center gap-2 flex-wrap mb-4 shadow-xs">
+            <input
+              placeholder="Cari customer..."
+              value={filterInvCustomer}
+              onChange={e => setFilterInvCustomer(e.target.value)}
+              className="input h-9 text-[12px] w-48"
+            />
+            <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input h-9 text-[12px] w-36" />
+            <span className="text-text-light text-[11px]">–</span>
+            <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input h-9 text-[12px] w-36" />
+            <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)} className="input h-9 text-[12px] w-28">
+              <option value="all">Semua Tipe</option>
+              <option value="normal">Normal</option>
+              <option value="dp">DP</option>
+              <option value="pelunasan">Pelunasan</option>
+            </select>
+            <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input h-9 text-[12px] w-36">
+              <option value="all">Semua Status</option>
+              <option value="Belum Bayar">Belum Bayar</option>
+              <option value="Parsial">Parsial</option>
+              <option value="Lunas">Lunas</option>
+              <option value="Lebih Bayar">Lebih Bayar</option>
+              <option value="Perlu Verifikasi">Perlu Verifikasi</option>
+            </select>
+            <div className="ml-auto flex items-center gap-2">
+              {loadingStatus && (
+                <span className="text-[11px] text-text-light italic flex items-center gap-1">
+                  <Icon name="Loader2" size={11} className="animate-spin" /> Cek status...
+                </span>
+              )}
+              <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
+              <button onClick={loadInvoices} disabled={loadingInvoices}
+                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                <Icon name="RefreshCw" size={13} /> Refresh
+              </button>
+            </div>
+          </div>
 
           {/* Tabel */}
           {loadingInvoices ? (
             <div className="text-center py-12 text-text-light text-[13px]">Memuat invoice...</div>
           ) : (
-            <div className="table-container max-h-[calc(100vh-340px)]">
+            <div className="bg-white border border-border-main rounded-xl overflow-hidden shadow-xs">
+              <div className="table-container max-h-[calc(100vh-380px)]">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr>
-                    <th className="text-left min-w-[160px]">No Invoice</th>
-                    <th className="text-left w-24">Tgl Invoice</th>
-                    <th className="text-left max-w-[180px]">Customer</th>
-                    <th className="text-left max-w-[200px]">Sales Order</th>
-                    <th className="text-center w-20">Tipe</th>
-                    <th className="text-right w-32">Total</th>
-                    <th className="text-center w-28">Status Bayar</th>
-                    <th className="text-center w-20">Aksi</th>
+                  <tr className="bg-slate-50 border-b-2 border-border-main">
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest min-w-[160px]">No Invoice</th>
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Tgl Invoice</th>
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Customer</th>
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Sales Order</th>
+                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-20">Tipe</th>
+                    <th className="text-right py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-32">Total</th>
+                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-28">Status Bayar</th>
+                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-20">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-main/20">
+                <tbody className="divide-y divide-border-main/30">
                   {filteredInvoices.length === 0 ? (
                     <tr><td colSpan={8}><EmptyState colSpan={8} /></td></tr>
                   ) : filteredInvoices.map(inv => {
@@ -624,6 +620,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   </tr>
                 </tfoot>
               </table>
+            </div>
             </div>
           )}
         </div>
