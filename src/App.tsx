@@ -351,7 +351,12 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
                     {/* Header invoice */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-black text-accent uppercase tracking-tight">{inv.no_invoice}</div>
+                        <button
+                          className="text-[10px] font-black text-accent uppercase tracking-tight hover:underline text-left"
+                          onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
+                        >
+                          {inv.no_invoice}
+                        </button>
                         <div className="text-[9px] text-text-light mt-0.5">
                           {inv.tgl_invoice ? new Date(inv.tgl_invoice).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                         </div>
@@ -1283,7 +1288,7 @@ export default function App() {
                 <>
                   {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
                   {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} />}
-                  {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} />}
+                  {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} />}
                   {activeSub === "quotation" && <QuotationPage currentUser={currentUser} />}
                 </>
               )}
