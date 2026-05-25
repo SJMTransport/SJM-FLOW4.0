@@ -556,39 +556,27 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       <PageHeader title="Sales Order" sub={`${so.length} SO tersimpan`}
         action={canEdit && <button className="btn-primary" onClick={openNew}><Icon name="Plus" size={16} /> SO Baru</button>} />
 
-      <div className="tab-bar">
-        {[
-           ["list", "Daftar SO"],
-           canEdit && ["form", editItem ? "Edit SO" : "Input SO"],
-           canEdit && ["import", "Import CSV"]
-        ].filter(Boolean).map(([k, l]: any) => (
-          <button
-            key={k}
-            className={`tab-btn ${tab === k ? "active" : ""}`}
-            onClick={() => handleTabChange(k)}
-          >
-            {l.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      {tab === "import" && (
-        <BulkImportSO 
-           showToast={showToast}
-           logAction={logAction}
-           onComplete={async () => {
-              const updated = await api.getSO();
-              setSo(updated);
-              setTab("list");
-           }}
-           onCancel={() => setTab("list")}
-        />
+      {tab !== "list" && (
+        <div className="tab-bar">
+          {[
+             ["list", "Daftar SO"],
+             canEdit && ["form", editItem ? "Edit SO" : "Input SO"],
+          ].filter(Boolean).map(([k, l]: any) => (
+            <button
+              key={k}
+              className={`tab-btn ${tab === k ? "active" : ""}`}
+              onClick={() => handleTabChange(k)}
+            >
+              {l.toUpperCase()}
+            </button>
+          ))}
+        </div>
       )}
 
       {(tab === "list" || tab === "form") && (
         <div>
           <ActionBar
-            left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} onAdd={canEdit ? openNew : null} />}
+            left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />}
             right={canEdit && selected.length > 0 && (
               <div className="flex items-center gap-2 px-3 h-10 bg-slate-50 border border-border-main rounded-xl">
                 <span className="text-[10px] font-bold text-text-med italic">{selected.length} Selected</span>

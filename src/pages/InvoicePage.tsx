@@ -494,31 +494,28 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       {activeTab === 'daftar' && (
         <div className="space-y-4">
 
-          {/* KPI Cards */}
-          <div className="grid grid-cols-7 gap-3 mb-4">
+          {/* KPI Cards — Baris 1: Status pembayaran */}
+          <div className="grid grid-cols-5 gap-3 mb-3">
             {([
-              { key: 'all',               label: 'Total Invoice',    value: String(kpiData.total),             icon: 'FileText',     color: 'var(--color-text-main)' },
-              { key: 'Lunas',             label: 'Lunas',            value: String(kpiData.lunas),             icon: 'CheckCircle',  color: 'var(--color-success)'   },
-              { key: 'Belum Bayar',       label: 'Belum Bayar',      value: String(kpiData.belumBayar),        icon: 'Clock',        color: 'var(--color-error)'     },
-              { key: 'Parsial',           label: 'Parsial',          value: String(kpiData.parsial),           icon: 'PieChart',     color: 'var(--color-warning)'   },
-              { key: 'Perlu Verifikasi',  label: 'Perlu Verifikasi', value: String(kpiData.perluVerifikasi),   icon: 'AlertCircle',  color: 'var(--color-info)'      },
-              { key: 'outstanding',       label: 'Outstanding',      value: fRp(kpiData.outstanding),          icon: 'TrendingUp',   color: 'var(--color-accent)'    },
+              { key: 'all',              label: 'Total Invoice',    value: String(kpiData.total),           icon: 'FileText',    color: 'var(--color-text-main)' },
+              { key: 'Lunas',            label: 'Lunas',            value: String(kpiData.lunas),           icon: 'CheckCircle', color: 'var(--color-success)'   },
+              { key: 'Belum Bayar',      label: 'Belum Bayar',      value: String(kpiData.belumBayar),      icon: 'Clock',       color: 'var(--color-error)'     },
+              { key: 'Parsial',          label: 'Parsial',          value: String(kpiData.parsial),         icon: 'PieChart',    color: 'var(--color-warning)'   },
+              { key: 'Perlu Verifikasi', label: 'Perlu Verifikasi', value: String(kpiData.perluVerifikasi), icon: 'AlertCircle', color: 'var(--color-info)'      },
             ] as const).map(({ key, label, value, icon, color }) => {
               const isActive = activeKpi === key;
-              const isClickable = key !== 'outstanding';
               return (
                 <div
                   key={key}
                   onClick={() => {
-                    if (!isClickable) return;
                     setActiveKpi(prev => prev === key ? 'all' : key);
                     setFilterInvStatus('all');
                   }}
-                  className={`kpi-card transition-all ${isClickable ? 'cursor-pointer' : 'cursor-default'} ${isActive && isClickable ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
+                  className={`kpi-card cursor-pointer transition-all ${isActive ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
                   style={{
                     borderLeftColor: color,
                     borderLeftWidth: '3px',
-                    ...(isActive && isClickable ? { boxShadow: `0 0 0 2px ${color}` } : {}),
+                    ...(isActive ? { boxShadow: `0 0 0 2px ${color}` } : {}),
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -529,7 +526,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     </div>
                   </div>
                   <div className="kpi-card-value" style={{ color }}>{value}</div>
-                  {isActive && isClickable && (
+                  {isActive && (
                     <div className="text-[8px] font-bold mt-1 opacity-60 flex items-center gap-1" style={{ color }}>
                       <Icon name="Filter" size={8} /> aktif
                     </div>
@@ -537,16 +534,59 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </div>
               );
             })}
+          </div>
 
-            {/* Card Belum Diinvoice */}
+          {/* KPI Cards — Baris 2: Financial summary */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {/* Outstanding */}
+            <div
+              className="kpi-card cursor-default"
+              style={{ borderLeftColor: 'var(--color-accent)', borderLeftWidth: '3px' }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="kpi-card-label">Outstanding</div>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'var(--color-accent-light)', color: 'var(--color-accent)' }}>
+                  <Icon name="TrendingUp" size={14} />
+                </div>
+              </div>
+              <div className="kpi-card-value" style={{ color: 'var(--color-accent)' }}>{fRp(kpiData.outstanding)}</div>
+              <div className="kpi-card-sub">Sisa tagihan belum lunas</div>
+            </div>
+
+            {/* Belum Diinvoice */}
             <div
               className="kpi-card cursor-pointer hover:shadow-md transition-all"
               style={{ borderLeftColor: '#0d9488', borderLeftWidth: '3px' }}
               onClick={() => setActiveTab('buat')}
             >
-              <div className="kpi-card-label">Belum Diinvoice</div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="kpi-card-label">Belum Diinvoice</div>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: '#0d948818', color: '#0d9488' }}>
+                  <Icon name="AlertTriangle" size={14} />
+                </div>
+              </div>
               <div className="kpi-card-value" style={{ color: '#0d9488' }}>{kpiData.soBelumiInvoice} SO</div>
               <div className="kpi-card-sub" style={{ color: '#0d9488' }}>{fRp(kpiData.nilaiBelumiInvoice)}</div>
+            </div>
+
+            {/* Total Revenue */}
+            <div
+              className="kpi-card cursor-default"
+              style={{ borderLeftColor: '#6366f1', borderLeftWidth: '3px' }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="kpi-card-label">Total Revenue</div>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: '#6366f118', color: '#6366f1' }}>
+                  <Icon name="DollarSign" size={14} />
+                </div>
+              </div>
+              <div className="kpi-card-value" style={{ color: '#6366f1' }}>
+                {fRp(kpiData.totalRevenue ?? invoices.reduce((s: number, inv: any) => s + (inv.total_setelah_pajak || 0), 0))}
+              </div>
+              <div className="kpi-card-sub">Seluruh invoice terbuat</div>
             </div>
           </div>
 
