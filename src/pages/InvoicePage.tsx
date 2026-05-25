@@ -130,16 +130,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   };
 
   const getTrackingUrl = (ekspedisi: string, no_resi: string): string => {
-    const e = ekspedisi?.toLowerCase() || '';
-    const r = encodeURIComponent(no_resi || '');
-    if (e.includes('tiki')) return `https://www.tiki.id/id/tracking?ref=${r}`;
-    if (e.includes('jne')) return `https://www.jne.co.id/id/tracking/trace/${r}`;
-    if (e.includes('sicepat')) return `https://sicepat.com/checkAwb/${r}`;
+    const e = (ekspedisi || '').toLowerCase().trim();
+    const r = no_resi || '';
+    if (e.includes('tiki'))     return `https://tiki.id/track?awb=${r}`;
+    if (e.includes('jne'))      return `https://www.jne.co.id/id/tracking/trace/${r}`;
+    if (e.includes('sicepat'))  return `https://sicepat.com/checkAwb/${r}`;
     if (e.includes('anteraja')) return `https://anteraja.id/tracking/${r}`;
     if (e.includes('jnt') || e.includes('j&t')) return `https://www.jet.co.id/track/${r}`;
-    if (e.includes('pos')) return `https://www.posindonesia.co.id/id/tracking?noResi=${r}`;
-    if (e.includes('wahana')) return `https://www.wahana.com/tracking/${r}`;
-    return `https://www.google.com/search?q=lacak+resi+${r}+${encodeURIComponent(ekspedisi)}`;
+    if (e.includes('pos'))      return `https://www.posindonesia.co.id/id/tracking?noResi=${r}`;
+    if (e.includes('wahana'))   return `https://www.wahana.com/tracking/${r}`;
+    if (e.includes('ninja'))    return `https://www.ninjaxpress.co/id-id/tracking?id=${r}`;
+    return `https://www.google.com/search?q=lacak+resi+${encodeURIComponent(ekspedisi)}+${r}`;
   };
 
   const handleSaveDokumen = async (invId: string) => {
