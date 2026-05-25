@@ -3,7 +3,9 @@ import { api } from '@/src/api';
 import { generateInvoiceNo } from '@/src/utils/invoiceGenerator';
 import InvoicePreviewModal from '@/src/components/InvoicePreviewModal';
 import type { InvoiceData } from '@/src/utils/generateInvoicePDF';
-import { Card, SectionHeader, StatCard, useToast, Icon, PageShell, statusBadge, KPIGrid, EmptyState } from '@/src/components/SJMComponents';
+import { Card, SectionHeader, StatCard, useToast, Icon, PageShell,
+  PageHeader, ActionBar, statusBadge, KPIGrid, EmptyState
+} from '@/src/components/SJMComponents';
 import { buildMeta } from '@/src/lib/activityLogger';
 
 type InvoiceTipe = 'normal' | 'dp' | 'pelunasan';
@@ -415,19 +417,19 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       {ToastUI}
 
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-[22px] font-black text-text-main tracking-tight">Invoice</h1>
-          <p className="text-[12px] text-text-med mt-0.5">Manajemen invoice PT Sugiarto Jaya Mandiri</p>
-        </div>
-        <button
-          onClick={() => { setActiveTab(activeTab === 'buat' ? 'daftar' : 'buat'); setSelectedIds(new Set()); }}
-          className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2"
-        >
-          <Icon name={activeTab === 'buat' ? 'List' : 'Plus'} size={14} />
-          {activeTab === 'buat' ? 'Daftar Invoice' : 'Buat Invoice'}
-        </button>
-      </div>
+      <PageHeader
+        title="Invoice"
+        sub="Manajemen invoice PT Sugiarto Jaya Mandiri"
+        action={
+          <button
+            onClick={() => { setActiveTab(activeTab === 'buat' ? 'daftar' : 'buat'); setSelectedIds(new Set()); }}
+            className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2"
+          >
+            <Icon name={activeTab === 'buat' ? 'List' : 'Plus'} size={14} />
+            {activeTab === 'buat' ? 'Daftar Invoice' : 'Buat Invoice'}
+          </button>
+        }
+      />
 
       {/* ══════════════════════════════════ */}
       {/* VIEW: DAFTAR INVOICE               */}
@@ -436,65 +438,97 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-7 gap-3">
-            {[
-              { label: 'Total Invoice', value: kpiData.total, color: 'text-text-main', bg: 'bg-white' },
-              { label: 'Lunas', value: kpiData.lunas, color: 'text-green-600', bg: 'bg-green-50' },
-              { label: 'Belum Bayar', value: kpiData.belumBayar, color: 'text-red-500', bg: 'bg-red-50' },
-              { label: 'Parsial', value: kpiData.parsial, color: 'text-amber-600', bg: 'bg-amber-50' },
-              { label: 'Perlu Verifikasi', value: kpiData.perluVerifikasi, color: 'text-purple-600', bg: 'bg-purple-50' },
-              { label: 'Outstanding', value: fRp(kpiData.outstanding), color: 'text-accent', bg: 'bg-accent/5' },
-            ].map(({ label, value, color, bg }) => (
-              <div key={label} className={`${bg} rounded-xl border border-border-main p-4`}>
-                <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-70 mb-1">{label}</div>
-                <div className={`text-[16px] font-black tabular-nums ${color}`}>{value}</div>
-              </div>
-            ))}
+          <KPIGrid cols={7}>
+            <StatCard
+              label="Total Invoice"
+              value={String(kpiData.total)}
+              icon="FileText"
+              color="var(--color-text-main)"
+            />
+            <StatCard
+              label="Lunas"
+              value={String(kpiData.lunas)}
+              icon="CheckCircle"
+              color="var(--color-success)"
+            />
+            <StatCard
+              label="Belum Bayar"
+              value={String(kpiData.belumBayar)}
+              icon="Clock"
+              color="var(--color-error)"
+            />
+            <StatCard
+              label="Parsial"
+              value={String(kpiData.parsial)}
+              icon="PieChart"
+              color="var(--color-warning)"
+            />
+            <StatCard
+              label="Perlu Verifikasi"
+              value={String(kpiData.perluVerifikasi)}
+              icon="AlertCircle"
+              color="var(--color-info)"
+            />
+            <StatCard
+              label="Outstanding"
+              value={fRp(kpiData.outstanding)}
+              icon="TrendingUp"
+              color="var(--color-accent)"
+            />
             <div
-              className="bg-teal-50 rounded-xl border border-border-main p-4 cursor-pointer hover:border-teal-400 transition-colors"
+              className="kpi-card cursor-pointer hover:border-teal-400 transition-colors"
+              style={{ borderLeftColor: '#0d9488', borderLeftWidth: '4px' }}
               onClick={() => setActiveTab('buat')}
             >
-              <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-70 mb-1">Belum Diinvoice</div>
-              <div className="text-[16px] font-black tabular-nums text-teal-600">{kpiData.soBelumiInvoice} SO</div>
-              <div className="text-[10px] font-bold tabular-nums text-teal-600 opacity-70 mt-0.5">{fRp(kpiData.nilaiBelumiInvoice)}</div>
+              <div className="kpi-card-label">Belum Diinvoice</div>
+              <div className="kpi-card-value" style={{ color: '#0d9488' }}>{kpiData.soBelumiInvoice} SO</div>
+              <div className="kpi-card-sub" style={{ color: '#0d9488' }}>{fRp(kpiData.nilaiBelumiInvoice)}</div>
             </div>
-          </div>
+          </KPIGrid>
 
           {/* Filter Bar */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <input
-              placeholder="🔍 Cari customer..."
-              value={filterInvCustomer}
-              onChange={e => setFilterInvCustomer(e.target.value)}
-              className="input h-8 text-[11px] w-44"
-            />
-            <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input h-8 text-[11px] w-34" />
-            <span className="text-text-light text-[11px]">–</span>
-            <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input h-8 text-[11px] w-34" />
-            <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)} className="input h-8 text-[11px] w-28">
-              <option value="all">Semua Tipe</option>
-              <option value="normal">Normal</option>
-              <option value="dp">DP</option>
-              <option value="pelunasan">Pelunasan</option>
-            </select>
-            <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input h-8 text-[11px] w-32">
-              <option value="all">Semua Status</option>
-              <option value="Belum Bayar">Belum Bayar</option>
-              <option value="Parsial">Parsial</option>
-              <option value="Lunas">Lunas</option>
-              <option value="Lebih Bayar">Lebih Bayar</option>
-              <option value="Perlu Verifikasi">Perlu Verifikasi</option>
-            </select>
-            <button onClick={loadInvoices} disabled={loadingInvoices} className="btn-ghost h-8 px-3 text-[11px] flex items-center gap-1.5">
-              <Icon name="RefreshCw" size={12} /> {loadingInvoices ? 'Memuat...' : 'Refresh'}
-            </button>
-            {loadingStatus && (
-              <span className="text-[10px] text-purple-500 italic flex items-center gap-1">
-                <Icon name="Loader" size={10} className="animate-spin" /> Cek status...
-              </span>
-            )}
-            <span className="text-[11px] text-text-light ml-auto">{filteredInvoices.length} invoice ditemukan</span>
-          </div>
+          <ActionBar
+            left={
+              <>
+                <input
+                  placeholder="Cari customer..."
+                  value={filterInvCustomer}
+                  onChange={e => setFilterInvCustomer(e.target.value)}
+                  className="input h-9 text-[12px] w-48"
+                />
+                <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input h-9 text-[12px] w-36" />
+                <span className="text-text-light text-[11px]">–</span>
+                <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input h-9 text-[12px] w-36" />
+                <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)} className="input h-9 text-[12px] w-28">
+                  <option value="all">Semua Tipe</option>
+                  <option value="normal">Normal</option>
+                  <option value="dp">DP</option>
+                  <option value="pelunasan">Pelunasan</option>
+                </select>
+                <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input h-9 text-[12px] w-36">
+                  <option value="all">Semua Status</option>
+                  <option value="Belum Bayar">Belum Bayar</option>
+                  <option value="Parsial">Parsial</option>
+                  <option value="Lunas">Lunas</option>
+                  <option value="Lebih Bayar">Lebih Bayar</option>
+                  <option value="Perlu Verifikasi">Perlu Verifikasi</option>
+                </select>
+              </>
+            }
+            right={
+              <>
+                {loadingStatus && (
+                  <span className="text-[11px] text-text-light italic flex items-center gap-1">
+                    <Icon name="Loader2" size={11} className="animate-spin" /> Cek status...
+                  </span>
+                )}
+                <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
+                <button onClick={loadInvoices} disabled={loadingInvoices} className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                  <Icon name="RefreshCw" size={13} /> Refresh
+                </button>
+              </>
+            }
+          />
 
           {/* Tabel */}
           {loadingInvoices ? (
