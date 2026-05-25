@@ -511,7 +511,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     setActiveKpi(prev => prev === key ? 'all' : key);
                     setFilterInvStatus('all');
                   }}
-                  className={`kpi-card cursor-pointer transition-all ${isActive ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
+                  className={`kpi-card py-3 cursor-pointer transition-all ${isActive ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
                   style={{
                     borderLeftColor: color,
                     borderLeftWidth: '3px',
@@ -525,7 +525,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                       <Icon name={icon} size={14} />
                     </div>
                   </div>
-                  <div className="kpi-card-value" style={{ color }}>{value}</div>
+                  <div className="kpi-card-value" style={{ color, fontSize: '1.25rem' }}>{value}</div>
                   {isActive && (
                     <div className="text-[8px] font-bold mt-1 opacity-60 flex items-center gap-1" style={{ color }}>
                       <Icon name="Filter" size={8} /> aktif
@@ -536,57 +536,48 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             })}
           </div>
 
-          {/* KPI Cards — Baris 2: Financial summary */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          {/* KPI Baris 2: Financial summary — flat layout */}
+          <div className="flex items-stretch gap-6 px-1 mb-4">
             {/* Outstanding */}
-            <div
-              className="kpi-card cursor-default"
-              style={{ borderLeftColor: 'var(--color-accent)', borderLeftWidth: '3px' }}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="kpi-card-label">Outstanding</div>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'var(--color-accent-light)', color: 'var(--color-accent)' }}>
-                  <Icon name="TrendingUp" size={14} />
-                </div>
+            <div className="flex-1">
+              <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                <Icon name="TrendingUp" size={10} className="text-accent" />
+                Outstanding
               </div>
-              <div className="kpi-card-value" style={{ color: 'var(--color-accent)' }}>{fRp(kpiData.outstanding)}</div>
-              <div className="kpi-card-sub">Sisa tagihan belum lunas</div>
+              <div className="text-[18px] font-black tabular-nums" style={{ color: 'var(--color-accent)' }}>
+                {fRp(kpiData.outstanding)}
+              </div>
+              <div className="text-[9px] text-text-light opacity-60 mt-0.5">Sisa tagihan belum lunas</div>
             </div>
+
+            <div className="w-px bg-border-main/40 self-stretch" />
 
             {/* Belum Diinvoice */}
-            <div
-              className="kpi-card cursor-pointer hover:shadow-md transition-all"
-              style={{ borderLeftColor: '#0d9488', borderLeftWidth: '3px' }}
-              onClick={() => setActiveTab('buat')}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="kpi-card-label">Belum Diinvoice</div>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#0d948818', color: '#0d9488' }}>
-                  <Icon name="AlertTriangle" size={14} />
-                </div>
+            <div className="flex-1 cursor-pointer group" onClick={() => setActiveTab('buat')}>
+              <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                <Icon name="AlertTriangle" size={10} style={{ color: '#0d9488' }} />
+                Belum Diinvoice
               </div>
-              <div className="kpi-card-value" style={{ color: '#0d9488' }}>{kpiData.soBelumiInvoice} SO</div>
-              <div className="kpi-card-sub" style={{ color: '#0d9488' }}>{fRp(kpiData.nilaiBelumiInvoice)}</div>
+              <div className="text-[18px] font-black tabular-nums group-hover:underline" style={{ color: '#0d9488' }}>
+                {kpiData.soBelumiInvoice} SO
+              </div>
+              <div className="text-[9px] mt-0.5" style={{ color: '#0d9488', opacity: 0.7 }}>
+                {fRp(kpiData.nilaiBelumiInvoice)}
+              </div>
             </div>
 
+            <div className="w-px bg-border-main/40 self-stretch" />
+
             {/* Total Revenue */}
-            <div
-              className="kpi-card cursor-default"
-              style={{ borderLeftColor: '#6366f1', borderLeftWidth: '3px' }}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="kpi-card-label">Total Revenue</div>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#6366f118', color: '#6366f1' }}>
-                  <Icon name="DollarSign" size={14} />
-                </div>
+            <div className="flex-1">
+              <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                <Icon name="DollarSign" size={10} style={{ color: '#6366f1' }} />
+                Total Revenue
               </div>
-              <div className="kpi-card-value" style={{ color: '#6366f1' }}>
-                {fRp(kpiData.totalRevenue ?? invoices.reduce((s: number, inv: any) => s + (inv.total_setelah_pajak || 0), 0))}
+              <div className="text-[18px] font-black tabular-nums" style={{ color: '#6366f1' }}>
+                {fRp(invoices.reduce((s: number, inv: any) => s + (inv.total_setelah_pajak || 0), 0))}
               </div>
-              <div className="kpi-card-sub">Seluruh invoice terbuat</div>
+              <div className="text-[9px] text-text-light opacity-60 mt-0.5">Seluruh invoice terbuat</div>
             </div>
           </div>
 
