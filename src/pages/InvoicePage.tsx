@@ -71,6 +71,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [filterInvCustomer, setFilterInvCustomer] = useState('');
   const [filterInvTipe, setFilterInvTipe] = useState('all');
   const [filterInvStatus, setFilterInvStatus] = useState('all');
+  const [activeKpi, setActiveKpi] = useState<string>('all');
   const [filterPeriodStart, setFilterPeriodStart] = useState('');
   const [filterPeriodEnd, setFilterPeriodEnd] = useState('');
   const [reprintData, setReprintData] = useState<InvoiceData | null>(null);
@@ -438,12 +439,13 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       const matchStatus = filterInvStatus === 'all' || getInvStatus(inv) === filterInvStatus;
       const matchStart = !filterPeriodStart || inv.tgl_invoice >= filterPeriodStart;
       const matchEnd = !filterPeriodEnd || inv.tgl_invoice <= filterPeriodEnd;
-      return matchCustomer && matchTipe && matchStatus && matchStart && matchEnd;
+      const matchKpi = activeKpi === 'all' || getInvStatus(inv) === activeKpi;
+      return matchCustomer && matchTipe && matchStatus && matchStart && matchEnd && matchKpi;
     }).sort((a, b) => {
       const extractNum = (s: string) => { const m = (s || '').match(/^(\d+)\//); return m ? parseInt(m[1], 10) : 0; };
       return extractNum(b.no_invoice) - extractNum(a.no_invoice);
     });
-  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd]);
+  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd, activeKpi]);
 
   const kpiData = useMemo(() => {
     const soBelumiInvoice = so.filter(s =>
@@ -493,46 +495,53 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-7 gap-4 mb-6">
-            <StatCard
-              label="Total Invoice"
-              value={String(kpiData.total)}
-              icon="FileText"
-              color="var(--color-text-main)"
-            />
-            <StatCard
-              label="Lunas"
-              value={String(kpiData.lunas)}
-              icon="CheckCircle"
-              color="var(--color-success)"
-            />
-            <StatCard
-              label="Belum Bayar"
-              value={String(kpiData.belumBayar)}
-              icon="Clock"
-              color="var(--color-error)"
-            />
-            <StatCard
-              label="Parsial"
-              value={String(kpiData.parsial)}
-              icon="PieChart"
-              color="var(--color-warning)"
-            />
-            <StatCard
-              label="Perlu Verifikasi"
-              value={String(kpiData.perluVerifikasi)}
-              icon="AlertCircle"
-              color="var(--color-info)"
-            />
-            <StatCard
-              label="Outstanding"
-              value={fRp(kpiData.outstanding)}
-              icon="TrendingUp"
-              color="var(--color-accent)"
-            />
+          <div className="grid grid-cols-7 gap-3 mb-4">
+            {([
+              { key: 'all',               label: 'Total Invoice',    value: String(kpiData.total),             icon: 'FileText',     color: 'var(--color-text-main)' },
+              { key: 'Lunas',             label: 'Lunas',            value: String(kpiData.lunas),             icon: 'CheckCircle',  color: 'var(--color-success)'   },
+              { key: 'Belum Bayar',       label: 'Belum Bayar',      value: String(kpiData.belumBayar),        icon: 'Clock',        color: 'var(--color-error)'     },
+              { key: 'Parsial',           label: 'Parsial',          value: String(kpiData.parsial),           icon: 'PieChart',     color: 'var(--color-warning)'   },
+              { key: 'Perlu Verifikasi',  label: 'Perlu Verifikasi', value: String(kpiData.perluVerifikasi),   icon: 'AlertCircle',  color: 'var(--color-info)'      },
+              { key: 'outstanding',       label: 'Outstanding',      value: fRp(kpiData.outstanding),          icon: 'TrendingUp',   color: 'var(--color-accent)'    },
+            ] as const).map(({ key, label, value, icon, color }) => {
+              const isActive = activeKpi === key;
+              const isClickable = key !== 'outstanding';
+              return (
+                <div
+                  key={key}
+                  onClick={() => {
+                    if (!isClickable) return;
+                    setActiveKpi(prev => prev === key ? 'all' : key);
+                    setFilterInvStatus('all');
+                  }}
+                  className={`kpi-card transition-all ${isClickable ? 'cursor-pointer' : 'cursor-default'} ${isActive && isClickable ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
+                  style={{
+                    borderLeftColor: color,
+                    borderLeftWidth: '3px',
+                    ...(isActive && isClickable ? { boxShadow: `0 0 0 2px ${color}` } : {}),
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="kpi-card-label">{label}</div>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: color + '18', color }}>
+                      <Icon name={icon} size={14} />
+                    </div>
+                  </div>
+                  <div className="kpi-card-value" style={{ color }}>{value}</div>
+                  {isActive && isClickable && (
+                    <div className="text-[8px] font-bold mt-1 opacity-60 flex items-center gap-1" style={{ color }}>
+                      <Icon name="Filter" size={8} /> aktif
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Card Belum Diinvoice */}
             <div
-              className="kpi-card cursor-pointer hover:border-teal-400 transition-colors"
-              style={{ borderLeftColor: '#0d9488', borderLeftWidth: '4px' }}
+              className="kpi-card cursor-pointer hover:shadow-md transition-all"
+              style={{ borderLeftColor: '#0d9488', borderLeftWidth: '3px' }}
               onClick={() => setActiveTab('buat')}
             >
               <div className="kpi-card-label">Belum Diinvoice</div>
@@ -573,6 +582,14 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </span>
               )}
               <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
+              {activeKpi !== 'all' && (
+                <button
+                  onClick={() => setActiveKpi('all')}
+                  className="flex items-center gap-1 h-9 px-3 bg-accent/10 text-accent rounded-lg text-[11px] font-bold hover:bg-accent/20 transition-colors"
+                >
+                  <Icon name="X" size={11} /> Reset KPI
+                </button>
+              )}
               <button onClick={loadInvoices} disabled={loadingInvoices}
                 className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
                 <Icon name="RefreshCw" size={13} /> Refresh
