@@ -78,6 +78,15 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [selectedPaymentInv, setSelectedPaymentInv] = useState<any>(null);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
+  const [editDokumen, setEditDokumen] = useState<string | null>(null);
+  const [formDokumen, setFormDokumen] = useState({
+    gdrive_url: '',
+    ekspedisi: '',
+    no_resi: '',
+    tgl_kirim: '',
+    status_dokumen: 'Belum Dikirim',
+  });
+  const [savingDokumen, setSavingDokumen] = useState(false);
 
   // ── Load all invoices
   const loadInvoices = async () => {
@@ -118,6 +127,36 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
   const handleOpenDetail = (inv: any) => {
     setSelectedPaymentInv(inv);
+  };
+
+  const getTrackingUrl = (ekspedisi: string, no_resi: string): string => {
+    const e = ekspedisi?.toLowerCase() || '';
+    const r = encodeURIComponent(no_resi || '');
+    if (e.includes('tiki')) return `https://www.tiki.id/id/tracking?ref=${r}`;
+    if (e.includes('jne')) return `https://www.jne.co.id/id/tracking/trace/${r}`;
+    if (e.includes('sicepat')) return `https://sicepat.com/checkAwb/${r}`;
+    if (e.includes('anteraja')) return `https://anteraja.id/tracking/${r}`;
+    if (e.includes('jnt') || e.includes('j&t')) return `https://www.jet.co.id/track/${r}`;
+    if (e.includes('pos')) return `https://www.posindonesia.co.id/id/tracking?noResi=${r}`;
+    if (e.includes('wahana')) return `https://www.wahana.com/tracking/${r}`;
+    return `https://www.google.com/search?q=lacak+resi+${r}+${encodeURIComponent(ekspedisi)}`;
+  };
+
+  const handleSaveDokumen = async (invId: string) => {
+    setSavingDokumen(true);
+    try {
+      await api.updateInvoiceDokumen(invId, formDokumen);
+      setSelectedPaymentInv((prev: any) => prev ? { ...prev, ...formDokumen } : prev);
+      setInvoices(prev => prev.map((inv: any) =>
+        inv.id === invId ? { ...inv, ...formDokumen } : inv
+      ));
+      setEditDokumen(null);
+      showToast('Data dokumen berhasil disimpan', 'success');
+    } catch (err: any) {
+      showToast('Gagal simpan: ' + err.message, 'error');
+    } finally {
+      setSavingDokumen(false);
+    }
   };
 
   // ── Buat Invoice: available SO by tipe
@@ -980,6 +1019,173 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     </div>
                   );
                 })()}
+
+                {/* Dokumen Fisik */}
+                <div className="px-4 pb-4 border-t border-border-main/30 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-60">
+                      Dokumen Fisik &amp; Pengiriman
+                    </div>
+                    {editDokumen !== inv.id ? (
+                      <button
+                        onClick={() => {
+                          setEditDokumen(inv.id);
+                          setFormDokumen({
+                            gdrive_url: inv.gdrive_url || '',
+                            ekspedisi: inv.ekspedisi || '',
+                            no_resi: inv.no_resi || '',
+                            tgl_kirim: inv.tgl_kirim || '',
+                            status_dokumen: inv.status_dokumen || 'Belum Dikirim',
+                          });
+                        }}
+                        className="btn-ghost h-7 px-3 text-[10px] flex items-center gap-1"
+                      >
+                        <Icon name="Edit3" size={11} /> Edit
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditDokumen(null)} className="btn-ghost h-7 px-3 text-[10px]">Batal</button>
+                        <button
+                          onClick={() => handleSaveDokumen(inv.id)}
+                          disabled={savingDokumen}
+                          className="btn-primary h-7 px-3 text-[10px] flex items-center gap-1"
+                        >
+                          <Icon name="Save" size={11} /> {savingDokumen ? 'Menyimpan...' : 'Simpan'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editDokumen !== inv.id ? (
+                    // VIEW MODE
+                    <div className="space-y-3">
+                      {/* Status */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-text-light w-24">Status</span>
+                        <span className={`badge text-[8px] ${
+                          inv.status_dokumen === 'Diterima Customer' ? 'badge-success' :
+                          inv.status_dokumen === 'Terkirim' ? 'badge-info' :
+                          'bg-slate-100 text-slate-500'
+                        }`}>
+                          {inv.status_dokumen || 'Belum Dikirim'}
+                        </span>
+                        {inv.status_dokumen === 'Terkirim' && (
+                          <button
+                            onClick={async () => {
+                              await api.updateInvoiceDokumen(inv.id, { status_dokumen: 'Diterima Customer' });
+                              setSelectedPaymentInv((prev: any) => prev ? { ...prev, status_dokumen: 'Diterima Customer' } : prev);
+                              setInvoices(prev => prev.map((i: any) => i.id === inv.id ? { ...i, status_dokumen: 'Diterima Customer' } : i));
+                              showToast('Status diupdate', 'success');
+                            }}
+                            className="btn-ghost h-6 px-2 text-[9px] flex items-center gap-1 text-success"
+                          >
+                            <Icon name="CheckCircle" size={10} /> Tandai Diterima
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Google Drive */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-text-light w-24">Scan Invoice</span>
+                        {inv.gdrive_url ? (
+                          <a
+                            href={inv.gdrive_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-accent hover:underline"
+                          >
+                            <Icon name="FileText" size={12} /> Buka Drive
+                            <Icon name="ExternalLink" size={10} />
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-text-light italic opacity-50">Belum ada file</span>
+                        )}
+                      </div>
+
+                      {/* Ekspedisi & Resi */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-text-light w-24">Pengiriman</span>
+                        {inv.no_resi ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-bold text-text-main">{inv.ekspedisi}</span>
+                            <span className="text-[10px] text-text-light">·</span>
+                            <span className="text-[11px] font-mono text-text-main">{inv.no_resi}</span>
+                            {inv.tgl_kirim && (
+                              <>
+                                <span className="text-[10px] text-text-light">·</span>
+                                <span className="text-[10px] text-text-light italic">{fmtDate(inv.tgl_kirim)}</span>
+                              </>
+                            )}
+                            <a
+                              href={getTrackingUrl(inv.ekspedisi, inv.no_resi)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 h-6 px-2 bg-accent/10 text-accent rounded-lg text-[9px] font-bold hover:bg-accent/20 transition-colors"
+                            >
+                              <Icon name="MapPin" size={10} /> Lacak Paket
+                            </a>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-text-light italic opacity-50">Belum ada resi</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    // EDIT MODE
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Status Dokumen</label>
+                        <select
+                          value={formDokumen.status_dokumen}
+                          onChange={e => setFormDokumen(f => ({ ...f, status_dokumen: e.target.value }))}
+                          className="input w-full text-[12px]"
+                        >
+                          <option value="Belum Dikirim">Belum Dikirim</option>
+                          <option value="Terkirim">Terkirim</option>
+                          <option value="Diterima Customer">Diterima Customer</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Link Google Drive (Scan Invoice)</label>
+                        <input
+                          value={formDokumen.gdrive_url}
+                          onChange={e => setFormDokumen(f => ({ ...f, gdrive_url: e.target.value }))}
+                          placeholder="https://drive.google.com/file/d/..."
+                          className="input w-full text-[12px]"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Ekspedisi</label>
+                          <input
+                            value={formDokumen.ekspedisi}
+                            onChange={e => setFormDokumen(f => ({ ...f, ekspedisi: e.target.value }))}
+                            placeholder="Tiki, JNE, SiCepat, dll"
+                            className="input w-full text-[12px]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">No Resi</label>
+                          <input
+                            value={formDokumen.no_resi}
+                            onChange={e => setFormDokumen(f => ({ ...f, no_resi: e.target.value }))}
+                            placeholder="Nomor resi pengiriman"
+                            className="input w-full text-[12px] font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1 block">Tanggal Kirim</label>
+                        <input
+                          type="date"
+                          value={formDokumen.tgl_kirim}
+                          onChange={e => setFormDokumen(f => ({ ...f, tgl_kirim: e.target.value }))}
+                          className="input w-full text-[12px]"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
             </div>
