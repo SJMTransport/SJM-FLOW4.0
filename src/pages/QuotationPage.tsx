@@ -212,43 +212,47 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
       {/* VIEW: DAFTAR */}
       {activeTab === 'daftar' && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-white border border-border-main rounded-xl px-4 py-3 flex items-center gap-2 flex-wrap mb-4 shadow-xs">
             <input
-              placeholder="🔍 Cari customer atau no quotation..."
+              placeholder="Cari customer atau no quotation..."
               value={filterText}
               onChange={e => setFilterText(e.target.value)}
-              className="input h-8 text-[11px] w-64"
+              className="input h-9 text-[12px] w-64"
             />
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input h-8 text-[11px] w-32">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input h-9 text-[12px] w-32">
               <option value="all">Semua Status</option>
               <option value="Draft">Draft</option>
               <option value="Terkirim">Terkirim</option>
               <option value="Diterima">Diterima</option>
               <option value="Ditolak">Ditolak</option>
             </select>
-            <button onClick={loadQuotations} disabled={loading} className="btn-ghost h-8 px-3 text-[11px] flex items-center gap-1.5">
-              <Icon name="RefreshCw" size={12} /> Refresh
-            </button>
-            <span className="text-[11px] text-text-light ml-auto">{filtered.length} quotation</span>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-[11px] text-text-light">{filtered.length} quotation</span>
+              <button onClick={loadQuotations} disabled={loading}
+                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                <Icon name="RefreshCw" size={13} /> Refresh
+              </button>
+            </div>
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-text-light text-[13px]">Memuat...</div>
           ) : (
-            <div className="table-container max-h-[calc(100vh-280px)]">
+            <div className="bg-white border border-border-main rounded-xl overflow-hidden shadow-xs">
+              <div className="table-container max-h-[calc(100vh-320px)]">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr>
-                    <th className="text-left min-w-[160px]">No Quotation</th>
-                    <th className="text-left w-28">Tgl</th>
-                    <th className="text-left">Customer</th>
-                    <th className="text-left">Rute</th>
-                    <th className="text-right w-32">Harga</th>
-                    <th className="text-center w-24">Status</th>
-                    <th className="text-center w-24">Aksi</th>
+                  <tr className="bg-slate-50 border-b-2 border-border-main">
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest min-w-[160px]">No Quotation</th>
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-28">Tgl</th>
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Customer</th>
+                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Rute</th>
+                    <th className="text-right py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-32">Harga</th>
+                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Status</th>
+                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-main/20">
+                <tbody className="divide-y divide-border-main/30">
                   {filtered.length === 0 ? (
                     <tr><td colSpan={7}><EmptyState colSpan={7} /></td></tr>
                   ) : filtered.map(q => {
@@ -286,6 +290,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
