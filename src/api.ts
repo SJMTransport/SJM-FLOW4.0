@@ -655,6 +655,12 @@ export const api = {
       .eq('id', id);
     if (error) throw new Error(error.message || "Gagal update status invoice");
   },
+
+  updateInvoiceStatusBatch: async (updates: Array<{id: string, status_bayar: string}>) => {
+    for (const u of updates) {
+      await supabase.from('invoices').update({ status_bayar: u.status_bayar }).eq('id', u.id);
+    }
+  },
   deleteInvoice: async (id: string) => {
     const { error } = await supabase.from('invoices').delete().eq('id', id);
     if (error) throw new Error(error.message || 'Gagal hapus invoice');

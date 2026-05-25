@@ -39,9 +39,10 @@ interface InvoicePageProps {
   so: any[];
   currentUser: any;
   logAction: (msg: string, meta?: any) => void;
+  onSOClick?: (orderId: string) => void;
 }
 
-export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAction }) => {
+export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAction, onSOClick }) => {
   const { showToast, ToastUI } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabType>('daftar');
@@ -100,6 +101,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         try {
           const map = await api.getPaymentStatusBatch(noInvoices);
           setPaymentStatusMap(map);
+          // Sync status_bayar ke DB agar halaman lain bisa baca status terkini
+          const statusMap = map;
+          const updates = list
+            .filter((inv: any) => {
+              const ps = statusMap[inv.no_invoice];
+              return ps && ps.status !== inv.status_bayar;
+            })
+            .map((inv: any) => ({
+              id: inv.id,
+              status_bayar: statusMap[inv.no_invoice].status,
+            }));
+          if (updates.length > 0) {
+            api.updateInvoiceStatusBatch(updates).catch(() => {});
+          }
         } catch { /* silent */ } finally {
           setLoadingStatus(false);
         }
@@ -608,7 +623,13 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         <td className="py-3 px-4 max-w-[200px]">
                           <div className="flex gap-1 flex-wrap">
                             {(inv.so_order_ids || []).slice(0, 2).map((soId: string) => (
-                              <span key={soId} className="px-1.5 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[9px] font-bold text-accent whitespace-nowrap">{soId}</span>
+                              <button
+                                key={soId}
+                                onClick={e => { e.stopPropagation(); onSOClick && onSOClick(soId); }}
+                                className="px-1.5 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[9px] font-bold text-accent whitespace-nowrap hover:bg-accent/20 transition-colors"
+                              >
+                                {soId}
+                              </button>
                             ))}
                             {(inv.so_order_ids || []).length > 2 && (
                               <span className="px-1.5 py-0.5 bg-slate-100 text-text-light rounded-full text-[9px] font-bold">+{(inv.so_order_ids || []).length - 2}</span>
@@ -951,7 +972,14 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         <tr><td colSpan={6} className="py-4 text-center text-text-light italic text-[11px]">Tidak ada data SO</td></tr>
                       ) : soDetails.map((s: any) => (
                         <tr key={s.order_id} className="hover:bg-slate-50 transition-colors">
-                          <td className="font-black text-accent uppercase tracking-tight">{s.order_id}</td>
+                          <td>
+                            <button
+                              className="font-black text-accent uppercase tracking-tight hover:underline"
+                              onClick={() => { setSelectedPaymentInv(null); onSOClick && onSOClick(s.order_id); }}
+                            >
+                              {s.order_id}
+                            </button>
+                          </td>
                           {s._notFound ? (
                             <td colSpan={5} className="text-text-light italic opacity-50 text-[10px]">Data tidak tersedia</td>
                           ) : (
