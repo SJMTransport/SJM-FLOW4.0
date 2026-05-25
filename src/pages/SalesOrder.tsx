@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import { C, STATUS_SO, STATUS_COLOR, STATUS_BG } from "../constants";
 import { fmt, fmtShort, filterByPeriod, today } from "@/src/utils";
-import { Card, SectionHeader, StatCard, useConfirm, PeriodFilter, Icon, EmptyState, useToast, statusBadge, Stepper, ModalShell, FeedbackButton, PageShell, KPIGrid, ActionBar } from "@/src/components/SJMComponents";
+import { Card, SectionHeader, StatCard, useConfirm, PeriodFilter, Icon, EmptyState, useToast, statusBadge, Stepper, ModalShell, FeedbackButton, PageShell, KPIGrid, ActionBar, PageHeader } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
 import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
@@ -326,6 +326,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [selected, setSelected] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'uninvoiced' | 'invoiced'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<'order_id' | 'tgl_muat'>('order_id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -524,6 +525,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         if (invoiceFilter === 'invoiced') return !!s.no_invoice;
         return true;
       })
+      .filter((s: any) => statusFilter === 'all' ? true : s.status_muatan === statusFilter)
       .filter((s: any) =>
         !search ||
         s.order_id?.toLowerCase().includes(search.toLowerCase()) ||
@@ -535,17 +537,23 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       const cmp = aVal.localeCompare(bVal);
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [so, period, search, sortKey, sortDir, invoiceFilter]);
+  }, [so, period, search, sortKey, sortDir, invoiceFilter, statusFilter]);
 
   const statusCount: any = { "Order Confirmed": 0, Loading: 0, "On Going": 0, Arrived: 0, Completed: 0, Cancelled: 0 };
   filtered.forEach((x: any) => { if (statusCount[x.status_muatan] !== undefined) statusCount[x.status_muatan]++; });
   const totalBiaya = filtered.reduce((sum: number, s: any) => sum + (Number(s.total_harga_pajak) || Number(s.total_harga) || 0), 0);
 
+  // KPI base counts — from period only, unaffected by statusFilter/invoiceFilter
+  const periodBase = filterByPeriod(so, period, "tgl_muat");
+  const kpiCount: any = { "On Going": 0, Loading: 0, Completed: 0, Cancelled: 0 };
+  periodBase.forEach((x: any) => { if (kpiCount[x.status_muatan] !== undefined) kpiCount[x.status_muatan]++; });
+  const kpiBelumInvoice = periodBase.filter((s: any) => !s.no_invoice).length;
+
   return (
     <PageShell>
       <ConfirmModalUI />
       <ToastUI />
-      <SectionHeader title="Sales Order" sub={`${so.length} SO tersimpan`}
+      <PageHeader title="Sales Order" sub={`${so.length} SO tersimpan`}
         action={canEdit && <button className="btn-primary" onClick={openNew}><Icon name="Plus" size={16} /> SO Baru</button>} />
 
       <div className="tab-bar">
@@ -594,24 +602,55 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             )}
           />
 
-          <KPIGrid cols={3}>
-            <StatCard label="Total SO" value={filtered.length} color="var(--color-accent)" icon="Package" />
-            <StatCard label="Completed" value={statusCount.Completed || 0} color="var(--color-green-brand)" icon="CheckCircle" />
-            <StatCard label="Cancelled" value={statusCount.Cancelled || 0} color="var(--color-red-brand)" icon="XCircle" />
-          </KPIGrid>
-
-          <div className="flex items-center gap-2 px-1 pb-2">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-6 gap-3 mb-4">
             {([
-              { key: 'all', label: 'Semua SO', count: so.length },
-              { key: 'uninvoiced', label: 'Belum Invoice', count: so.filter((s: any) => !s.no_invoice).length },
-              { key: 'invoiced', label: 'Sudah Invoice', count: so.filter((s: any) => !!s.no_invoice).length },
+              { key: 'all',       label: 'Total SO',      value: periodBase.length,          color: 'var(--color-accent)',     icon: 'Package'     },
+              { key: 'On Going',  label: 'On Going',      value: kpiCount['On Going'],       color: 'var(--color-info)',       icon: 'Truck'       },
+              { key: 'Loading',   label: 'Loading',       value: kpiCount['Loading'],        color: 'var(--color-warning)',    icon: 'PackageOpen' },
+              { key: 'Completed', label: 'Completed',     value: kpiCount['Completed'],      color: 'var(--color-success)',    icon: 'CheckCircle' },
+              { key: 'Cancelled', label: 'Cancelled',     value: kpiCount['Cancelled'],      color: 'var(--color-error)',      icon: 'XCircle'     },
+              { key: '__belum__', label: 'Belum Invoice', value: kpiBelumInvoice,            color: 'var(--color-teal, #0d9488)', icon: 'FileX'    },
+            ] as const).map(({ key, label, value, color, icon }) => {
+              const isActive =
+                key === '__belum__'
+                  ? invoiceFilter === 'uninvoiced'
+                  : statusFilter === key;
+              return (
+                <div
+                  key={key}
+                  onClick={() => {
+                    if (key === '__belum__') {
+                      setInvoiceFilter(invoiceFilter === 'uninvoiced' ? 'all' : 'uninvoiced');
+                      setStatusFilter('all');
+                    } else {
+                      setStatusFilter(isActive ? 'all' : key);
+                      setInvoiceFilter('all');
+                    }
+                  }}
+                  className={`kpi-card cursor-pointer select-none transition-all hover:shadow-md ${isActive ? 'ring-2 ring-offset-1' : ''}`}
+                  style={isActive ? { outlineColor: color, boxShadow: `0 0 0 2px ${color}` } : {}}
+                >
+                  <span className="kpi-card-label">{label}</span>
+                  <span className="kpi-card-value" style={{ color }}>{value}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Invoice filter pills + reset */}
+          <div className="flex items-center gap-2 px-1 pb-2 flex-wrap">
+            {([
+              { key: 'all',        label: 'Semua SO',       count: periodBase.length },
+              { key: 'uninvoiced', label: 'Belum Invoice',  count: kpiBelumInvoice },
+              { key: 'invoiced',   label: 'Sudah Invoice',  count: periodBase.filter((s: any) => !!s.no_invoice).length },
             ] as const).map(({ key, label, count }) => (
               <button
                 key={key}
-                onClick={() => setInvoiceFilter(key)}
+                onClick={() => { setInvoiceFilter(key); if (key !== 'all') setStatusFilter('all'); }}
                 className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold border transition-colors ${
                   invoiceFilter === key
-                    ? key === 'uninvoiced' ? 'bg-emerald-600 text-white border-emerald-600' : key === 'invoiced' ? 'bg-blue-brand text-white border-blue-brand' : 'bg-accent text-white border-accent'
+                    ? key === 'uninvoiced' ? 'bg-emerald-600 text-white border-emerald-600' : key === 'invoiced' ? 'bg-blue-600 text-white border-blue-600' : 'bg-accent text-white border-accent'
                     : 'bg-white text-text-med border-border-main hover:border-accent'
                 }`}
               >
@@ -619,26 +658,35 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${invoiceFilter === key ? 'bg-white/20' : 'bg-slate-100'}`}>{count}</span>
               </button>
             ))}
+            {(statusFilter !== 'all' || invoiceFilter !== 'all') && (
+              <button
+                onClick={() => { setStatusFilter('all'); setInvoiceFilter('all'); }}
+                className="flex items-center gap-1 h-7 px-3 rounded-full text-[10px] font-bold border border-dashed border-red-300 text-red-500 hover:bg-red-50 transition-colors ml-auto"
+              >
+                <Icon name="X" size={10} /> Reset Filter
+              </button>
+            )}
+            <span className="text-[10px] text-text-light ml-1">{filtered.length} dari {periodBase.length} SO</span>
           </div>
 
           {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
+          <div className="bg-white border border-border-main rounded-xl overflow-hidden shadow-xs">
           <div className="table-container max-h-[calc(100vh-380px)]">
             <table className="w-full border-collapse">
-              <thead>
+              <thead className="bg-slate-50 border-b-2 border-border-main sticky top-0 z-10">
                   <tr>
                     {canEdit && (
-                      <th className="w-10">
-                        <input 
-                          type="checkbox" 
+                      <th className="w-10 font-black text-text-med uppercase tracking-widest">
+                        <input
+                          type="checkbox"
                           className="w-3.5 h-3.5 rounded border-border-main text-accent focus:ring-accent"
-                          checked={selected.length > 0 && selected.length === filtered.length} 
-                          onChange={toggleAll} 
+                          checked={selected.length > 0 && selected.length === filtered.length}
+                          onChange={toggleAll}
                         />
                       </th>
                     )}
                     <th
-                      className="cursor-pointer select-none transition-colors"
-                      style={{ background: sortKey === 'order_id' ? '#e2e8f0' : undefined }}
+                      className={`cursor-pointer select-none transition-colors font-black text-text-med uppercase tracking-widest ${sortKey === 'order_id' ? 'bg-slate-200' : ''}`}
                       onClick={() => toggleSort('order_id')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -649,8 +697,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </span>
                     </th>
                     <th
-                      className="cursor-pointer select-none transition-colors"
-                      style={{ background: sortKey === 'tgl_muat' ? '#e2e8f0' : undefined }}
+                      className={`cursor-pointer select-none transition-colors font-black text-text-med uppercase tracking-widest ${sortKey === 'tgl_muat' ? 'bg-slate-200' : ''}`}
                       onClick={() => toggleSort('tgl_muat')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -660,13 +707,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         {sortKey === 'tgl_muat' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
                       </span>
                     </th>
-                    <th>Rute</th>
-                    <th>Customer</th>
-                    <th>Unit / Sopir</th>
-                    <th>Status</th>
-                    <th className="text-right">Biaya</th>
-                    <th>Invoice</th>
-                    <th className="text-center">Aksi</th>
+                    <th className="font-black text-text-med uppercase tracking-widest">Rute</th>
+                    <th className="font-black text-text-med uppercase tracking-widest">Customer</th>
+                    <th className="font-black text-text-med uppercase tracking-widest">Unit / Sopir</th>
+                    <th className="font-black text-text-med uppercase tracking-widest">Status</th>
+                    <th className="text-right font-black text-text-med uppercase tracking-widest">Biaya</th>
+                    <th className="font-black text-text-med uppercase tracking-widest">Invoice</th>
+                    <th className="text-center font-black text-text-med uppercase tracking-widest">Aksi</th>
                   </tr>
                 </thead>
                 <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/20">
@@ -767,6 +814,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </tfoot>
               </table>
             </div>
+          </div>
         </div>
       )}
 
