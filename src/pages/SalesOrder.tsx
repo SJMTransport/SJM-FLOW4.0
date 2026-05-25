@@ -621,9 +621,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       setInvoiceFilter('all');
                     }
                   }}
-                  className={`kpi-card cursor-pointer select-none transition-all hover:shadow-md ${isActive ? 'ring-2 ring-offset-1' : ''}`}
-                  style={isActive ? { outlineColor: color, boxShadow: `0 0 0 2px ${color}` } : {}}
+                  className={`kpi-card relative cursor-pointer select-none transition-all hover:shadow-md ${isActive ? 'ring-2 ring-offset-1' : ''}`}
+                  style={{ padding: '10px 14px', ...(isActive ? { outlineColor: color, boxShadow: `0 0 0 2px ${color}` } : {}) }}
                 >
+                  {isActive && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent animate-pulse" />
+                  )}
                   <span className="kpi-card-label">{label}</span>
                   <span className="kpi-card-value" style={{ color }}>{value}</span>
                   {key === '__belum__' && (

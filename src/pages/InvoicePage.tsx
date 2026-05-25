@@ -511,13 +511,18 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     setActiveKpi(prev => prev === key ? 'all' : key);
                     setFilterInvStatus('all');
                   }}
-                  className={`kpi-card py-3 cursor-pointer transition-all ${isActive ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
+                  className={`kpi-card relative cursor-pointer transition-all ${isActive ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
                   style={{
+                    padding: '10px 14px',
                     borderLeftColor: color,
                     borderLeftWidth: '3px',
                     ...(isActive ? { boxShadow: `0 0 0 2px ${color}` } : {}),
                   }}
                 >
+                  {isActive && key !== 'all' && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full animate-pulse"
+                      style={{ backgroundColor: color }} />
+                  )}
                   <div className="flex items-start justify-between gap-2">
                     <div className="kpi-card-label">{label}</div>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
@@ -526,11 +531,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     </div>
                   </div>
                   <div className="kpi-card-value" style={{ color, fontSize: '1.25rem' }}>{value}</div>
-                  {isActive && (
-                    <div className="text-[8px] font-bold mt-1 opacity-60 flex items-center gap-1" style={{ color }}>
-                      <Icon name="Filter" size={8} /> aktif
-                    </div>
-                  )}
                 </div>
               );
             })}
