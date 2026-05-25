@@ -462,7 +462,14 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       belumBayar: invoices.filter(i => getInvStatus(i) === 'Belum Bayar').length,
       parsial: invoices.filter(i => getInvStatus(i) === 'Parsial').length,
       perluVerifikasi: invoices.filter(i => getInvStatus(i) === 'Perlu Verifikasi').length,
-      outstanding: invoices.filter(i => getInvStatus(i) !== 'Lunas').reduce((s, i) => s + (i.total_setelah_pajak || 0), 0),
+      outstanding: invoices
+        .filter(i => getInvStatus(i) !== 'Lunas')
+        .reduce((s, i) => {
+          const ps = paymentStatusMap[i.no_invoice];
+          const terbayar = Number(ps?.terbayar || 0);
+          const total = Number(i.total_setelah_pajak || 0);
+          return s + Math.max(0, total - terbayar);
+        }, 0),
       soBelumiInvoice: soBelumiInvoice.length,
       nilaiBelumiInvoice,
     };
@@ -538,11 +545,11 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
           {/* KPI Baris 2: Financial summary — flat layout */}
           <div className="flex items-stretch gap-6 px-1 mb-4">
-            {/* Outstanding */}
+            {/* Belum Lunas */}
             <div className="flex-1">
               <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1 flex items-center gap-1.5">
                 <Icon name="TrendingUp" size={10} className="text-accent" />
-                Outstanding
+                Belum Lunas
               </div>
               <div className="text-[18px] font-black tabular-nums" style={{ color: 'var(--color-accent)' }}>
                 {fRp(kpiData.outstanding)}
