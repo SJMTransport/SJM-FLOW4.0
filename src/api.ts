@@ -660,6 +660,20 @@ export const api = {
     if (error) throw new Error(error.message || 'Gagal hapus invoice');
   },
 
+  updateInvoiceDokumen: async (id: string, data: {
+    gdrive_url?: string;
+    ekspedisi?: string;
+    no_resi?: string;
+    tgl_kirim?: string;
+    status_dokumen?: string;
+  }) => {
+    const { error } = await supabase
+      .from('invoices')
+      .update(data)
+      .eq('id', id);
+    if (error) throw new Error(error.message || 'Gagal update dokumen invoice');
+  },
+
   getQuotations: async () => {
     const { data, error } = await supabase
       .from('quotations')
