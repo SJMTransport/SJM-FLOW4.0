@@ -266,7 +266,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
 
   const totalTagih = filtered.reduce((s, r: any) => s + (tab === "piutang" ? r.debit : r.kredit), 0);
   const totalBayar = filtered.reduce((s, r: any) => s + (tab === "piutang" ? r.kredit : r.debit), 0);
-  const totalSaldo = filtered.reduce((s, r: any) => s + r.saldo, 0);
+  const totalSaldo = filtered.reduce((s, r: any) => s + Math.max(0, r.saldo), 0);
 
   const isNotifTab = tab.startsWith("notif");
 
@@ -401,7 +401,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                           <div className="text-[11px] font-medium text-text-med max-w-xs truncate" title={r.keterangan}>{r.keterangan}</div>
                         </td>
                         <td className="text-right tabular-nums text-[12px] font-bold text-text-main whitespace-nowrap">{fmt(tab === "piutang" ? r.debit : r.kredit)}</td>
-                        <td className={`text-right tabular-nums text-[12px] font-black whitespace-nowrap ${r.saldo > 0 ? "text-red-brand" : "text-green-brand"}`}>{fmt(r.saldo)}</td>
+                        <td className={`text-right tabular-nums text-[12px] font-black whitespace-nowrap ${r.saldo > 0 ? "text-red-brand" : "text-green-brand"}`}>{fmt(Math.max(0, r.saldo))}</td>
                         <td className="text-center">{statusBadge(r.status)}</td>
                       </tr>
                     ))
