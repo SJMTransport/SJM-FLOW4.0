@@ -24,6 +24,7 @@ import { InvoicePage } from "@/src/pages/InvoicePage";
 import { QuotationPage } from "@/src/pages/QuotationPage";
 import { MasterPage } from "@/src/pages/Master";
 import { Loader2, LogOut, Plus, ChevronRight, ChevronLeft, Search, User, Power, AlertCircle } from "lucide-react";
+import { canView, type ModuleKey } from "@/src/permissions";
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
 const LoginPage = ({ onLogin }: any) => {
@@ -979,53 +980,41 @@ export default function App() {
 
   const NAV_MODULES = [
     { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", subs: [] },
-    { 
-      key: "operasional", label: "Operasional", icon: "Truck", 
-      subs: [
+    { key: "operasional", label: "Operasional", icon: "Truck", subs: [
         { key: "so", label: "Sales Order" },
         { key: "updatemuatan", label: "Update Muatan" },
         { key: "quotation", label: "Quotation" },
         { key: "invoice", label: "Invoice" }
-      ]
-    },
-    { 
-      key: "keuangan", label: "Keuangan", icon: "CreditCard", 
-      subs: [
+    ]},
+    { key: "keuangan", label: "Keuangan", icon: "CreditCard", subs: [
         { key: "jurnal", label: "Jurnal Umum" },
         { key: "persetujuan", label: "Persetujuan Jurnal" },
         { key: "hutangpiutang", label: "Hutang & Piutang" }
-      ]
-    },
-    { 
-      key: "laporan", label: "Laporan", icon: "FilePieChart", 
-      subs: [
+    ]},
+    { key: "laporan", label: "Laporan", icon: "FilePieChart", subs: [
         { key: "neraca", label: "Neraca Saldo" },
         { key: "labarugi", label: "Laba Rugi" },
         { key: "bukubesar", label: "Buku Besar" },
-        { key: "profit", label: "Profitabilitas" },
-        { key: "audit", label: "Log Aktivitas" }
-      ]
-    },
-    { 
-      key: "armada", label: "Armada", icon: "Dribbble", // Armada icon
-      subs: [
+        { key: "profit", label: "Profitabilitas" }
+    ]},
+    { key: "armada", label: "Armada", icon: "Dribbble", subs: [
         { key: "dashboard_unit", label: "Dashboard Unit" },
         { key: "unit", label: "Unit List" },
         { key: "dokumen", label: "Dokumen" },
         { key: "service", label: "Service" },
         { key: "sopir", label: "Sopir" }
-      ]
-    },
-    { 
-      key: "master", label: "Master", icon: "Settings", 
-      subs: [
+    ]},
+    { key: "master", label: "Master", icon: "Settings", subs: [
         { key: "kontak", label: "Kontak" },
         { key: "coa", label: "Master COA" },
-        { key: "saldoawal", label: "Saldo Awal" },
-        { key: "users", label: "Users" },
-        { key: "password", label: "Password" }
-      ]
-    },
+        { key: "saldoawal", label: "Saldo Awal" }
+    ]},
+  ];
+
+  const NAV_BOTTOM = [
+    { key: "users", label: "Users", icon: "Users", moduleKey: "users" as ModuleKey },
+    { key: "activity", label: "Log Aktivitas", icon: "ClipboardList", moduleKey: "users" as ModuleKey },
+    { key: "password", label: "Password", icon: "KeyRound", moduleKey: "users" as ModuleKey },
   ];
 
   const handleNav = (mod: string, sub?: string) => {
@@ -1068,19 +1057,50 @@ export default function App() {
         </div>
 
         <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto no-scrollbar py-1">
-          {NAV_MODULES.map(item => (
-            <button 
-              key={item.key} 
-              onClick={() => handleNav(item.key)}
-              title={collapsed ? item.label : ""}
-              className={`nav-item w-full ${activeModule === item.key ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
-            >
-              <Icon name={item.icon} size={collapsed ? 18 : 16} strokeWidth={activeModule === item.key ? 2.5 : 2} />
-              {!collapsed && <span className="flex-1 truncate tracking-tight text-left ml-px">{item.label}</span>}
-            </button>
-          ))}
+          {NAV_MODULES
+            .filter(item => {
+              const moduleMap: Record<string, ModuleKey> = {
+                dashboard: "dashboard",
+                operasional: "so",
+                keuangan: "jurnal",
+                laporan: "laporan",
+                armada: "armada",
+                master: "master",
+              };
+              const key = moduleMap[item.key];
+              return key ? canView(currentUser.role, key) : true;
+            })
+            .map(item => (
+              <button
+                key={item.key}
+                onClick={() => handleNav(item.key)}
+                title={collapsed ? item.label : ""}
+                className={`nav-item w-full ${activeModule === item.key ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+              >
+                <Icon name={item.icon} size={collapsed ? 18 : 16} strokeWidth={activeModule === item.key ? 2.5 : 2} />
+                {!collapsed && <span className="flex-1 truncate tracking-tight text-left ml-px">{item.label}</span>}
+              </button>
+            ))
+          }
         </nav>
-        
+
+        <div className="px-2 pb-1 border-t border-white/10 pt-2 space-y-0.5">
+          {NAV_BOTTOM
+            .filter(item => canView(currentUser.role, item.moduleKey))
+            .map(item => (
+              <button
+                key={item.key}
+                onClick={() => handleNav(item.key)}
+                title={collapsed ? item.label : ""}
+                className={`nav-item w-full ${activeModule === item.key ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+              >
+                <Icon name={item.icon} size={collapsed ? 18 : 16} strokeWidth={activeModule === item.key ? 2.5 : 2} />
+                {!collapsed && <span className="flex-1 truncate tracking-tight text-left ml-px">{item.label}</span>}
+              </button>
+            ))
+          }
+        </div>
+
         <div className="p-2 border-t border-white/10 bg-black/10">
            {!collapsed && (
               <div className="mb-2 px-1 flex items-center justify-between">
