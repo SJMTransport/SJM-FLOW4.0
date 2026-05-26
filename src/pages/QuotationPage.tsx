@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { canEdit as checkCanEdit } from "@/src/permissions";
 import { api } from '@/src/api';
 import { generateQuotationNo } from '@/src/utils/quotationGenerator';
 import { generateQuotationPDF } from '@/src/utils/generateQuotationPDF';
@@ -41,6 +42,7 @@ interface QuotationPageProps {
 }
 
 export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => {
+  const userCanEdit = checkCanEdit(currentUser?.role ?? "", "quotation");
   const { showToast, ToastUI } = useToast();
   const [activeTab, setActiveTab] = useState<'daftar' | 'buat'>('daftar');
   const [quotations, setQuotations] = useState<any[]>([]);
@@ -258,7 +260,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
                   ) : filtered.map(q => {
                     const sc = STATUS_COLOR[q.status] || '#666';
                     return (
-                      <tr key={q.id} className="hover:bg-amber-50/30 cursor-pointer transition-colors group" onClick={() => handleEdit(q)}>
+                      <tr key={q.id} className={`transition-colors group ${userCanEdit ? "hover:bg-amber-50/30 cursor-pointer" : ""}`} onClick={() => userCanEdit && handleEdit(q)}>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{q.no_quotation}</div>
                         </td>
@@ -280,9 +282,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
                             <button className="p-1.5 rounded-lg hover:bg-slate-100 text-text-med transition-colors" onClick={() => handleDownload(q)} title="Download PDF">
                               <Icon name="Download" size={13} />
                             </button>
-                            <button className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" onClick={() => setConfirmDelete(q)} title="Hapus">
-                              <Icon name="Trash2" size={13} />
-                            </button>
+                            {userCanEdit && (
+                              <button className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" onClick={() => setConfirmDelete(q)} title="Hapus">
+                                <Icon name="Trash2" size={13} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -412,7 +416,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
               className="btn-ghost h-9 px-4 text-[12px] flex items-center gap-2" disabled={saving}>
               <Icon name="X" size={14} /> Batal
             </button>
-            <button onClick={handleSave} disabled={saving}
+            <button onClick={handleSave} disabled={saving || !userCanEdit}
               className="btn-primary h-9 px-5 text-[12px] flex items-center gap-2 disabled:opacity-50">
               <Icon name="Save" size={14} />
               {saving ? 'Menyimpan...' : editItem ? 'Update Quotation' : 'Simpan Quotation'}
