@@ -333,6 +333,7 @@ Font           : Inter, tabular-nums untuk angka
 | KPI "Outstanding" nilai penuh | InvoicePage.tsx | Pakai sisa (total - terbayar) |
 | Create invoice subTotal tanpa asuransi | InvoicePage.tsx | Fix kalkulasi |
 | Invoice PDF blank page 2 | InvoiceTemplate.tsx | Hapus minHeight |
+| Log Aktivitas reset setiap login | audit_logs + api.ts | Fix schema tabel + RLS policy anon + limit 500 |
 
 ---
 
@@ -362,7 +363,6 @@ Keputusan ini TIDAK BOLEH diubah tanpa instruksi eksplisit dari owner:
 ### Parking Lot (sudah dikonsep, belum dikerjakan)
 - Fix Notif Piutang — ganti source dari tabel `piutang` → `piutangRows` (kalkulasi jurnal)
 - Refactor hardcoded `["Admin","Operasional"]` → `canEdit()` dari permissions.ts di semua file
-- UI redesign Update Muatan — referensi EXPD Operasional, lebih compact, KPI cards di atas
 
 ### Data Pending (tunggu konfirmasi owner)
 - SO 0329, 0330 — `harga_pengiriman = NULL`

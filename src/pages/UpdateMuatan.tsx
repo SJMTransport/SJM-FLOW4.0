@@ -1,386 +1,694 @@
-import React, { useState } from "react";
-import { C, STATUS_SO, STATUS_COLOR, STATUS_BG } from "../constants";
-import { Card, SectionHeader, Icon, useToast, EmptyState, PageShell, ActionBar } from "@/src/components/SJMComponents";
+import React, { useState, useMemo } from "react";
+import { STATUS_COLOR } from "../constants";
+import {
+  Icon, useToast, EmptyState, PageShell, KPIGrid, StatCard
+} from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
-import { fmt } from "../utils";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const getInitials = (name: string) => {
+  const parts = (name || "").trim().split(" ");
+  return parts.length >= 2
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : (parts[0] || "?")[0].toUpperCase();
+};
+
+const timeAgo = (dateStr: string, timeStr: string) => {
+  if (!dateStr) return "";
+  try {
+    const dt = new Date(`${dateStr}T${timeStr || "00:00"}:00`);
+    const diffH = Math.floor((Date.now() - dt.getTime()) / (1000 * 60 * 60));
+    if (diffH < 1) return "Baru saja";
+    if (diffH < 24) return `${diffH} jam lalu`;
+    return `${Math.floor(diffH / 24)} hari lalu`;
+  } catch { return ""; }
+};
+
+const STATUS_BUTTONS = [
+  { label: "Confirmed",  value: "Order Confirmed" },
+  { label: "Loading",    value: "Loading"         },
+  { label: "In Transit", value: "On Going"        },
+  { label: "Completed",  value: "Completed"       },
+  { label: "Cancelled",  value: "Cancelled"       },
+];
+
+const URGENSI_OPTIONS = ["Normal", "High Priority", "Emergency"];
+
+const STATUS_HEX: Record<string, string> = {
+  "Order Confirmed": "#4A6FA5",
+  "Loading":         "#C4914A",
+  "On Going":        "#EB5E28",
+  "Completed":       "#6B8E23",
+  "Cancelled":       "#B85450",
+};
+
+const URGENSI_HEX: Record<string, string> = {
+  "Normal":       "#6B8E23",
+  "High Priority":"#C4914A",
+  "Emergency":    "#B85450",
+};
+
+const getStatusHex = (status: string) => STATUS_HEX[status] || "#6B6862";
+const getStatusLabel = (status: string) => {
+  const map: Record<string, string> = {
+    "Order Confirmed": "Confirmed",
+    "On Going": "In Transit",
+  };
+  return map[status] || status;
+};
+
+// ─── Terminal Panel ───────────────────────────────────────────────────────────
+
+const TerminalPanel = ({
+  s, panelStatus, setPanelStatus,
+  panelCheckpoint, setPanelCheckpoint,
+  panelUrgensi, setPanelUrgensi,
+  panelRemarks, setPanelRemarks,
+  loading, onSubmit, onCopy, onClose,
+}: any) => {
+  const urgensiColor = URGENSI_HEX[panelUrgensi] || "#6B8E23";
+
+  return (
+    <div className="border-t-2 border-accent/30 bg-bg">
+      {/* Panel header bar */}
+      <div
+        className="flex items-center justify-between px-5 py-2.5"
+        style={{ background: "#252422" }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">
+            Dispatch Terminal Panel
+          </span>
+          <span className="text-white/30 text-[11px]">|</span>
+          <span className="text-[11px] font-black italic text-accent">{s.order_id}</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors"
+        >
+          <Icon name="ChevronUp" size={12} /> Sembunyikan Panel
+        </button>
+      </div>
+
+      {/* 3-column body */}
+      <div className="grid grid-cols-3 divide-x divide-border-main/30 bg-white">
+
+        {/* ── LEFT: Driver Profile ───────────────────────── */}
+        <div className="p-5">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-text-light opacity-60 mb-4">
+            Profil &amp; Identitas Driver
+          </div>
+
+          {/* Urgensi badge */}
+          <div className="mb-4">
+            <span
+              className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: urgensiColor + "18", color: urgensiColor }}
+            >
+              {panelUrgensi} Priority
+            </span>
+          </div>
+
+          {/* Avatar + name */}
+          <div className="flex items-center gap-3 mb-5">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-[14px] font-black shrink-0"
+              style={{ background: "#EB5E28" }}
+            >
+              {getInitials(s.nama_sopir || "NA")}
+            </div>
+            <div>
+              <div className="text-[13px] font-black text-text-main">
+                {s.nama_sopir || "—"}
+              </div>
+              <div className="text-[10px] text-text-light">
+                {s.no_polisi || "—"}
+              </div>
+            </div>
+          </div>
+
+          {/* Detail rows */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-widest text-text-light">Plat Nomor</span>
+              <span
+                className="text-[11px] font-black font-mono px-2 py-0.5 rounded text-white tracking-wider"
+                style={{ background: "#252422" }}
+              >
+                {s.no_polisi || "—"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-widest text-text-light">Jenis Truck</span>
+              <span className="text-[11px] font-medium text-text-main">
+                {s.jenis_truk || s.unit_muatan || "—"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-widest text-text-light">Muatan</span>
+              <span className="text-[11px] font-medium text-text-main truncate max-w-[130px]">
+                {s.muatan || "—"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-widest text-text-light">Rute</span>
+              <span className="text-[10px] text-text-med text-right max-w-[130px]">
+                {s.lokasi_muat} → {s.lokasi_bongkar}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── CENTER: Form Input Logger ──────────────────── */}
+        <div className="p-5">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-text-light opacity-60 mb-4">
+            Form Input Logger Dispatcher
+          </div>
+
+          {/* Status buttons */}
+          <div className="mb-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2 block">
+              Tahap Status:
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {STATUS_BUTTONS.map((btn) => {
+                const isActive = panelStatus === btn.value;
+                const c = getStatusHex(btn.value);
+                return (
+                  <button
+                    key={btn.value}
+                    onClick={() => setPanelStatus(btn.value)}
+                    className="h-7 px-3 text-[10px] font-bold rounded-full transition-all"
+                    style={{
+                      backgroundColor: isActive ? c : c + "15",
+                      color: isActive ? "#fff" : c,
+                    }}
+                  >
+                    {btn.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Checkpoint */}
+          <div className="mb-3">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-light mb-1.5 block">
+              Checkpoint / Posisi Terakhir: <span className="text-error">*</span>
+            </label>
+            <input
+              className="input w-full text-[12px] h-9"
+              placeholder="Cth: Rest Area KM 207A Tol Palimanan"
+              value={panelCheckpoint}
+              onChange={e => setPanelCheckpoint(e.target.value)}
+            />
+          </div>
+
+          {/* Urgensi */}
+          <div className="mb-3">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-light mb-1.5 block">
+              Prioritas / Urgensi Operasional:
+            </label>
+            <select
+              className="input w-full text-[12px] h-9"
+              value={panelUrgensi}
+              onChange={e => setPanelUrgensi(e.target.value)}
+            >
+              {URGENSI_OPTIONS.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Remarks */}
+          <div className="mb-4">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-light mb-1.5 block">
+              Catatan Logs / Remarks:
+            </label>
+            <textarea
+              className="input w-full text-[12px] resize-none"
+              rows={3}
+              placeholder="Deskripsi kejadian berkendara (Remarks)..."
+              value={panelRemarks}
+              onChange={e => setPanelRemarks(e.target.value)}
+            />
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={onSubmit}
+              disabled={loading}
+              className="btn-primary h-9 px-4 text-[12px] flex-1 flex items-center justify-center gap-2"
+            >
+              {loading
+                ? <Icon name="Loader2" size={13} className="animate-spin" />
+                : <Icon name="Plus" size={13} />
+              }
+              Submit Log
+            </button>
+            <button
+              onClick={onCopy}
+              className="btn-secondary h-9 px-4 text-[12px] flex items-center gap-2"
+            >
+              <Icon name="Copy" size={13} /> Salin Teks SJM
+            </button>
+          </div>
+        </div>
+
+        {/* ── RIGHT: Kronologi Timeline ──────────────────── */}
+        <div className="p-5">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-text-light opacity-60 mb-4">
+            Kronologi Rute Pergerakan ({(s.posisi_log || []).length})
+          </div>
+
+          {(!s.posisi_log || s.posisi_log.length === 0) ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-text-light">
+              <Icon name="MapPin" size={28} strokeWidth={1.5} className="opacity-30" />
+              <div className="text-[11px] opacity-50 font-medium">Belum ada log pergerakan</div>
+              <div className="text-[10px] opacity-30">Submit log pertama di form sebelah</div>
+            </div>
+          ) : (
+            <div className="space-y-0 max-h-[280px] overflow-y-auto pr-1">
+              {(s.posisi_log || []).slice(0, 10).map((log: any, i: number) => {
+                const lc = getStatusHex(log.status);
+                const ago = timeAgo(log.date, log.time);
+                return (
+                  <div key={i} className="relative flex gap-3 pb-4">
+                    {/* Vertical line */}
+                    {i < Math.min((s.posisi_log || []).length - 1, 9) && (
+                      <div className="absolute left-[6px] top-3.5 bottom-0 w-px bg-border-main/40" />
+                    )}
+                    {/* Dot */}
+                    <div
+                      className="w-3 h-3 rounded-full border-2 border-white shrink-0 mt-1 shadow-sm"
+                      style={{ backgroundColor: lc }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-[10px] text-text-light tabular-nums">
+                          {log.date}, {log.time}
+                        </span>
+                        {ago && (
+                          <span className="text-[9px] text-text-light opacity-50">{ago}</span>
+                        )}
+                        <span
+                          className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: lc + "18", color: lc }}
+                        >
+                          {getStatusLabel(log.status)}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-bold text-text-main">
+                        {log.location || "—"}
+                      </div>
+                      {log.info && !log.info.includes("Status diperbarui via Stepper") && (
+                        <div className="text-[10px] text-text-med mt-0.5 italic line-clamp-2">
+                          "{log.info}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }: any) => {
   const { showToast, ToastUI } = useToast();
-  const [search, setSearch] = useState("");
+
+  // ── Filters
+  const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedSO, setSelectedSO] = useState<any>(null);
-  const [showLogForm, setShowLogForm] = useState(false);
-  const [newLog, setNewLog] = useState({ info: "", location: "" });
-  const [loading, setLoading] = useState(false);
 
-  const filtered = so.filter((s: any) => {
-    const matchesSearch = !search || 
-      s.order_id?.toLowerCase().includes(search.toLowerCase()) || 
-      s.customer?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || s.status_muatan === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // ── Panel state
+  const [expandedId, setExpandedId]       = useState<string | null>(null);
+  const [panelStatus, setPanelStatus]     = useState("");
+  const [panelCheckpoint, setPanelCheckpoint] = useState("");
+  const [panelUrgensi, setPanelUrgensi]   = useState("Normal");
+  const [panelRemarks, setPanelRemarks]   = useState("");
+  const [loading, setLoading]             = useState(false);
 
-  const updateSOStatus = async (s: any, newStatus: string) => {
-    if (s.status_muatan === newStatus) return;
-    setLoading(true);
+  // ── KPI data
+  const allSO = so || [];
+  const activeSO = useMemo(
+    () => allSO.filter((s: any) => !["Completed", "Cancelled"].includes(s.status_muatan)),
+    [allSO]
+  );
+  const kpiTotal   = activeSO.length;
+  const kpiTransit = activeSO.filter((s: any) => s.status_muatan === "On Going").length;
+  const kpiMuat    = activeSO.filter((s: any) => s.status_muatan === "Loading").length;
+  const kpiAtensi  = useMemo(() => activeSO.filter((s: any) => {
+    if (!s.posisi_log?.length) return true;
+    const last = s.posisi_log[0];
     try {
-      const logEntry = {
-        date: new Date().toISOString().split("T")[0],
-        time: new Date().toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }),
-        status: newStatus,
-        info: `Status diperbarui via Stepper: ${newStatus}`,
-        location: s.posisi_log?.[0]?.location || s.lokasi_muat
-      };
-      
-      const updatedLog = [logEntry, ...(s.posisi_log || [])];
-      await api.updateSO(s.id, { 
-        status_muatan: newStatus,
-        posisi_log: updatedLog
-      });
-      
-      setSo((prev: any[]) => prev.map(x => x.id === s.id ? { ...x, status_muatan: newStatus, posisi_log: updatedLog } : x));
-      logAction(`Update Status SO: ${s.order_id}`, { from: s.status_muatan, to: newStatus });
-      showToast(`Status berkas ${s.order_id} diperbarui`);
-    } catch (e: any) { 
-      showToast("Gagal update status: " + e.message, "error");
-    }
-    setLoading(false);
+      const dt = new Date(`${last.date}T${last.time || "00:00"}:00`);
+      return (Date.now() - dt.getTime()) > 24 * 60 * 60 * 1000;
+    } catch { return false; }
+  }).length, [activeSO]);
+
+  // ── Filtered list
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return allSO.filter((s: any) => {
+      const matchSearch = !search ||
+        s.order_id?.toLowerCase().includes(q) ||
+        s.customer?.toLowerCase().includes(q) ||
+        s.no_polisi?.toLowerCase().includes(q) ||
+        s.nama_sopir?.toLowerCase().includes(q);
+      const matchStatus = statusFilter === "all" || s.status_muatan === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [allSO, search, statusFilter]);
+
+  // ── Open / close terminal panel
+  const openPanel = (s: any) => {
+    if (expandedId === s.id) { setExpandedId(null); return; }
+    setExpandedId(s.id);
+    setPanelStatus(s.status_muatan);
+    setPanelCheckpoint(s.posisi_log?.[0]?.location || "");
+    setPanelUrgensi("Normal");
+    setPanelRemarks("");
   };
 
-  const toggleCancelSO = async (s: any) => {
-    const isCurrentlyCancelled = s.status_muatan === "Cancelled";
-    let newStatus = "Cancelled";
-    
-    if (isCurrentlyCancelled) {
-      // Revert to previous status from log
-      const prevLog = (s.posisi_log || []).find((l: any) => l.status !== "Cancelled");
-      newStatus = prevLog ? prevLog.status : "Order Confirmed";
+  // ── Submit log from terminal panel
+  const submitLog = async (s: any) => {
+    if (!panelCheckpoint && !panelRemarks) {
+      showToast("Mohon isi checkpoint atau catatan", "error"); return;
     }
-
-    setLoading(true);
-    try {
-      const logEntry = {
-        date: new Date().toISOString().split("T")[0],
-        time: new Date().toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }),
-        status: newStatus,
-        info: isCurrentlyCancelled ? `Order dipulihkan ke status ${newStatus}` : "Order dibatalkan oleh pengguna",
-        location: s.posisi_log?.[0]?.location || s.lokasi_muat
-      };
-      
-      const updatedLog = [logEntry, ...(s.posisi_log || [])];
-      await api.updateSO(s.id, { 
-        status_muatan: newStatus,
-        posisi_log: updatedLog
-      });
-      
-      setSo((prev: any[]) => prev.map(x => x.id === s.id ? { ...x, status_muatan: newStatus, posisi_log: updatedLog } : x));
-      logAction(`${isCurrentlyCancelled ? 'Revert' : 'Cancel'} SO: ${s.order_id}`, { status: newStatus });
-      showToast(isCurrentlyCancelled ? "Order dipulihkan" : "Order telah dibatalkan");
-    } catch (e: any) { 
-      showToast("Operasi gagal: " + e.message, "error");
-    }
-    setLoading(false);
-  };
-
-  const addManualLog = async () => {
-    if (!newLog.location && !newLog.info) return showToast("Mohon isi minimal lokasi atau keterangan", "error");
     setLoading(true);
     try {
       const now = new Date();
       const logEntry = {
-        date: now.toISOString().split("T")[0],
-        time: now.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }),
-        status: selectedSO.status_muatan,
-        info: newLog.info || `Update posisi di ${newLog.location}`,
-        location: newLog.location
+        date:    now.toISOString().split("T")[0],
+        time:    now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+        status:  panelStatus,
+        info:    panelRemarks || `Update posisi: ${panelCheckpoint}`,
+        location: panelCheckpoint,
+        urgensi: panelUrgensi,
       };
-      const updatedLog = [logEntry, ...(selectedSO.posisi_log || [])];
-      
-      await api.updateSO(selectedSO.id, { posisi_log: updatedLog });
-      
-      setSo((prev: any[]) => prev.map(x => x.id === selectedSO.id ? { ...x, posisi_log: updatedLog } : x));
-      setNewLog({ info: "", location: "" });
-      setShowLogForm(false);
-      showToast("Log operasional berhasil ditambahkan");
-      logAction(`Log Muatan SO: ${selectedSO.order_id}`, { location: newLog.location });
-    } catch (e: any) { 
-      showToast("Gagal update log: " + e.message, "error");
+      const updatedLog = [logEntry, ...(s.posisi_log || [])];
+      const updates: any = { posisi_log: updatedLog };
+      if (panelStatus !== s.status_muatan) updates.status_muatan = panelStatus;
+
+      await api.updateSO(s.id, updates);
+      setSo((prev: any[]) =>
+        prev.map(x => x.id === s.id ? { ...x, ...updates } : x)
+      );
+      logAction(`Log Muatan SO: ${s.order_id}`, {
+        location: panelCheckpoint,
+        status: panelStatus,
+        urgensi: panelUrgensi,
+      });
+      setPanelRemarks("");
+      showToast("Log berhasil disimpan", "success");
+    } catch (e: any) {
+      showToast("Gagal simpan: " + e.message, "error");
     }
     setLoading(false);
   };
 
+  // ── Copy SJM text to clipboard
+  const copySJMText = (s: any) => {
+    const lastLog = s.posisi_log?.[0];
+    const statusText = lastLog
+      ? `${getStatusLabel(lastLog.status)}${lastLog.location ? ` di ${lastLog.location}` : ""}${
+          lastLog.info && !lastLog.info.includes("Status diperbarui via Stepper")
+            ? `\n${lastLog.info}`
+            : ""
+        }`
+      : getStatusLabel(s.status_muatan);
+
+    const text =
+      `*Update Status Muatan*\n${s.order_id}\n\n` +
+      `${s.lokasi_muat} → ${s.lokasi_bongkar}\n\n` +
+      `Armada  : ${s.unit_muatan || "—"}\n` +
+      `Sopir   : ${s.nama_sopir || "—"}\n` +
+      `No. Pol : ${s.no_polisi || "—"}\n` +
+      `Muatan  : ${s.muatan || "—"}\n\n` +
+      `Status :\n${statusText}\n\n` +
+      `Terima kasih\nPT Sugiarto Jaya Mandiri Transport`;
+
+    navigator.clipboard.writeText(text);
+    showToast("Teks SJM berhasil disalin!", "success");
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <PageShell>
-      <ToastUI />
-      
-      <SectionHeader 
-        title="Update Muatan Operasional" 
-        sub="Kelola pergerakan logistik dan status pengiriman armada SJM" 
-      />
-      
-      <ActionBar
-        left={
-          <div className="relative group">
-            <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-50 group-focus-within:text-accent transition-all duration-300" />
-            <input
-              className="input-field pl-10 bg-white border-border-main/40 focus:border-accent text-[11px] font-bold"
-              placeholder="Cari Kode SO, Pelanggan, atau Unit..."
-              value={search || ""}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-        }
-        right={
-          <select className="input-field w-56 font-bold text-[11px] bg-white border-border-main/40 focus:border-accent" value={statusFilter || "all"} onChange={e => setStatusFilter(e.target.value)}>
-            <option value="all">Semua Status Muat</option>
-            {STATUS_SO.map(st => <option key={st} value={st}>{st}</option>)}
-          </select>
-        }
-      />
+      {ToastUI}
 
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <EmptyState msg="Tidak ada muatan aktif yang ditemukan" />
-        ) : (
-          filtered.map((s: any) => {
-            const stepList = STATUS_SO.filter(s => s !== "Cancelled");
-            const isCancelled = s.status_muatan === "Cancelled";
-            const isEditing = showLogForm && selectedSO?.id === s.id;
-            
-            return (
-              <Card key={s.id} className="p-0 border-border-main/50 overflow-hidden shadow-sm hover:shadow-md transition-all bg-white ring-1 ring-black/[0.02]">
-                <div className="flex flex-col w-full">
-                  {/* Narrow Info Bar */}
-                  <div className="flex flex-col lg:flex-row items-center p-3 sm:px-5 gap-3 lg:gap-8 hover:bg-slate-50 transition-colors">
-                     <div className="flex items-center gap-3 min-w-[240px] flex-1 lg:flex-none">
-                        <button 
-                          onClick={() => onSOClick(s.order_id)}
-                          className="text-[12px] font-black text-navy hover:text-amber-600 transition-colors tracking-tight italic bg-navy/5 px-2.5 py-1 rounded-lg"
-                        >
-                          {s.order_id}
-                        </button>
-                        <div>
-                           <div className="text-[13px] font-black text-text-main line-clamp-1 tracking-tight">{s.customer}</div>
-                           <button
-                             className="text-[9px] font-bold text-amber-600 hover:underline flex items-center gap-1.5"
-                             onClick={(e) => { e.stopPropagation(); onArmadaClick && onArmadaClick(s.no_polisi); }}
-                           >
-                             <Icon name="Truck" size={10} className="text-amber-500" /> {s.no_polisi || "N/A"}
-                           </button>
-                        </div>
-                     </div>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-[22px] font-black text-text-main tracking-tight">
+            Update Muatan Operasional
+          </h1>
+          <p className="text-[12px] text-text-med mt-0.5">
+            Manajemen rantai pasok logistik dan penjejakan status pengiriman armada
+          </p>
+        </div>
+        <button
+          onClick={() => { setSearch(""); setStatusFilter("all"); }}
+          className="btn-ghost h-9 px-4 text-[12px] flex items-center gap-2"
+        >
+          <Icon name="RefreshCw" size={13} /> Reset Filter
+        </button>
+      </div>
 
-                     <div className="hidden sm:flex flex-1 items-center gap-4 text-[11px]">
-                        <div className="flex items-center gap-2 font-bold text-text-med bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-200/50">
-                           <span className="truncate max-w-[100px]">{s.lokasi_muat}</span>
-                           <Icon name="ArrowRight" size={10} className="text-text-light/30" />
-                           <span className="truncate max-w-[100px]">{s.lokasi_bongkar}</span>
-                        </div>
-                        <div className="text-[11px] font-black text-navy bg-amber-50 px-3 py-1.5 rounded-lg">
-                           {fmt(s.total_harga || 0)}
-                        </div>
-                     </div>
+      {/* ── KPI Grid ── */}
+      <KPIGrid cols={4}>
+        <StatCard
+          label="Total Armada Aktif"
+          value={String(kpiTotal)}
+          sub={`${kpiTransit} dalam perjalanan`}
+          icon="Truck"
+          color="var(--color-accent)"
+        />
+        <StatCard
+          label="Dalam Perjalanan"
+          value={String(kpiTransit)}
+          sub="Menuju titik bongkar"
+          icon="Navigation"
+          color="#4A6FA5"
+        />
+        <StatCard
+          label="Proses Muat & Bongkar"
+          value={String(kpiMuat)}
+          sub="Sedang di pabrik / gudang"
+          icon="Package"
+          color="var(--color-warning)"
+        />
+        <StatCard
+          label="Perlu Atensi"
+          value={String(kpiAtensi)}
+          sub={kpiAtensi > 0 ? `${kpiAtensi} armada perlu update` : "Semua armada update"}
+          icon="AlertTriangle"
+          color="var(--color-error)"
+        />
+      </KPIGrid>
 
-                     <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-0">
-                        {isCancelled ? (
-                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-brand text-white text-[10px] font-black uppercase tracking-widest">
-                              <Icon name="XCircle" size={12} /> Cancelled
-                           </div>
-                        ) : (
-                           <div 
-                              className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border border-transparent shadow-sm"
-                              style={{ 
-                                 backgroundColor: (STATUS_BG[s.status_muatan] || "#F8FAFC") + "10",
-                                 color: STATUS_COLOR[s.status_muatan] || "#64748B",
-                                 borderColor: (STATUS_COLOR[s.status_muatan] || "#64748B") + "20"
-                              }}
-                           >
-                              {s.status_muatan}
-                           </div>
-                        )}
-                        <button 
-                           onClick={() => toggleCancelSO(s)}
-                           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                              isCancelled 
-                                ? "bg-amber-100 text-amber-600 hover:bg-amber-200" 
-                                : "bg-slate-100 text-slate-400 hover:bg-red-brand-light hover:text-red-brand"
-                           }`}
-                        >
-                           <Icon name={isCancelled ? "RotateCcw" : "XCircle"} size={16} />
-                        </button>
-                     </div>
-                  </div>
-
-                  {/* Slim Minimal Stepper */}
-                  {!isCancelled && (
-                    <div className="px-5 pt-5 pb-10 bg-slate-50/10 border-y border-border-main/20">
-                       <div className="flex items-center justify-between w-full max-w-5xl mx-auto relative px-2">
-                          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 rounded-full" />
-                          <div 
-                            className="absolute top-1/2 left-0 h-0.5 bg-amber-500 -translate-y-1/2 rounded-full transition-all duration-700" 
-                            style={{ width: `${(stepList.indexOf(s.status_muatan) / (stepList.length - 1)) * 100}%` }}
-                          />
-                          
-                          {stepList.map((step, idx) => {
-                             const isActive = s.status_muatan === step;
-                             const isCompleted = stepList.indexOf(s.status_muatan) > idx;
-                             const stepColor = STATUS_COLOR[step] || "var(--color-navy)";
-                             
-                             return (
-                               <div key={idx} className="relative z-10 flex flex-col items-center group/step">
-                                 <button 
-                                   disabled={isActive || loading}
-                                   onClick={() => updateSOStatus(s, step)}
-                                   className={`w-4 h-4 rounded-full border-2 transition-all duration-300 relative ${
-                                     isActive ? "scale-125 border-white ring-4 ring-amber-500/20 shadow-md" : 
-                                     isCompleted ? "border-amber-500 bg-amber-500 shadow-sm" : 
-                                     "bg-white border-slate-300 hover:border-navy"
-                                   }`}
-                                   style={{ 
-                                     backgroundColor: isActive ? stepColor : (isCompleted ? stepColor : "white"),
-                                     borderColor: isActive ? "white" : (isCompleted ? stepColor : "var(--color-border-main)")
-                                   }}
-                                 >
-                                    {isCompleted && isActive === false && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto" />}
-                                    {isActive && (
-                                       <div className="absolute -top-1.5 -left-1.5 w-7 h-7 bg-amber-500/10 rounded-full animate-ping pointer-events-none" />
-                                    )}
-                                 </button>
-                                 <div className={`absolute -bottom-7 text-[8px] font-black uppercase tracking-tight whitespace-nowrap transition-all ${
-                                   isActive ? "opacity-100 text-navy translate-y-0" : "opacity-30 translate-y-1 group-hover/step:opacity-60"
-                                 }`}>
-                                   {step}
-                                 </div>
-                               </div>
-                             );
-                          })}
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Inline Edit Form */}
-                  {isEditing && (
-                    <div className="p-8 bg-slate-50 border-b border-border-main/50 animate-fade-down shadow-inner relative z-20">
-                       <div className="max-w-3xl mx-auto space-y-5">
-                          <div className="flex items-center justify-between mb-1">
-                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                                   <Icon name="PlusCircle" size={16} />
-                                </div>
-                                <div>
-                                   <h4 className="text-[11px] font-black text-navy uppercase tracking-widest leading-none">Update Manual Logistik</h4>
-                                   <p className="text-[9px] font-bold text-text-light mt-1 opacity-50">Tambahkan catatan pergerakan muatan terbaru</p>
-                                </div>
-                             </div>
-                             <button onClick={() => setShowLogForm(false)} className="px-3 py-1.5 rounded-lg text-[10px] font-black text-red-brand hover:bg-red-brand-light transition-colors uppercase tracking-widest">Tutup</button>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                             <div className="space-y-2">
-                                <label className="text-[9px] font-black text-text-med uppercase tracking-widest px-1 flex items-center gap-2">
-                                   <Icon name="MapPin" size={10} className="text-amber-500" /> Lokasi Terkini
-                                </label>
-                                <input 
-                                  className="input-field h-11 font-bold bg-white border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all text-[12px]" 
-                                  placeholder="Cth: Gerbang Tol Cikampek" 
-                                  value={newLog.location || ""} 
-                                  onChange={e => setNewLog({...newLog, location: e.target.value})} 
-                                />
-                             </div>
-                             <div className="space-y-2">
-                                <label className="text-[9px] font-black text-text-med uppercase tracking-widest px-1 flex items-center gap-2">
-                                   <Icon name="MessageSquare" size={10} className="text-amber-500" /> Keterangan / Kejadian
-                                </label>
-                                <input 
-                                  className="input-field h-11 font-medium bg-white border-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all text-[12px]" 
-                                  placeholder="Cth: Antrian muat..." 
-                                  value={newLog.info || ""} 
-                                  onChange={e => setNewLog({...newLog, info: e.target.value})} 
-                                />
-                             </div>
-                          </div>
-                          
-                          <div className="flex justify-end gap-3 pt-3 border-t border-slate-200/50">
-                             <button className="h-10 px-5 text-[10px] font-black uppercase tracking-widest text-text-light hover:bg-slate-200 rounded-lg transition-colors" onClick={() => setShowLogForm(false)}>Batal</button>
-                             <button 
-                                className="h-10 px-8 bg-amber-500 text-white shadow-lg shadow-amber-500/20 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-amber-600 transition-all active:scale-95 flex items-center gap-2" 
-                                onClick={addManualLog} 
-                                disabled={loading}
-                             >
-                                {loading && <Icon name="Loader2" size={14} className="animate-spin" />}
-                                Simpan Log Pergerakan
-                             </button>
-                          </div>
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Log Footer */}
-                  <div className="px-5 py-3 flex flex-wrap gap-4 items-center bg-white border-t border-border-main/20">
-                     <div className="flex items-center gap-2 text-text-light/40">
-                        <Icon name="History" size={12} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Logs:</span>
-                     </div>
-                     
-                     {s.posisi_log?.length > 0 ? (
-                        <div className="flex-1 flex items-center gap-3 overflow-hidden">
-                           <div className="text-[11px] font-bold text-navy italic truncate flex-1 leading-relaxed opacity-80 decoration-amber-500/20">
-                              "{s.posisi_log[0].info || "-"}" @ {s.posisi_log[0].location}
-                           </div>
-                           <div className="text-[9px] font-black text-text-light shrink-0 opacity-40 bg-slate-100 px-2 py-0.5 rounded-md tabular-nums">
-                              {s.posisi_log[0].date} • {s.posisi_log[0].time}
-                           </div>
-                        </div>
-                     ) : (
-                        <div className="text-[10px] font-bold text-text-light opacity-30 italic">Belum ada riwayat update</div>
-                     )}
-
-                     {!isEditing && (
-                       <div className="ml-auto flex gap-2">
-                          <button 
-                             onClick={() => {
-                                const lastLog = s.posisi_log?.[0];
-                                let statusText = s.status_muatan;
-                                if (lastLog) {
-                                   const parts = [];
-                                   parts.push(lastLog.status || s.status_muatan);
-                                   if (lastLog.location) parts.push(`di ${lastLog.location}`);
-                                   // Only add info if it's not the generic stepper update message
-                                   if (lastLog.info && !lastLog.info.includes("Status diperbarui via Stepper")) {
-                                      parts.push(lastLog.info);
-                                   }
-                                   statusText = parts.join(", ");
-                                }
-                                
-                                const text = `*Update Status Muatan*\n${s.order_id}\n\n${s.lokasi_muat} - ${s.lokasi_bongkar}\n\nArmada : ${s.unit_muatan || "—"}\nSopir : ${s.nama_sopir || "—"}\nNo Polisi : ${s.no_polisi || "—"}\nMuatan : ${s.muatan || "—"}\n\nStatus :\n${statusText}\n\nTerima kasih\nPT SJM`;
-                                navigator.clipboard.writeText(text);
-                                showToast("Konfirmasi status di-copy ke clipboard!");
-                             }}
-                             className={`h-8 px-4 rounded-xl bg-green-brand/10 text-green-brand text-[9px] font-black uppercase tracking-widest hover:bg-green-brand hover:text-white transition-all flex items-center gap-1.5 shadow-sm border border-green-brand/20 ${isCancelled ? "opacity-20 grayscale pointer-events-none" : ""}`}
-                          >
-                             <Icon name="Send" size={12} /> Konfirmasi
-                          </button>
-                          <button 
-                             onClick={() => { setSelectedSO(s); setShowLogForm(true); }}
-                             className={`h-8 px-4 rounded-xl border border-navy/20 bg-navy/5 text-navy text-[9px] font-black uppercase tracking-widest hover:bg-navy hover:text-white transition-all flex items-center gap-1.5 ${isCancelled ? "opacity-20 grayscale pointer-events-none" : ""}`}
-                          >
-                             <Icon name="Plus" size={12} /> Log
-                          </button>
-                          <button 
-                             onClick={() => onSOClick(s.order_id)}
-                             className="h-8 px-4 rounded-xl border border-border-main bg-white text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm"
-                          >
-                             Detail
-                          </button>
-                       </div>
-                     )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })
+      {/* ── Filter Bar ── */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="relative flex-1 min-w-[200px]">
+          <Icon
+            name="Search"
+            size={13}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light"
+          />
+          <input
+            className="input h-9 w-full pl-9 text-[12px]"
+            placeholder="Cari SO, Customer, Sopir, Plat..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="input h-9 text-[12px]"
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+        >
+          <option value="all">Semua Status ({allSO.length})</option>
+          {["Order Confirmed", "Loading", "On Going", "Completed", "Cancelled"].map(st => (
+            <option key={st} value={st}>{getStatusLabel(st)}</option>
+          ))}
+        </select>
+        {(search || statusFilter !== "all") && (
+          <button
+            onClick={() => { setSearch(""); setStatusFilter("all"); }}
+            className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
+          >
+            <Icon name="X" size={13} /> Reset
+          </button>
         )}
+      </div>
+
+      {/* ── Table ── */}
+      <div className="table-container max-h-[calc(100vh-360px)]">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70 whitespace-nowrap">No. SO</th>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Sopir</th>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Plat &amp; Armada</th>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Customer &amp; Barang</th>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Rute</th>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Posisi Terakhir</th>
+              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Status</th>
+              <th className="text-right py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-main/20">
+            {filtered.length === 0 ? (
+              <EmptyState colSpan={8} msg="Tidak ada muatan yang ditemukan" icon="Truck" />
+            ) : filtered.map((s: any) => {
+              const isExpanded  = expandedId === s.id;
+              const lastLog     = s.posisi_log?.[0];
+              const statusColor = getStatusHex(s.status_muatan);
+
+              return (
+                <React.Fragment key={s.id}>
+                  {/* ── Data row ── */}
+                  <tr className={`transition-colors group ${
+                    isExpanded ? "bg-accent/5 border-l-2 border-l-accent" : "hover:bg-accent/5"
+                  }`}>
+
+                    {/* No. SO */}
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => onSOClick(s.order_id)}
+                        className="text-[11px] font-black italic text-accent hover:underline tracking-tight"
+                      >
+                        {s.order_id}
+                      </button>
+                      {s.tgl_muat && (
+                        <div className="text-[10px] text-text-light mt-0.5 tabular-nums">
+                          {s.tgl_muat}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Sopir */}
+                    <td className="py-3 px-4">
+                      <div className="text-[12px] font-medium text-text-main">
+                        {s.nama_sopir || "—"}
+                      </div>
+                    </td>
+
+                    {/* Plat & Armada */}
+                    <td className="py-3 px-4">
+                      {s.no_polisi ? (
+                        <button
+                          onClick={() => onArmadaClick && onArmadaClick(s.no_polisi)}
+                          className="text-[11px] font-black font-mono px-2 py-0.5 rounded text-white tracking-wider hover:bg-accent transition-colors"
+                          style={{ background: "#252422" }}
+                        >
+                          {s.no_polisi}
+                        </button>
+                      ) : <span className="text-text-light text-[11px]">—</span>}
+                      <div className="text-[10px] text-text-light mt-0.5">
+                        {s.jenis_truk || s.unit_muatan || "—"}
+                      </div>
+                    </td>
+
+                    {/* Customer & Barang */}
+                    <td className="py-3 px-4 max-w-[160px]">
+                      <div className="text-[12px] font-medium text-text-main truncate">
+                        {s.customer || "—"}
+                      </div>
+                      <div className="text-[10px] text-text-light truncate">
+                        {s.muatan || s.unit_muatan || "—"}
+                      </div>
+                    </td>
+
+                    {/* Rute */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5 text-[11px] text-text-med">
+                        <span className="truncate max-w-[80px]">{s.lokasi_muat || "—"}</span>
+                        <Icon name="ArrowRight" size={10} className="text-text-light shrink-0" />
+                        <span className="truncate max-w-[80px]">{s.lokasi_bongkar || "—"}</span>
+                      </div>
+                    </td>
+
+                    {/* Posisi Terakhir */}
+                    <td className="py-3 px-4 max-w-[160px]">
+                      {lastLog ? (
+                        <>
+                          <div className="text-[11px] text-text-main truncate">
+                            {lastLog.location || "—"}
+                          </div>
+                          <div className="text-[10px] text-text-light tabular-nums">
+                            {lastLog.date}, {lastLog.time}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-text-light italic">
+                          Belum ada update
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3 px-4">
+                      <span
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide whitespace-nowrap"
+                        style={{
+                          backgroundColor: statusColor + "18",
+                          color: statusColor,
+                        }}
+                      >
+                        {getStatusLabel(s.status_muatan)}
+                      </span>
+                    </td>
+
+                    {/* Aksi */}
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => openPanel(s)}
+                        className="btn-primary h-8 px-3 text-[11px] flex items-center gap-1.5 ml-auto"
+                      >
+                        <Icon name={isExpanded ? "ChevronUp" : "Pencil"} size={12} />
+                        {isExpanded ? "Tutup" : "Update"}
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* ── Terminal Panel ── */}
+                  {isExpanded && (
+                    <tr>
+                      <td colSpan={8} className="p-0">
+                        <TerminalPanel
+                          s={s}
+                          panelStatus={panelStatus}
+                          setPanelStatus={setPanelStatus}
+                          panelCheckpoint={panelCheckpoint}
+                          setPanelCheckpoint={setPanelCheckpoint}
+                          panelUrgensi={panelUrgensi}
+                          setPanelUrgensi={setPanelUrgensi}
+                          panelRemarks={panelRemarks}
+                          setPanelRemarks={setPanelRemarks}
+                          loading={loading}
+                          onSubmit={() => submitLog(s)}
+                          onCopy={() => copySJMText(s)}
+                          onClose={() => setExpandedId(null)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </PageShell>
   );
