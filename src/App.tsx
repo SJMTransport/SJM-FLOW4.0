@@ -951,7 +951,7 @@ export default function App() {
   }, [so, pushModal]);
 
   const handleJurnalClick = useCallback((no: string) => {
-    if (!canView(currentUser.role, "jurnal")) return;
+    if (!currentUser || !canView(currentUser.role, "jurnal")) return;
     const j = (jurnal || []).find((x: any) => x.no_jurnal === no);
     if (j) pushModal("jurnal", j);
   }, [jurnal, currentUser.role, pushModal]);
@@ -1032,7 +1032,7 @@ export default function App() {
 
   const handleNav = (mod: string, sub?: string) => {
     const permKey = MODULE_PERMISSION_MAP[mod];
-    if (permKey && !canView(currentUser.role, permKey)) {
+    if (permKey && currentUser && !canView(currentUser.role, permKey)) {
       return; // silent block — tidak navigate, tidak ada pesan
     }
     setActiveModule(mod);
