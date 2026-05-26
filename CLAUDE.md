@@ -363,7 +363,6 @@ Keputusan ini TIDAK BOLEH diubah tanpa instruksi eksplisit dari owner:
 ### Parking Lot (sudah dikonsep, belum dikerjakan)
 - Fix Notif Piutang — ganti source dari tabel `piutang` → `piutangRows` (kalkulasi jurnal)
 - Refactor hardcoded `["Admin","Operasional"]` → `canEdit()` dari permissions.ts di semua file
-- UI redesign Update Muatan — referensi EXPD Operasional, lebih compact, KPI cards di atas
 
 ### Data Pending (tunggu konfirmasi owner)
 - SO 0329, 0330 — `harga_pengiriman = NULL`
