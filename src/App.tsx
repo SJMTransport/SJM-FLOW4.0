@@ -951,9 +951,10 @@ export default function App() {
   }, [so, pushModal]);
 
   const handleJurnalClick = useCallback((no: string) => {
+    if (!canView(currentUser.role, "jurnal")) return;
     const j = (jurnal || []).find((x: any) => x.no_jurnal === no);
     if (j) pushModal("jurnal", j);
-  }, [jurnal, pushModal]);
+  }, [jurnal, currentUser.role, pushModal]);
 
   const handleGoToJurnal = useCallback((data: any) => {
     setJurnalPrefill(data);
@@ -1318,7 +1319,17 @@ export default function App() {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="max-w-[1800px] mx-auto min-h-full"
             >
-              {activeModule === "dashboard" && <Dashboard jurnal={jurnal} so={so} coa={coa} piutang={piutang} armada={armada} sopir={sopir} armadaDokumen={armadaDokumen} onSOClick={handleSOClick} onJurnalClick={handleJurnalClick} onNavigate={handleNav} />}
+              {activeModule === "dashboard" && <Dashboard
+                jurnal={jurnal} so={so} coa={coa} piutang={piutang}
+                armada={armada} sopir={sopir} armadaDokumen={armadaDokumen}
+                onSOClick={handleSOClick}
+                onJurnalClick={canView(currentUser.role, "jurnal") ? handleJurnalClick : undefined}
+                onNavigate={(mod: string, sub?: string) => {
+                  const permKey = MODULE_PERMISSION_MAP[mod];
+                  if (permKey && !canView(currentUser.role, permKey)) return;
+                  handleNav(mod, sub);
+                }}
+              />}
               
               {activeModule === "operasional" && (
                 <>
