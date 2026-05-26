@@ -533,13 +533,16 @@ export const api = {
   },
 
   getLogs: async () => {
-    const { data, error } = await supabaseManual.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) { console.error("getLogs", error); return []; }
+    const { data, error } = await supabaseManual.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(500);
+    if (error) { console.error("[getLogs] error:", JSON.stringify(error)); return []; }
     return data || [];
   },
   addLog: async (log: any) => {
     const { data, error } = await supabaseManual.from("audit_logs").insert([log]).select();
-    if (error) console.error("addLog", error);
+    if (error) {
+      console.error("[addLog] gagal insert ke audit_logs:", JSON.stringify(error));
+      // Jangan throw — logAction bukan operasi kritis, tidak boleh crash app
+    }
     return data ? data[0] : null;
   },
   getLastInvoiceNo: async (): Promise<number> => {
