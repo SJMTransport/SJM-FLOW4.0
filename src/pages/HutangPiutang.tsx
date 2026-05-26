@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { C } from "@/src/constants";
 import { fmt, fmtShort } from "@/src/utils";
 import { Card, SectionHeader, StatCard, useConfirm, statusBadge, PeriodFilter, EmptyState, Icon, PageShell, KPIGrid } from "@/src/components/SJMComponents";
@@ -31,7 +33,15 @@ const RekapPiutangPanel = ({ rows, fmt, fmtShort }: any) => {
   };
 
   const handleDownloadExcel = () => {
+    const filterLabel = customerFilter === "all" ? "Semua Customer" : customerFilter;
+    const umurLabel = umurMin === 0 ? "Semua Umur" : `> ${umurMin} Hari`;
     const wsData = [
+      ["PT Sugiarto Jaya Mandiri Transport"],
+      ["Rekapitulasi Piutang Usaha"],
+      [`Dicetak: ${new Date().toLocaleDateString('id-ID')}`],
+      [`Filter Customer: ${filterLabel}  |  Filter Umur: ${umurLabel}`],
+      [`Total Tagihan: ${fmt(totalTagih)}  |  Total Sisa: ${fmt(totalSisa)}  |  Jumlah Faktur: ${filtered.length}`],
+      [],
       ["No", "Tanggal Invoice", "No Invoice", "No SO", "Customer",
        "Asal", "Tujuan", "Muatan", "Armada",
        "Total Invoice", "Terbayar", "Sisa Tagihan", "Umur (Hari)", "Status"],
@@ -48,31 +58,43 @@ const RekapPiutangPanel = ({ rows, fmt, fmtShort }: any) => {
   };
 
   const handleDownloadPDF = () => {
-    const { jsPDF } = require('jspdf');
-    require('jspdf-autotable');
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Rekapitulasi Piutang Usaha', 14, 15);
+
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`PT Sugiarto Jaya Mandiri Transport`, 14, 22);
+    doc.text('PT Sugiarto Jaya Mandiri Transport', 14, 22);
     doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 27);
-    doc.text(`Total Tagihan: ${fmt(totalTagih)}  |  Total Sisa: ${fmt(totalSisa)}`, 14, 32);
+    doc.text(`Total Tagihan: ${fmt(totalTagih)}  |  Total Sisa: ${fmt(totalSisa)}  |  Jumlah Faktur: ${filtered.length}`, 14, 32);
 
-    const headers = [["No", "Tgl Invoice", "No Invoice", "No SO", "Customer", "Asal", "Tujuan", "Muatan", "Total", "Sisa", "Umur"]];
+    const headers = [["No","Tgl Invoice","No Invoice","No SO","Customer","Asal","Tujuan","Muatan","Armada","Total Invoice","Sisa Tagihan","Umur","Status"]];
     const body = filtered.map((r: any, i: number) => [
-      i + 1, r.tgl_invoice, r.no_invoice, r.no_so, r.customer,
-      r.asal, r.tujuan, r.muatan,
-      fmt(r.total_invoice), fmt(r.sisa), `${r.umur} hari`
+      i + 1,
+      r.tgl_invoice,
+      r.no_invoice,
+      r.no_so,
+      r.customer,
+      r.asal,
+      r.tujuan,
+      r.muatan,
+      r.armada,
+      fmt(r.total_invoice),
+      fmt(r.sisa),
+      `${r.umur} hari`,
+      r.status_bayar,
     ]);
 
-    (doc as any).autoTable({
-      head: headers, body,
+    autoTable(doc, {
+      head: headers,
+      body,
       startY: 37,
       styles: { fontSize: 7, cellPadding: 2 },
       headStyles: { fillColor: [235, 94, 40], textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [250, 248, 245] },
+      columnStyles: { 0: { halign: 'center', cellWidth: 8 }, 11: { halign: 'center' }, 12: { halign: 'center' } },
     });
 
     doc.save(`Rekap_Piutang_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -96,18 +118,16 @@ const RekapPiutangPanel = ({ rows, fmt, fmtShort }: any) => {
           className="input-field h-10 lg:w-48 text-[11px] font-bold"
           onChange={e => {
             const val = e.target.value;
-            if (val === "0-30") { setUmurMin(0); setUmurMax(30); }
-            else if (val === "31-60") { setUmurMin(31); setUmurMax(60); }
-            else if (val === "61-90") { setUmurMin(61); setUmurMax(90); }
-            else if (val === "90+") { setUmurMin(91); setUmurMax(9999); }
+            if (val === "30") { setUmurMin(30); setUmurMax(9999); }
+            else if (val === "60") { setUmurMin(60); setUmurMax(9999); }
+            else if (val === "90") { setUmurMin(90); setUmurMax(9999); }
             else { setUmurMin(0); setUmurMax(9999); }
           }}
         >
           <option value="all">Semua Umur</option>
-          <option value="0-30">0 - 30 Hari</option>
-          <option value="31-60">31 - 60 Hari</option>
-          <option value="61-90">61 - 90 Hari</option>
-          <option value="90+">{'>'} 90 Hari</option>
+          <option value="30">&gt; 30 Hari</option>
+          <option value="60">&gt; 60 Hari</option>
+          <option value="90">&gt; 90 Hari</option>
         </select>
 
         <div className="flex-1" />
