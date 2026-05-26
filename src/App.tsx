@@ -24,7 +24,7 @@ import { InvoicePage } from "@/src/pages/InvoicePage";
 import { QuotationPage } from "@/src/pages/QuotationPage";
 import { MasterPage } from "@/src/pages/Master";
 import { Loader2, LogOut, Plus, ChevronRight, ChevronLeft, Search, User, Power, AlertCircle } from "lucide-react";
-import { canView, type ModuleKey } from "@/src/permissions";
+import { canView, getAccess, type ModuleKey } from "@/src/permissions";
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
 const LoginPage = ({ onLogin }: any) => {
@@ -1017,7 +1017,23 @@ export default function App() {
     { key: "password", label: "Password", icon: "KeyRound", moduleKey: "users" as ModuleKey },
   ];
 
+  const MODULE_PERMISSION_MAP: Record<string, ModuleKey> = {
+    dashboard: "dashboard",
+    operasional: "so",
+    keuangan: "jurnal",
+    laporan: "laporan",
+    armada: "armada",
+    master: "master",
+    users: "users",
+    activity: "users",
+    password: "users",
+  };
+
   const handleNav = (mod: string, sub?: string) => {
+    const permKey = MODULE_PERMISSION_MAP[mod];
+    if (permKey && !canView(currentUser.role, permKey)) {
+      return; // silent block — tidak navigate, tidak ada pesan
+    }
     setActiveModule(mod);
     const lastSub = lastSubByModule[mod];
     const defaultSub = (NAV_MODULES.find(m => m.key === mod)?.subs[0]?.key) || "default";
@@ -1364,6 +1380,20 @@ export default function App() {
                   logAction={logAction}
                   auditLogs={logAction}
                 />
+              )}
+              {activeModule && MODULE_PERMISSION_MAP[activeModule] &&
+               !canView(currentUser.role, MODULE_PERMISSION_MAP[activeModule]) && (
+                <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                    <Icon name="ShieldOff" size={28} className="text-red-400" />
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-black text-text-main mb-1">Akses Ditolak</div>
+                    <div className="text-[12px] text-text-med">
+                      Role <span className="font-bold">{currentUser.role}</span> tidak memiliki akses ke halaman ini.
+                    </div>
+                  </div>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>
