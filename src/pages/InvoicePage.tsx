@@ -163,6 +163,11 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     setSavingDokumen(true);
     try {
       await api.updateInvoiceDokumen(invId, formDokumen);
+      const inv = invoices.find((i: any) => i.id === invId);
+      logAction(`Update Dokumen Invoice: ${inv?.no_invoice || invId}`, buildMeta({
+        module: 'invoice', action_type: 'UPDATE', record_id: inv?.no_invoice || invId,
+        after_data: formDokumen,
+      }));
       setSelectedPaymentInv((prev: any) => prev ? { ...prev, ...formDokumen } : prev);
       setInvoices(prev => prev.map((inv: any) =>
         inv.id === invId ? { ...inv, ...formDokumen } : inv
@@ -356,6 +361,10 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     setDeletingInvoiceId(inv.id);
     try {
       await api.deleteInvoice(inv.id);
+      logAction(`Hapus Invoice: ${inv.no_invoice}`, buildMeta({
+        module: 'invoice', action_type: 'DELETE', record_id: inv.no_invoice,
+        before_data: { customer: inv.customer, total: inv.total_setelah_pajak },
+      }));
       showToast(`Invoice ${inv.no_invoice} berhasil dihapus`, 'success');
       setConfirmDelete(null);
       await loadInvoices();
@@ -1157,6 +1166,10 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                           <button
                             onClick={async () => {
                               await api.updateInvoiceDokumen(inv.id, { status_dokumen: 'Diterima Customer' });
+                              logAction(`Invoice Diterima Customer: ${inv.no_invoice}`, buildMeta({
+                                module: 'invoice', action_type: 'UPDATE', record_id: inv.no_invoice,
+                                after_data: { status_dokumen: 'Diterima Customer' },
+                              }));
                               setSelectedPaymentInv((prev: any) => prev ? { ...prev, status_dokumen: 'Diterima Customer' } : prev);
                               setInvoices(prev => prev.map((i: any) => i.id === inv.id ? { ...i, status_dokumen: 'Diterima Customer' } : i));
                               showToast('Status diupdate', 'success');

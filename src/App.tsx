@@ -23,6 +23,7 @@ import { ArmadaPage } from "@/src/pages/Armada";
 import { InvoicePage } from "@/src/pages/InvoicePage";
 import { QuotationPage } from "@/src/pages/QuotationPage";
 import { MasterPage } from "@/src/pages/Master";
+import { LogAktivitasPage } from "@/src/pages/LogAktivitas";
 import { Loader2, LogOut, Plus, ChevronRight, ChevronLeft, Search, User, Power, AlertCircle } from "lucide-react";
 import { canView, getAccess, type ModuleKey } from "@/src/permissions";
 
@@ -1014,7 +1015,7 @@ export default function App() {
 
   const NAV_BOTTOM = [
     { key: "users", label: "Users", icon: "Users", moduleKey: "users" as ModuleKey },
-    { key: "activity", label: "Log Aktivitas", icon: "ClipboardList", moduleKey: "users" as ModuleKey },
+    { key: "activity", label: "Log Aktivitas", icon: "ClipboardList", moduleKey: "dashboard" as ModuleKey },
     { key: "password", label: "Password", icon: "KeyRound", moduleKey: "users" as ModuleKey },
   ];
 
@@ -1336,7 +1337,7 @@ export default function App() {
                   {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
                   {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} />}
                   {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} />}
-                  {activeSub === "quotation" && <QuotationPage currentUser={currentUser} />}
+                  {activeSub === "quotation" && <QuotationPage currentUser={currentUser} logAction={logAction} />}
                 </>
               )}
 
@@ -1373,13 +1374,9 @@ export default function App() {
                 />
               )}
               {activeModule === "activity" && (
-                <MasterPage
-                  activeSub="audit"
-                  coa={coa} setCoa={setCoa}
-                  users={users} setUsers={setUsers}
-                  saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
-                  logAction={logAction}
+                <LogAktivitasPage
                   auditLogs={auditLogs}
+                  currentUser={currentUser}
                 />
               )}
               {activeModule === "password" && (
