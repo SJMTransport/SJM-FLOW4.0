@@ -954,7 +954,7 @@ export default function App() {
     if (!currentUser || !canView(currentUser.role, "jurnal")) return;
     const j = (jurnal || []).find((x: any) => x.no_jurnal === no);
     if (j) pushModal("jurnal", j);
-  }, [jurnal, currentUser.role, pushModal]);
+  }, [jurnal, currentUser?.role, pushModal]);
 
   const handleGoToJurnal = useCallback((data: any) => {
     setJurnalPrefill(data);
