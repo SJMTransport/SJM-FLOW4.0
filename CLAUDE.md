@@ -351,6 +351,9 @@ Keputusan ini TIDAK BOLEH diubah tanpa instruksi eksplisit dari owner:
 | Permission di frontend constant | Lebih aman, tidak bisa dimanipulasi | Jangan pindah ke DB/RLS |
 | jsPDF import bukan require() | Pattern yang bekerja di Vite | Jangan pakai require('jspdf') |
 | autoTable(doc, {...}) bukan doc.autoTable() | API jsPDF v4+ | Jangan pakai doc.autoTable |
+| Log Aktivitas difilter per role permission | Setiap role hanya lihat log modul yang bisa mereka akses | Jangan tampilkan semua log ke semua role |
+| Log Aktivitas: semua role bisa akses | moduleKey="dashboard" di NAV_BOTTOM | Jangan kembalikan ke moduleKey="users" |
+| ACTION_HEX untuk badge inline style | ACTION_COLORS pakai class names invalid (bg-green-brand) | Jangan pakai ACTION_COLORS untuk badge di LogAktivitas |
 
 ---
 
@@ -370,7 +373,6 @@ Keputusan ini TIDAK BOLEH diubah tanpa instruksi eksplisit dari owner:
 ### Deferred (ditunda, low priority)
 - COA renumbering (571–5712 → 57001–57012)
 - SQL cleanup `sub_kelompok` normalization
-- Activity Log — sudah ada tabel `audit_logs`, belum fully functional
 
 ---
 
