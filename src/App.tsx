@@ -1389,7 +1389,7 @@ export default function App() {
                   users={users} setUsers={setUsers}
                   saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
                   logAction={logAction}
-                  auditLogs={logAction}
+                  auditLogs={auditLogs}
                 />
               )}
               {activeModule && MODULE_PERMISSION_MAP[activeModule] &&
