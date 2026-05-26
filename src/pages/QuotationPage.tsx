@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { canEdit as checkCanEdit } from "@/src/permissions";
+import { buildMeta } from '@/src/lib/activityLogger';
 import { api } from '@/src/api';
 import { generateQuotationNo } from '@/src/utils/quotationGenerator';
 import { generateQuotationPDF } from '@/src/utils/generateQuotationPDF';
@@ -39,9 +40,10 @@ const EMPTY_FORM = {
 
 interface QuotationPageProps {
   currentUser: any;
+  logAction: (msg: string, meta?: any) => void;
 }
 
-export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => {
+export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAction }) => {
   const userCanEdit = checkCanEdit(currentUser?.role ?? "", "quotation");
   const { showToast, ToastUI } = useToast();
   const [activeTab, setActiveTab] = useState<'daftar' | 'buat'>('daftar');
@@ -109,9 +111,18 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
       };
       if (editItem) {
         await api.updateQuotation(editItem.id, payload);
+        logAction(`Update Quotation: ${payload.no_quotation}`, buildMeta({
+          module: 'quotation', action_type: 'UPDATE', record_id: payload.no_quotation,
+          before_data: { customer: editItem.customer, harga: editItem.harga },
+          after_data: { customer: payload.customer, harga: payload.harga },
+        }));
         showToast('Quotation berhasil diupdate', 'success');
       } else {
         await api.addQuotation(payload);
+        logAction(`Buat Quotation: ${payload.no_quotation}`, buildMeta({
+          module: 'quotation', action_type: 'CREATE', record_id: payload.no_quotation,
+          after_data: { customer: payload.customer, harga: payload.harga },
+        }));
         showToast('Quotation berhasil disimpan', 'success');
       }
       setForm({ ...EMPTY_FORM });
@@ -174,6 +185,10 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser }) => 
   const handleDelete = async (q: any) => {
     try {
       await api.deleteQuotation(q.id);
+      logAction(`Hapus Quotation: ${q.no_quotation}`, buildMeta({
+        module: 'quotation', action_type: 'DELETE', record_id: q.no_quotation,
+        before_data: { customer: q.customer, harga: q.harga },
+      }));
       showToast('Quotation berhasil dihapus', 'success');
       setConfirmDelete(null);
       await loadQuotations();
