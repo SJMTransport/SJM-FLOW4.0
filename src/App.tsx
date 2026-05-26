@@ -69,13 +69,13 @@ const LoginPage = ({ onLogin }: any) => {
           
           <div className="space-y-5">
             <div className="space-y-1.5">
-              <div className="relative">
-                <input 
-                  className="input-field h-12 text-[14px] font-medium tracking-tight bg-white border-border-main shadow-none placeholder:opacity-50" 
-                  value={username || ""} 
-                  onChange={e => setUsername(e.target.value)} 
-                  placeholder="Username" 
-                  onKeyDown={e => e.key === "Enter" && submit()} 
+              <div className="relative w-full">
+                <input
+                  className="input-field h-12 text-[14px] font-medium tracking-tight bg-bg border-border-dark placeholder:opacity-50 w-full"
+                  value={username || ""}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="Username"
+                  onKeyDown={e => e.key === "Enter" && submit()}
                 />
               </div>
             </div>
