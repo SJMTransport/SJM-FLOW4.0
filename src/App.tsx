@@ -1330,10 +1330,40 @@ export default function App() {
               {activeModule === "master" && (
                 <>
                   {activeSub === "kontak" && <KontakPage so={so} connected={connected} />}
-                  {["coa", "saldoawal", "users", "password"].includes(activeSub) && (
+                  {["coa", "saldoawal"].includes(activeSub) && (
                     <MasterPage activeSub={activeSub} coa={coa} setCoa={setCoa} users={users} setUsers={setUsers} saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal} logAction={logAction} />
                   )}
                 </>
+              )}
+              {activeModule === "users" && (
+                <MasterPage
+                  activeSub={activeSub === "default" ? "users" : activeSub}
+                  coa={coa} setCoa={setCoa}
+                  users={users} setUsers={setUsers}
+                  saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
+                  logAction={logAction}
+                  auditLogs={auditLogs}
+                />
+              )}
+              {activeModule === "activity" && (
+                <MasterPage
+                  activeSub="audit"
+                  coa={coa} setCoa={setCoa}
+                  users={users} setUsers={setUsers}
+                  saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
+                  logAction={logAction}
+                  auditLogs={auditLogs}
+                />
+              )}
+              {activeModule === "password" && (
+                <MasterPage
+                  activeSub="password"
+                  coa={coa} setCoa={setCoa}
+                  users={users} setUsers={setUsers}
+                  saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
+                  logAction={logAction}
+                  auditLogs={logAction}
+                />
               )}
             </motion.div>
           </AnimatePresence>
