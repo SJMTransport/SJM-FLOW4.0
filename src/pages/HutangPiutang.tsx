@@ -1,9 +1,199 @@
 import React, { useState, useMemo, useEffect } from "react";
+import * as XLSX from 'xlsx';
 import { C } from "@/src/constants";
 import { fmt, fmtShort } from "@/src/utils";
 import { Card, SectionHeader, StatCard, useConfirm, statusBadge, PeriodFilter, EmptyState, Icon, PageShell, KPIGrid } from "@/src/components/SJMComponents";
 
-export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClick, onJurnalClick, piutang = [], onGoToJurnal, prefill, onPrefillUsed }: any) => {
+const RekapPiutangPanel = ({ rows, fmt, fmtShort }: any) => {
+  const [customerFilter, setCustomerFilter] = useState("all");
+  const [umurMin, setUmurMin] = useState(0);
+  const [umurMax, setUmurMax] = useState(9999);
+
+  const customers = useMemo(() =>
+    ["all", ...new Set(rows.map((r: any) => r.customer).filter(Boolean))],
+    [rows]
+  );
+
+  const filtered = useMemo(() => rows.filter((r: any) => {
+    const matchCustomer = customerFilter === "all" || r.customer === customerFilter;
+    const matchUmur = r.umur >= umurMin && r.umur <= umurMax;
+    return matchCustomer && matchUmur;
+  }), [rows, customerFilter, umurMin, umurMax]);
+
+  const totalSisa = filtered.reduce((s: number, r: any) => s + r.sisa, 0);
+  const totalTagih = filtered.reduce((s: number, r: any) => s + r.total_invoice, 0);
+
+  const getUmurColor = (umur: number) => {
+    if (umur > 90) return "var(--color-error)";
+    if (umur > 60) return "var(--color-warning)";
+    if (umur > 30) return "#F59E0B";
+    return "var(--color-success)";
+  };
+
+  const handleDownloadExcel = () => {
+    const wsData = [
+      ["No", "Tanggal Invoice", "No Invoice", "No SO", "Customer",
+       "Asal", "Tujuan", "Muatan", "Armada",
+       "Total Invoice", "Terbayar", "Sisa Tagihan", "Umur (Hari)", "Status"],
+      ...filtered.map((r: any, i: number) => [
+        i + 1, r.tgl_invoice, r.no_invoice, r.no_so, r.customer,
+        r.asal, r.tujuan, r.muatan, r.armada,
+        r.total_invoice, r.terbayar, r.sisa, r.umur, r.status_bayar
+      ])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Rekapitulasi Piutang");
+    XLSX.writeFile(wb, `Rekap_Piutang_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const handleDownloadPDF = () => {
+    const { jsPDF } = require('jspdf');
+    require('jspdf-autotable');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Rekapitulasi Piutang Usaha', 14, 15);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`PT Sugiarto Jaya Mandiri Transport`, 14, 22);
+    doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 27);
+    doc.text(`Total Tagihan: ${fmt(totalTagih)}  |  Total Sisa: ${fmt(totalSisa)}`, 14, 32);
+
+    const headers = [["No", "Tgl Invoice", "No Invoice", "No SO", "Customer", "Asal", "Tujuan", "Muatan", "Total", "Sisa", "Umur"]];
+    const body = filtered.map((r: any, i: number) => [
+      i + 1, r.tgl_invoice, r.no_invoice, r.no_so, r.customer,
+      r.asal, r.tujuan, r.muatan,
+      fmt(r.total_invoice), fmt(r.sisa), `${r.umur} hari`
+    ]);
+
+    (doc as any).autoTable({
+      head: headers, body,
+      startY: 37,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [235, 94, 40], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [250, 248, 245] },
+    });
+
+    doc.save(`Rekap_Piutang_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          className="input-field h-10 lg:w-56 text-[11px] font-bold"
+          value={customerFilter}
+          onChange={e => setCustomerFilter(e.target.value)}
+        >
+          <option value="all">Semua Customer</option>
+          {customers.filter((c: string) => c !== "all").map((c: string) =>
+            <option key={c} value={c}>{c}</option>
+          )}
+        </select>
+
+        <select
+          className="input-field h-10 lg:w-48 text-[11px] font-bold"
+          onChange={e => {
+            const val = e.target.value;
+            if (val === "0-30") { setUmurMin(0); setUmurMax(30); }
+            else if (val === "31-60") { setUmurMin(31); setUmurMax(60); }
+            else if (val === "61-90") { setUmurMin(61); setUmurMax(90); }
+            else if (val === "90+") { setUmurMin(91); setUmurMax(9999); }
+            else { setUmurMin(0); setUmurMax(9999); }
+          }}
+        >
+          <option value="all">Semua Umur</option>
+          <option value="0-30">0 - 30 Hari</option>
+          <option value="31-60">31 - 60 Hari</option>
+          <option value="61-90">61 - 90 Hari</option>
+          <option value="90+">{'>'} 90 Hari</option>
+        </select>
+
+        <div className="flex-1" />
+
+        <button onClick={handleDownloadExcel} className="btn-ghost h-10 px-4 text-[11px] font-bold flex items-center gap-2">
+          <Icon name="FileSpreadsheet" size={14} /> Excel
+        </button>
+        <button onClick={handleDownloadPDF} className="btn-primary h-10 px-4 text-[11px] font-bold flex items-center gap-2">
+          <Icon name="FileText" size={14} /> PDF
+        </button>
+      </div>
+
+      <KPIGrid cols={3}>
+        <StatCard label="Total Faktur Beredar" value={String(filtered.length)} color="var(--color-accent)" icon="FileText" />
+        <StatCard label="Total Tagihan" value={fmtShort(totalTagih)} color="var(--color-info)" icon="TrendingUp" />
+        <StatCard label="Total Sisa Tagihan" value={fmtShort(totalSisa)} color="var(--color-error)" icon="AlertCircle" />
+      </KPIGrid>
+
+      <div className="table-container max-h-[calc(100vh-380px)]">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="text-center w-8">No</th>
+              <th>Tgl Invoice</th>
+              <th>No Invoice</th>
+              <th>No SO</th>
+              <th>Customer</th>
+              <th>Asal</th>
+              <th>Tujuan</th>
+              <th>Muatan</th>
+              <th>Armada</th>
+              <th className="text-right">Total Invoice</th>
+              <th className="text-right">Sisa Tagihan</th>
+              <th className="text-center">Umur</th>
+              <th className="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-main/20">
+            {filtered.length === 0 ? (
+              <tr><td colSpan={13}><EmptyState colSpan={13} /></td></tr>
+            ) : filtered.map((r: any, i: number) => (
+              <tr key={i} className="group transition-colors">
+                <td className="text-center text-[10px] text-text-light">{i + 1}</td>
+                <td className="text-[11px] text-text-med tabular-nums italic">{r.tgl_invoice}</td>
+                <td className="text-[11px] font-bold text-accent italic">{r.no_invoice}</td>
+                <td className="text-[11px] text-text-med">{r.no_so}</td>
+                <td className="text-[12px] font-bold text-text-main">{r.customer}</td>
+                <td className="text-[11px] text-text-med">{r.asal}</td>
+                <td className="text-[11px] text-text-med">{r.tujuan}</td>
+                <td className="text-[11px] text-text-med">{r.muatan}</td>
+                <td className="text-[11px] text-text-med">{r.armada}</td>
+                <td className="text-right tabular-nums text-[12px] font-bold text-text-main">{fmt(r.total_invoice)}</td>
+                <td className="text-right tabular-nums text-[12px] font-black" style={{ color: getUmurColor(r.umur) }}>{fmt(r.sisa)}</td>
+                <td className="text-center">
+                  <span className="text-[11px] font-black tabular-nums" style={{ color: getUmurColor(r.umur) }}>
+                    {r.umur} hari
+                  </span>
+                </td>
+                <td className="text-center">
+                  <span className="badge text-[9px]" style={{
+                    backgroundColor: r.status_bayar === "Parsial" ? "#FEF3C7" : "#FEE2E2",
+                    color: r.status_bayar === "Parsial" ? "#92400E" : "#991B1B"
+                  }}>
+                    {r.status_bayar}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="bg-slate-50 font-black border-t-2 border-border-main">
+              <td colSpan={9} className="py-3 px-4 text-right italic text-[9px] opacity-60 uppercase tracking-widest">
+                Total ({filtered.length} faktur)
+              </td>
+              <td className="py-3 px-4 text-right tabular-nums text-[12px]">{fmt(totalTagih)}</td>
+              <td className="py-3 px-4 text-right tabular-nums text-[12px]" style={{ color: "var(--color-error)" }}>{fmt(totalSisa)}</td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClick, onJurnalClick, piutang = [], invoices = [], onGoToJurnal, prefill, onPrefillUsed }: any) => {
   const [tab, setTab] = useState("piutang");
   const [period, setPeriod] = useState({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
   const [search, setSearch] = useState("");
@@ -120,6 +310,50 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
       status: (r.kredit - r.debit) <= 0 ? "Lunas" : r.debit > 0 ? "Parsial" : "Belum Lunas"
     }));
   }, [jurnal, coa, soMap]);
+
+  const rekapRows = useMemo(() => {
+    const today = new Date();
+    const soMapLocal: Record<string, any> = {};
+    (so || []).forEach((s: any) => {
+      soMapLocal[s.order_id] = s;
+    });
+
+    return (invoices || [])
+      .filter((inv: any) => {
+        const statusBayar = inv.status_bayar;
+        const statusDok = inv.status_dokumen;
+        const belumLunas = statusBayar === "Belum Bayar" || statusBayar === "Parsial";
+        const sudahKirim = statusDok === "Terkirim" || statusDok === "Diterima Customer";
+        return belumLunas && sudahKirim;
+      })
+      .map((inv: any) => {
+        const tglInvoice = inv.tgl_invoice ? new Date(inv.tgl_invoice) : new Date(inv.created_at);
+        const umur = Math.floor((today.getTime() - tglInvoice.getTime()) / (1000 * 60 * 60 * 24));
+        const soIds: string[] = inv.so_order_ids || [];
+        const soData = soIds.map((id: string) => soMapLocal[id]).filter(Boolean);
+        const firstSO = soData[0] || {};
+        const totalInvoice = Number(inv.total_setelah_pajak || inv.total_sebelum_pajak || 0);
+        const terbayar = Number(inv.total_terbayar || 0);
+        const sisa = totalInvoice - terbayar;
+        return {
+          tgl_invoice: inv.tgl_invoice || inv.created_at,
+          no_invoice: inv.no_invoice,
+          no_so: soIds.join(", "),
+          customer: inv.customer || firstSO.customer || "—",
+          asal: firstSO.lokasi_muat || "—",
+          tujuan: firstSO.lokasi_bongkar || "—",
+          muatan: firstSO.muatan || firstSO.unit_muatan || "—",
+          armada: firstSO.no_polisi ? `${firstSO.no_polisi} (${firstSO.jenis_truk || ""})` : "—",
+          total_invoice: totalInvoice,
+          terbayar,
+          sisa,
+          status_bayar: inv.status_bayar,
+          umur,
+          keterangan: inv.keterangan || "—",
+        };
+      })
+      .sort((a: any, b: any) => b.umur - a.umur);
+  }, [invoices, so]);
 
   // Aging Logic
   const piutangOutstanding = useMemo(() => {
@@ -299,7 +533,8 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
       
       <div className="tab-bar">
         {[
-          ["piutang", "Piutang Usaha"], 
+          ["piutang", "Piutang Usaha"],
+          ["rekap_piutang", "Rekapitulasi Piutang"],
           ["hutang", "Hutang Usaha"],
           ["notif_piutang", `Notif Piutang (${piutangOutstanding.filter(r=>r.umur>notifDays).length})`],
           ["notif_hutang", `Notif Hutang (${hutangVendorOutstanding.filter(r=>r.umur>notifDays).length})`]
@@ -314,7 +549,13 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
         ))}
       </div>
 
-      {isNotifTab ? (
+      {tab === "rekap_piutang" ? (
+        <RekapPiutangPanel
+          rows={rekapRows}
+          fmt={fmt}
+          fmtShort={fmtShort}
+        />
+      ) : isNotifTab ? (
         <div className="space-y-4">
            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-[11px] font-bold text-text-light italic opacity-60 uppercase tracking-widest">

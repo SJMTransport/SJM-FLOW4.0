@@ -1344,7 +1344,7 @@ export default function App() {
                 <>
                   {activeSub === "persetujuan" && <ApprovalPage jurnal={jurnal} setJurnal={setJurnal} currentUser={currentUser} onJurnalClick={handleJurnalClick} logAction={logAction} />}
                   {activeSub === "jurnal" && <JurnalUmum jurnal={jurnal} setJurnal={setJurnal} coa={coa} so={so} connected={connected} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onJurnalClick={handleJurnalClick} prefill={jurnalPrefill} onPrefillUsed={() => setJurnalPrefill(null)} />}
-                  {activeSub === "hutangpiutang" && <HutangPiutangPage jurnal={jurnal} coa={coa} so={so} armada={armada} connected={connected} onSOClick={handleSOClick} onJurnalClick={handleJurnalClick} piutang={piutang} onGoToJurnal={handleGoToJurnal} prefill={hpPrefill} onPrefillUsed={() => setHpPrefill(null)} />}
+                  {activeSub === "hutangpiutang" && <HutangPiutangPage jurnal={jurnal} coa={coa} so={so} armada={armada} connected={connected} onSOClick={handleSOClick} onJurnalClick={handleJurnalClick} piutang={piutang} invoices={invoices} onGoToJurnal={handleGoToJurnal} prefill={hpPrefill} onPrefillUsed={() => setHpPrefill(null)} />}
                   {["hutangvendor", "cicilan", "rekapuj"].includes(activeSub) && (
                     <KeuanganPage activeSub={activeSub} jurnal={jurnal} coa={coa} so={so} connected={connected} />
                   )}
