@@ -200,6 +200,7 @@ const ArmadaPositionForm = ({ armadaDetail, setGlobalArmadaDetail, setArmada, lo
 // ─── DETAIL MODALS ──────────────────────────────────────────────────────────
 const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, handleNav, setPendingEditSO, onJurnalClick, onArmadaClick }: any) => {
   if (!data) return null;
+
   const relatedJurnals = (jurnal || []).filter((j: any) =>
     String(j.no_so || "").split(",").map((s: string) => s.trim()).includes(data.order_id)
   );
@@ -207,253 +208,544 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
     (inv.so_order_ids || []).includes(data.order_id)
   );
 
+  // ── Piutang: kalkulasi dari jurnal_detail, sama dengan pola HutangPiutangPage ──
+  const piutangCoas = useMemo(() =>
+    (coa || []).filter((c: any) => c.sub_kelompok === "Piutang Usaha" || c.kode === "112").map((c: any) => c.kode),
+    [coa]
+  );
+
+  const { totalPiutang, totalTerbayar } = useMemo(() => {
+    let tp = 0, tt = 0;
+    (jurnal || []).forEach((j: any) => {
+      const headerSOs = j.no_so ? j.no_so.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+      const legacySO = headerSOs.length === 1 ? headerSOs[0] : "";
+      (j.jurnal_detail || []).forEach((d: any) => {
+        if (!piutangCoas.includes(d.coa_kode)) return;
+        const detailSO = d.no_so || legacySO || "";
+        if (detailSO !== data.order_id) return;
+        tp += Number(d.debit || 0);
+        tt += Number(d.kredit || 0);
+      });
+    });
+    return { totalPiutang: tp, totalTerbayar: tt };
+  }, [jurnal, piutangCoas, data.order_id]);
+
+  const sisaPiutang = Math.max(0, totalPiutang - totalTerbayar);
+  const payPct = totalPiutang > 0 ? Math.min(100, Math.round((totalTerbayar / totalPiutang) * 100)) : 0;
+  const payStatus = sisaPiutang <= 0 && totalPiutang > 0 ? "Lunas"
+    : totalTerbayar > 0 ? "Parsial"
+    : totalPiutang > 0 ? "Belum Bayar"
+    : "Belum Ditagih";
+  const PAY_HEX: Record<string, string> = {
+    "Lunas": "#6B8E23", "Parsial": "#C4914A", "Belum Bayar": "#B85450", "Belum Ditagih": "#6B6862",
+  };
+  const payColor = PAY_HEX[payStatus] || "#6B6862";
+
+  // ── Aging: dihitung dari tgl_invoice terlama ──
+  const earliestInvDate = [...(relatedInvoices || [])].map((inv: any) => inv.tgl_invoice).filter(Boolean).sort()[0];
+  const aging = earliestInvDate ? Math.floor((Date.now() - new Date(earliestInvDate).getTime()) / 86400000) : 0;
+  const agingColor = !earliestInvDate ? "#6B6862" : aging <= 30 ? "#6B8E23" : aging <= 60 ? "#C4914A" : "#B85450";
+
+  // ── Durasi trip ──
+  const durationDays = data.tgl_muat && data.tgl_bongkar
+    ? Math.max(0, Math.floor((new Date(data.tgl_bongkar).getTime() - new Date(data.tgl_muat).getTime()) / 86400000))
+    : null;
+
+  const nilaiSO = data.total_harga_pajak || data.total_harga || data.harga_pengiriman || 0;
+  const canEdit = ["Admin", "Operasional"].includes(currentUser?.role ?? "");
+  const canFinance = ["Admin", "Keuangan"].includes(currentUser?.role ?? "");
+
+  const INV_STATUS_HEX: Record<string, string> = {
+    'Belum Bayar': '#B85450', 'Parsial': '#C4914A', 'Lunas': '#6B8E23',
+    'Lebih Bayar': '#4A6FA5', 'Perlu Verifikasi': '#8b5cf6',
+  };
+
   return (
-    <Card className="w-full max-w-xl h-full flex flex-col shadow-2xl animate-fade-left p-0 border-none rounded-none bg-white overflow-hidden relative z-10" onClick={e => e.stopPropagation()}>
-      <div className="p-4 border-b border-border-main flex justify-between items-center bg-white sticky top-0 z-20">
-        <div>
-          <h3 className="text-sm font-black text-text-main tracking-tight uppercase">Detail Sales Order</h3>
-          <div className="text-[9px] font-bold text-accent tracking-widest">{data.order_id}</div>
-        </div>
-        <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors" onClick={onClose}>
-          <Icon name="X" size={18} className="text-text-med" />
-        </button>
-      </div>
+    <Card className="w-screen h-full flex flex-col p-0 border-none rounded-none bg-[#F5F4F1] overflow-hidden" onClick={e => e.stopPropagation()}>
 
-      <div className="flex-1 overflow-y-auto p-6 no-scrollbar space-y-6 bg-white">
-        <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-               <div className="col-span-2">
-                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Customer</div>
-                  <div className="text-[15px] font-black text-text-main tracking-tight leading-tight">{data.customer}</div>
-               </div>
-               
-               <div>
-                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Tanggal Muat</div>
-                  <div className="text-[13px] font-black text-text-main tabular-nums italic">{data.tgl_muat}</div>
-               </div>
-               <div>
-                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Status Muatan</div>
-                  <div className="mt-1">{statusBadge(data.status_muatan)}</div>
-               </div>
+      {/* ── HEADER STICKY ── */}
+      <div className="sticky top-0 z-20 bg-white border-b border-border-main px-6 py-3 flex items-center justify-between gap-4 shrink-0 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors shrink-0">
+            <Icon name="X" size={16} className="text-text-med" />
+          </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-[9px] font-black text-text-light uppercase tracking-widest">Sales Order</span>
+              <span className="text-[9px] text-text-light opacity-40">/</span>
+              <span className="text-[11px] font-black text-accent italic tracking-tight">{data.order_id}</span>
             </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-border-main/50 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-accent/5 -rotate-45 translate-x-8 -translate-y-8" />
-                <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-2 opacity-50">Rute Operasional</div>
-                <div className="flex items-center gap-3">
-                    <div className="flex-1 text-[12px] font-black text-text-main truncate" title={data.lokasi_muat}>{data.lokasi_muat}</div>
-                    <Icon name="ArrowRight" size={12} className="text-accent/30" />
-                    <div className="flex-1 text-[12px] font-black text-text-main truncate" title={data.lokasi_bongkar}>{data.lokasi_bongkar}</div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-2">
-               <div>
-                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Unit Armada</div>
-                  <button
-                    className="text-[13px] font-black text-accent tabular-nums italic uppercase tracking-tight hover:underline"
-                    onClick={() => data.no_polisi && onArmadaClick && onArmadaClick(data.no_polisi)}
-                  >{data.no_polisi || "—"}</button>
-               </div>
-               <div>
-                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Nama Sopir</div>
-                  <div className="text-[13px] font-bold text-text-main">{data.nama_sopir || "—"}</div>
-               </div>
-            </div>
-
-            {data.keterangan && (
-              <div className="pt-2">
-                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest label-glow mb-1">Keterangan</div>
-                  <div className="text-[11px] font-medium text-text-med leading-relaxed bg-slate-50 p-3 rounded-lg border-l-2 border-accent italic">{data.keterangan}</div>
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-border-main/50 space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Biaya & Keuangan</h4>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-border-main/50 shadow-sm flex flex-col justify-center">
-                    <div className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 mb-1 leading-none">Harga Pengiriman</div>
-                    <div className="text-[15px] font-black text-navy tabular-nums leading-none">{fmt(data.harga_pengiriman || 0)}</div>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-xl border border-border-main/50 shadow-sm flex flex-col justify-center">
-                    <div className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60 mb-1 leading-none">Asuransi Trip</div>
-                    <div className="text-[15px] font-black text-navy tabular-nums leading-none">{fmt(data.harga_asuransi || 0)}</div>
-                  </div>
-                  <div className="col-span-2 bg-navy p-5 rounded-2xl flex items-center justify-between border border-white/10 shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-full bg-white/5 -skew-x-12 translate-x-10 transition-transform group-hover:translate-x-6" />
-                    <div>
-                      <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5 leading-none italic">Total Billable Amount (Inc. PPN)</div>
-                      <div className="text-2xl font-black text-white tabular-nums tracking-tighter leading-none">{fmt(data.total_harga_pajak || data.total_harga || 0)}</div>
-                    </div>
-                    <div className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg ${data.nilai_pajak > 0 ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
-                      {data.nilai_pajak > 0 ? "Taxable (1.1%)" : "Non-Taxable"}
-                    </div>
-                  </div>
-                </div>
-            </div>
-
-            {data.posisi_log?.length > 0 && (
-              <div className="pt-4 border-t border-border-main/50">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-brand" />
-                    <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Riwayat Operasional / Muatan</h4>
-                  </div>
-                  <div className="space-y-3 pl-2 border-l border-slate-200">
-                    {data.posisi_log.slice(0, 5).map((log: any, idx: number) => (
-                      <div key={idx} className="relative pl-4 pb-2 group">
-                        <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full bg-slate-200 border-2 border-white group-first:bg-blue-brand" />
-                        <div className="text-[11px] font-black text-navy leading-none mb-1">{log.location || "Log Entry"}</div>
-                        <div className="text-[10px] font-medium text-text-med leading-tight mb-0.5">{log.info}</div>
-                        <div className="text-[8px] font-bold text-text-light opacity-50 tabular-nums lowercase italic">{log.date} @ {log.time}</div>
-                      </div>
-                    ))}
-                  </div>
-              </div>
-            )}
-        </div>
-
-        {/* Invoice & Dokumen */}
-        <div className="pt-4 border-t border-border-main/50">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-brand" />
-            <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Invoice &amp; Dokumen</h4>
+            <div className="text-[15px] font-black text-text-main leading-tight truncate">{data.customer}</div>
           </div>
-
-          {relatedInvoices.length === 0 ? (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200">
-              <div>
-                <div className="text-[10px] font-bold text-amber-700">Belum ada invoice</div>
-                <div className="text-[9px] text-amber-600 opacity-70 mt-0.5">SO ini belum dibuatkan invoice</div>
-              </div>
-              {data.status_muatan === 'Completed' && (
-                <button
-                  onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
-                  className="h-7 px-3 bg-accent text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-accent/90 transition-colors shrink-0"
-                >
-                  + Buat Invoice
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {relatedInvoices.map((inv: any) => {
-                const STATUS_COLOR: Record<string, string> = {
-                  'Belum Bayar':       '#B85450',
-                  'Parsial':           '#C4914A',
-                  'Lunas':             '#6B8E23',
-                  'Lebih Bayar':       '#4A6FA5',
-                  'Perlu Verifikasi':  '#8b5cf6',
-                };
-                const sc = STATUS_COLOR[inv.status_bayar || 'Belum Bayar'] || '#666';
-                return (
-                  <div key={inv.id} className="p-3.5 rounded-xl bg-white border border-border-main space-y-3">
-                    {/* Header invoice */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <button
-                          className="text-[10px] font-black text-accent uppercase tracking-tight hover:underline text-left"
-                          onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
-                        >
-                          {inv.no_invoice}
-                        </button>
-                        <div className="text-[9px] text-text-light mt-0.5">
-                          {inv.tgl_invoice ? new Date(inv.tgl_invoice).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-[12px] font-black text-text-main tabular-nums">{fmt(inv.total_setelah_pajak || 0)}</div>
-                        <span className="px-2 py-0.5 rounded-full text-[8px] font-bold" style={{ backgroundColor: sc + '20', color: sc }}>
-                          {inv.status_bayar || 'Belum Bayar'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Dokumen fisik */}
-                    {(inv.gdrive_url || inv.no_resi || inv.status_dokumen) && (
-                      <div className="pt-2 border-t border-border-main/30 space-y-1.5">
-                        {inv.status_dokumen && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-text-light w-16 shrink-0">Status</span>
-                            <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${
-                              inv.status_dokumen === 'Diterima Customer' ? 'bg-success/10 text-success' :
-                              inv.status_dokumen === 'Terkirim'          ? 'bg-info/10 text-info' :
-                              'bg-slate-100 text-slate-500'
-                            }`}>{inv.status_dokumen}</span>
-                          </div>
-                        )}
-                        {inv.gdrive_url && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-text-light w-16 shrink-0">Scan</span>
-                            <a href={inv.gdrive_url} target="_blank" rel="noopener noreferrer"
-                              className="text-[9px] font-bold text-accent hover:underline flex items-center gap-1">
-                              <Icon name="FileText" size={10} /> Buka Drive
-                              <Icon name="ExternalLink" size={9} />
-                            </a>
-                          </div>
-                        )}
-                        {inv.no_resi && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-text-light w-16 shrink-0">Resi</span>
-                            <span className="text-[9px] font-mono text-text-main">{inv.ekspedisi} {inv.no_resi}</span>
-                            <a
-                              href={`https://www.google.com/search?q=lacak+resi+${encodeURIComponent(inv.ekspedisi || '')}+${inv.no_resi}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[8px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full hover:bg-accent/20 transition-colors"
-                            >
-                              Lacak
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {statusBadge(data.status_muatan)}
+          <span className="px-2.5 py-1 rounded-full text-[9px] font-black" style={{ backgroundColor: payColor + "18", color: payColor }}>
+            {payStatus}
+          </span>
+          {canEdit && (
+            <button
+              onClick={() => { handleNav("operasional", "so"); setPendingEditSO(data.order_id); onClose(); }}
+              className="h-8 px-4 bg-accent text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-accent/90 transition-colors"
+            >
+              Edit SO
+            </button>
           )}
         </div>
-
-        {relatedJurnals.length > 0 && (
-           <div className="pt-4 border-t border-border-main/50">
-             <div className="flex items-center gap-2 mb-4">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Jurnal Finansial Terkait</h4>
-             </div>
-             <div className="space-y-2">
-               {relatedJurnals.map((j: any) => (
-                 <div 
-                   key={j.id} 
-                   onClick={() => onJurnalClick(j.no_jurnal)}
-                   className="p-3.5 rounded-xl bg-white border border-border-main hover:border-accent hover:shadow-lg hover:shadow-accent/5 transition-all cursor-pointer group flex items-center justify-between"
-                 >
-                   <div className="flex-1 min-w-0 pr-3">
-                     <div className="text-[9px] font-black text-accent uppercase tracking-widest mb-0.5">{j.no_jurnal}</div>
-                     <div className="text-[11px] font-bold text-text-main truncate group-hover:text-accent transition-colors">{j.keterangan}</div>
-                   </div>
-                   <div className="text-right shrink-0">
-                     <div className="text-[12px] font-black text-text-main tabular-nums">{fmt(j.total_debit)}</div>
-                     <div className="text-[8px] font-bold text-text-light uppercase mt-0.5 opacity-60 tabular-nums">{j.tanggal}</div>
-                   </div>
-                 </div>
-               ))}
-             </div>
-           </div>
-        )}
       </div>
 
-      <div className="p-5 border-t border-border-main bg-slate-50/50 flex gap-2 sticky bottom-0">
-         <button className="flex-1 h-10 rounded-xl bg-white border border-border-main/60 text-text-med font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors" onClick={onClose}>Close</button>
-         {["Admin", "Operasional"].includes(currentUser?.role) && (
-           <button className="flex-1 h-10 bg-accent text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg shadow-accent/20 hover:bg-accent/90 transition-all active:scale-95" onClick={() => {
-               handleNav("operasional", "so");
-               setPendingEditSO(data.order_id);
-               onClose();
-           }}>Edit Transaksi</button>
-         )}
+      {/* ── KPI STRIP ── */}
+      <div className="grid grid-cols-4 gap-3 px-6 py-4 bg-white border-b border-border-main shrink-0">
+        {[
+          {
+            label: "Nilai SO", value: fmt(nilaiSO),
+            sub: data.nilai_pajak > 0 ? "inc. PPN 1.1%" : "Non-Taxable",
+            color: "#252422",
+          },
+          {
+            label: "Terbayar", value: fmt(totalTerbayar),
+            sub: "dari jurnal piutang",
+            color: totalTerbayar > 0 ? "#6B8E23" : "#6B6862",
+          },
+          {
+            label: "Sisa Piutang", value: fmt(sisaPiutang),
+            sub: sisaPiutang <= 0 && totalPiutang > 0 ? "Lunas ✓" : payPct > 0 ? `${payPct}% terbayar` : totalPiutang === 0 ? "Belum ada jurnal" : "—",
+            color: sisaPiutang > 0 ? "#B85450" : "#6B8E23",
+          },
+          {
+            label: "Aging Piutang", value: earliestInvDate ? `${aging} hari` : "—",
+            sub: earliestInvDate
+              ? `sejak ${new Date(earliestInvDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}`
+              : "Belum ada invoice",
+            color: agingColor,
+          },
+        ].map(kpi => (
+          <div key={kpi.label} className="bg-[#F5F4F1] rounded-xl p-4 border border-border-main/50">
+            <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-1.5">{kpi.label}</div>
+            <div className="text-[16px] font-black tabular-nums leading-none" style={{ color: kpi.color }}>{kpi.value}</div>
+            <div className="text-[9px] text-text-light mt-1 opacity-70">{kpi.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── BODY 2-KOLOM ── */}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="grid grid-cols-5 min-h-full">
+
+          {/* ── KIRI (3/5): Operasional + Biaya + Dokumen + Timeline ── */}
+          <div className="col-span-3 p-6 space-y-4 border-r border-border-main/30">
+
+            {/* A. Operasional */}
+            <div className="bg-white rounded-2xl border border-border-main p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Operasional</h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div className="col-span-2 sm:col-span-1">
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Customer</div>
+                  <div className="text-[13px] font-black text-text-main">{data.customer}</div>
+                </div>
+                {(data.pic_cust || data.no_pic) && (
+                  <div>
+                    <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">PIC / Kontak</div>
+                    <div className="text-[12px] font-bold text-text-main">{data.pic_cust || "—"}</div>
+                    {data.no_pic && <div className="text-[10px] text-text-med">{data.no_pic}</div>}
+                  </div>
+                )}
+                <div>
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Tanggal Muat</div>
+                  <div className="text-[12px] font-black text-text-main tabular-nums italic">{data.tgl_muat || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Tanggal Bongkar</div>
+                  <div className="text-[12px] font-black text-text-main tabular-nums italic">
+                    {data.tgl_bongkar || "—"}
+                    {durationDays !== null && (
+                      <span className="text-text-light font-medium text-[10px] ml-1.5">({durationDays} hari)</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Rute */}
+              <div className="bg-[#F5F4F1] rounded-xl p-4 border border-border-main/50">
+                <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-2 opacity-60">Rute</div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-black text-text-main truncate">{data.lokasi_muat || "—"}</div>
+                    {data.sharelok_muat && (
+                      <a href={data.sharelok_muat} target="_blank" rel="noopener noreferrer" className="text-[9px] text-accent hover:underline">
+                        Lihat Lokasi ↗
+                      </a>
+                    )}
+                  </div>
+                  <Icon name="ArrowRight" size={14} className="text-accent/40 shrink-0" />
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="text-[11px] font-black text-text-main truncate">{data.lokasi_bongkar || "—"}</div>
+                    {data.sharelok_bongkar && (
+                      <a href={data.sharelok_bongkar} target="_blank" rel="noopener noreferrer" className="text-[9px] text-accent hover:underline">
+                        Lihat Lokasi ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Armada + Sopir + Muatan */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Armada</div>
+                  <button
+                    onClick={() => data.no_polisi && onArmadaClick && onArmadaClick(data.no_polisi)}
+                    className="text-[13px] font-black text-accent tabular-nums italic uppercase tracking-tight hover:underline block"
+                  >
+                    {data.no_polisi || "—"}
+                  </button>
+                  {data.jenis_truk && <div className="text-[9px] text-text-light mt-0.5">{data.jenis_truk}</div>}
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Sopir</div>
+                  <div className="text-[12px] font-bold text-text-main">{data.nama_sopir || "—"}</div>
+                </div>
+                {data.muatan && (
+                  <div>
+                    <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Muatan</div>
+                    <div className="text-[12px] font-bold text-text-main">{data.muatan}</div>
+                    {data.tonase && <div className="text-[9px] text-text-light">{data.tonase} ton</div>}
+                  </div>
+                )}
+              </div>
+
+              {data.keterangan && (
+                <div className="bg-[#F5F4F1] p-3 rounded-lg border-l-2 border-accent">
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Keterangan</div>
+                  <div className="text-[11px] font-medium text-text-med italic leading-relaxed">{data.keterangan}</div>
+                </div>
+              )}
+            </div>
+
+            {/* B. Biaya & Pajak */}
+            <div className="bg-white rounded-2xl border border-border-main p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Biaya & Pajak</h4>
+              </div>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] text-text-med">Harga Pengiriman</span>
+                  <span className="text-[12px] font-black text-text-main tabular-nums">{fmt(data.harga_pengiriman || 0)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] text-text-med">Asuransi Trip</span>
+                  <span className="text-[12px] font-black text-text-main tabular-nums">{fmt(data.harga_asuransi || 0)}</span>
+                </div>
+                {data.nilai_pajak > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] text-text-med">PPN (1.1%)</span>
+                    <span className="text-[12px] font-black text-text-main tabular-nums">{fmt(data.nilai_pajak)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2.5 mt-1 border-t border-border-main/50">
+                  <span className="text-[11px] font-black text-text-main uppercase tracking-wide">Total Billable</span>
+                  <span className="text-[15px] font-black text-text-main tabular-nums">{fmt(nilaiSO)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* C. Asuransi & Dokumen */}
+            {(data.no_asuransi || data.nilai_tanggungan || data.spk || data.surat_jalan || data.bukti_muatan) && (
+              <div className="bg-white rounded-2xl border border-border-main p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Asuransi & Dokumen</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                  {data.no_asuransi && (
+                    <div>
+                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">No. Asuransi</div>
+                      <div className="text-[11px] font-bold text-text-main">{data.no_asuransi}</div>
+                    </div>
+                  )}
+                  {data.nilai_tanggungan > 0 && (
+                    <div>
+                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Nilai Tanggungan</div>
+                      <div className="text-[12px] font-black text-text-main tabular-nums">{fmt(data.nilai_tanggungan)}</div>
+                    </div>
+                  )}
+                  {data.spk && (
+                    <div>
+                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">No. SPK</div>
+                      <div className="text-[11px] font-bold text-text-main">{data.spk}</div>
+                    </div>
+                  )}
+                  {data.surat_jalan && (
+                    <div>
+                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Surat Jalan</div>
+                      <a href={data.surat_jalan} target="_blank" rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1">
+                        <Icon name="FileText" size={10} /> Buka Dokumen <Icon name="ExternalLink" size={9} />
+                      </a>
+                    </div>
+                  )}
+                  {data.bukti_muatan && (
+                    <div>
+                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Bukti Muatan</div>
+                      <a href={data.bukti_muatan} target="_blank" rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1">
+                        <Icon name="FileText" size={10} /> Buka Dokumen <Icon name="ExternalLink" size={9} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* D. Timeline Operasional */}
+            {data.posisi_log?.length > 0 && (
+              <div className="bg-white rounded-2xl border border-border-main p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#4A6FA5" }} />
+                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Timeline Operasional</h4>
+                  <span className="text-[9px] text-text-light opacity-50 ml-auto">{data.posisi_log.length} event</span>
+                </div>
+                <div className="border-l-2 border-border-main/30 ml-2 space-y-0">
+                  {data.posisi_log.map((log: any, idx: number) => (
+                    <div key={idx} className="relative pl-5 pb-4 last:pb-0">
+                      <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: idx === 0 ? "#4A6FA5" : "#E8E4DC" }} />
+                      <div className="text-[11px] font-black text-text-main leading-none mb-0.5">{log.location || log.status || "Log Entry"}</div>
+                      {log.info && <div className="text-[10px] font-medium text-text-med leading-tight">{log.info}</div>}
+                      <div className="text-[8px] font-bold text-text-light opacity-50 tabular-nums mt-0.5">{log.date}{log.time && ` @ ${log.time}`}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── KANAN (2/5): Keuangan + Invoice + Jurnal + Aksi ── */}
+          <div className="col-span-2 p-6 space-y-4">
+
+            {/* D. Status Keuangan */}
+            <div className="bg-white rounded-2xl border border-border-main p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: payColor }} />
+                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Status Keuangan</h4>
+                <span className="ml-auto text-[9px] font-black px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: payColor + "18", color: payColor }}>
+                  {payStatus}
+                </span>
+              </div>
+
+              {totalPiutang > 0 && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-[9px] text-text-light mb-1.5">
+                    <span>Progress Pembayaran</span>
+                    <span className="font-black">{payPct}%</span>
+                  </div>
+                  <div className="h-2 bg-[#F5F4F1] rounded-full overflow-hidden border border-border-main/20">
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${payPct}%`, backgroundColor: payColor }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2.5">
+                {totalPiutang > 0 ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-text-med">Total Tagihan</span>
+                      <span className="text-[11px] font-black text-text-main tabular-nums">{fmt(totalPiutang)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-text-med">Terbayar</span>
+                      <span className="text-[11px] font-black tabular-nums" style={{ color: totalTerbayar > 0 ? "#6B8E23" : "#6B6862" }}>
+                        {fmt(totalTerbayar)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2.5 border-t border-border-main/40">
+                      <span className="text-[10px] font-black text-text-main">Sisa Piutang</span>
+                      <span className="text-[14px] font-black tabular-nums" style={{ color: payColor }}>{fmt(sisaPiutang)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-[11px] text-text-light text-center py-2 opacity-60">
+                    Belum ada jurnal piutang untuk SO ini
+                  </div>
+                )}
+                {aging > 0 && sisaPiutang > 0 && (
+                  <div className="flex items-center gap-2 mt-1 p-2.5 rounded-lg" style={{ backgroundColor: agingColor + "12" }}>
+                    <Icon name="Clock" size={11} style={{ color: agingColor }} />
+                    <span className="text-[10px] font-black" style={{ color: agingColor }}>
+                      Piutang sudah {aging} hari sejak invoice
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* E. Invoice */}
+            <div className="bg-white rounded-2xl border border-border-main p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#6B8E23" }} />
+                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Invoice</h4>
+                {relatedInvoices.length > 0 && (
+                  <span className="ml-auto text-[9px] font-bold text-text-light opacity-60">{relatedInvoices.length} invoice</span>
+                )}
+              </div>
+
+              {relatedInvoices.length === 0 ? (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+                  <div className="text-[10px] font-bold text-amber-700">Belum ada invoice</div>
+                  <div className="text-[9px] text-amber-600 opacity-70 mt-0.5">SO ini belum dibuatkan invoice</div>
+                  {data.status_muatan === 'Completed' && (
+                    <button
+                      onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
+                      className="mt-2 h-7 px-3 bg-accent text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-accent/90 transition-colors w-full"
+                    >
+                      + Buat Invoice
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {relatedInvoices.map((inv: any) => {
+                    const sc = INV_STATUS_HEX[inv.status_bayar || 'Belum Bayar'] || '#666';
+                    const invAge = inv.tgl_invoice
+                      ? Math.floor((Date.now() - new Date(inv.tgl_invoice).getTime()) / 86400000) : 0;
+                    return (
+                      <div key={inv.id} className="p-3 rounded-xl border border-border-main space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <button
+                              onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
+                              className="text-[10px] font-black text-accent uppercase tracking-tight hover:underline text-left block"
+                            >
+                              {inv.no_invoice}
+                            </button>
+                            <div className="text-[9px] text-text-light mt-0.5">
+                              {inv.tgl_invoice ? new Date(inv.tgl_invoice).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                              {invAge > 0 && sisaPiutang > 0 && <span className="ml-1 opacity-60">· {invAge}h</span>}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[11px] font-black text-text-main tabular-nums">{fmt(inv.total_setelah_pajak || 0)}</div>
+                            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{ backgroundColor: sc + '20', color: sc }}>
+                              {inv.status_bayar || 'Belum Bayar'}
+                            </span>
+                          </div>
+                        </div>
+                        {(inv.status_dokumen || inv.gdrive_url || inv.no_resi) && (
+                          <div className="pt-2 border-t border-border-main/20 space-y-1">
+                            {inv.status_dokumen && (
+                              <div className="flex items-center gap-2 text-[9px]">
+                                <span className="text-text-light w-14 shrink-0">Dokumen</span>
+                                <span className={`font-bold px-1.5 py-0.5 rounded-full ${
+                                  inv.status_dokumen === 'Diterima Customer' ? 'bg-success/10 text-success' :
+                                  inv.status_dokumen === 'Terkirim' ? 'bg-info/10 text-info' : 'bg-slate-100 text-slate-500'
+                                }`}>{inv.status_dokumen}</span>
+                              </div>
+                            )}
+                            {inv.gdrive_url && (
+                              <div className="flex items-center gap-2 text-[9px]">
+                                <span className="text-text-light w-14 shrink-0">Scan</span>
+                                <a href={inv.gdrive_url} target="_blank" rel="noopener noreferrer"
+                                  className="font-bold text-accent hover:underline flex items-center gap-1">
+                                  <Icon name="FileText" size={9} /> Buka Drive <Icon name="ExternalLink" size={8} />
+                                </a>
+                              </div>
+                            )}
+                            {inv.no_resi && (
+                              <div className="flex items-center gap-2 text-[9px]">
+                                <span className="text-text-light w-14 shrink-0">Resi</span>
+                                <span className="font-mono text-text-main">{inv.ekspedisi} {inv.no_resi}</span>
+                                <a
+                                  href={`https://www.google.com/search?q=lacak+resi+${encodeURIComponent(inv.ekspedisi || '')}+${inv.no_resi}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  className="font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full hover:bg-accent/20 transition-colors"
+                                >Lacak</a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* F. Jurnal Terkait */}
+            {relatedJurnals.length > 0 && (
+              <div className="bg-white rounded-2xl border border-border-main p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Jurnal Terkait</h4>
+                  <span className="ml-auto text-[9px] font-bold text-text-light opacity-60">{relatedJurnals.length} jurnal</span>
+                </div>
+                <div className="space-y-2">
+                  {relatedJurnals.map((j: any) => (
+                    <div key={j.id} onClick={() => onJurnalClick(j.no_jurnal)}
+                      className="p-3 rounded-xl border border-border-main hover:border-accent hover:bg-accent/5 transition-all cursor-pointer group flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <div className="text-[9px] font-black text-accent uppercase tracking-widest leading-none mb-0.5">{j.no_jurnal}</div>
+                        <div className="text-[10px] font-bold text-text-main truncate group-hover:text-accent transition-colors">{j.keterangan}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-[11px] font-black text-text-main tabular-nums">{fmt(j.total_debit)}</div>
+                        <div className="text-[8px] text-text-light opacity-50 tabular-nums">{j.tanggal}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* G. Aksi Cepat */}
+            <div className="bg-white rounded-2xl border border-border-main p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-text-light" />
+                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Aksi Cepat</h4>
+              </div>
+              <div className="space-y-2">
+                {canEdit && (
+                  <button
+                    onClick={() => { handleNav("operasional", "so"); setPendingEditSO(data.order_id); onClose(); }}
+                    className="w-full h-9 rounded-lg border border-border-main text-[10px] font-black text-text-med uppercase tracking-widest hover:border-accent hover:text-accent transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icon name="Edit2" size={12} /> Edit Sales Order
+                  </button>
+                )}
+                {data.status_muatan === 'Completed' && relatedInvoices.length === 0 && (
+                  <button
+                    onClick={() => { handleNav("operasional", "invoice"); onClose(); }}
+                    className="w-full h-9 rounded-lg bg-accent text-white text-[10px] font-black uppercase tracking-widest hover:bg-accent/90 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icon name="FileText" size={12} /> Buat Invoice
+                  </button>
+                )}
+                {(canEdit || canFinance) && (
+                  <button
+                    onClick={() => { handleNav("keuangan", "jurnal"); onClose(); }}
+                    className="w-full h-9 rounded-lg border border-border-main text-[10px] font-black text-text-med uppercase tracking-widest hover:border-accent hover:text-accent transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icon name="BookOpen" size={12} /> Input Jurnal
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-full h-9 rounded-lg border border-border-main/50 text-[10px] font-medium text-text-light uppercase tracking-widest hover:bg-slate-50 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </Card>
   );
