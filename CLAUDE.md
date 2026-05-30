@@ -355,6 +355,9 @@ Keputusan ini TIDAK BOLEH diubah tanpa instruksi eksplisit dari owner:
 | Log Aktivitas difilter per role permission | Setiap role hanya lihat log modul yang bisa mereka akses | Jangan tampilkan semua log ke semua role |
 | Log Aktivitas: semua role bisa akses | moduleKey="dashboard" di NAV_BOTTOM | Jangan kembalikan ke moduleKey="users" |
 | ACTION_HEX untuk badge inline style | ACTION_COLORS pakai class names invalid (bg-green-brand) | Jangan pakai ACTION_COLORS untuk badge di LogAktivitas |
+| SODetailModal = full-screen overlay | 360° view: KPI strip + 2-kolom kiri/kanan + piutang dari jurnal | Jangan kembalikan ke side panel max-w-xl |
+| Piutang per SO dihitung dari jurnal_detail | Filter coa sub_kelompok="Piutang Usaha" atau kode="112", group by no_so | Jangan query ke tabel piutang (kosong) |
+| Aging piutang dihitung dari tgl_invoice | Bahkan 1-2 hari tetap ditampilkan sebagai info | Jangan sembunyikan aging kecil |
 
 ---
 
