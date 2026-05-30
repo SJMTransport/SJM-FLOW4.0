@@ -454,12 +454,12 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
               </div>
             </div>
 
-            {/* C. Asuransi & Dokumen */}
-            {(data.no_asuransi || data.nilai_tanggungan || data.spk || data.surat_jalan || data.bukti_muatan) && (
+            {/* C. Asuransi & Referensi */}
+            {(data.no_asuransi || data.nilai_tanggungan || data.spk) && (
               <div className="bg-white rounded-2xl border border-border-main p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Asuransi & Dokumen</h4>
+                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Asuransi & Referensi</h4>
                 </div>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                   {data.no_asuransi && (
@@ -475,27 +475,9 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
                     </div>
                   )}
                   {data.spk && (
-                    <div>
+                    <div className="col-span-2">
                       <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">No. SPK</div>
                       <div className="text-[11px] font-bold text-text-main">{data.spk}</div>
-                    </div>
-                  )}
-                  {data.surat_jalan && (
-                    <div>
-                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Surat Jalan</div>
-                      <a href={data.surat_jalan} target="_blank" rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1">
-                        <Icon name="FileText" size={10} /> Buka Dokumen <Icon name="ExternalLink" size={9} />
-                      </a>
-                    </div>
-                  )}
-                  {data.bukti_muatan && (
-                    <div>
-                      <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-0.5">Bukti Muatan</div>
-                      <a href={data.bukti_muatan} target="_blank" rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1">
-                        <Icon name="FileText" size={10} /> Buka Dokumen <Icon name="ExternalLink" size={9} />
-                      </a>
                     </div>
                   )}
                 </div>
@@ -503,26 +485,120 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
             )}
 
             {/* D. Timeline Operasional */}
-            {data.posisi_log?.length > 0 && (
-              <div className="bg-white rounded-2xl border border-border-main p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#4A6FA5" }} />
-                  <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Timeline Operasional</h4>
-                  <span className="text-[9px] text-text-light opacity-50 ml-auto">{data.posisi_log.length} event</span>
-                </div>
-                <div className="border-l-2 border-border-main/30 ml-2 space-y-0">
-                  {data.posisi_log.map((log: any, idx: number) => (
-                    <div key={idx} className="relative pl-5 pb-4 last:pb-0">
-                      <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full border-2 border-white shadow-sm"
-                        style={{ backgroundColor: idx === 0 ? "#4A6FA5" : "#E8E4DC" }} />
-                      <div className="text-[11px] font-black text-text-main leading-none mb-0.5">{log.location || log.status || "Log Entry"}</div>
-                      {log.info && <div className="text-[10px] font-medium text-text-med leading-tight">{log.info}</div>}
-                      <div className="text-[8px] font-bold text-text-light opacity-50 tabular-nums mt-0.5">{log.date}{log.time && ` @ ${log.time}`}</div>
-                    </div>
-                  ))}
-                </div>
+            <div className="bg-white rounded-2xl border border-border-main p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#4A6FA5" }} />
+                <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Log Perjalanan</h4>
+                <span className="text-[9px] text-text-light opacity-50 ml-auto">
+                  {(data.posisi_log || []).length} event
+                </span>
               </div>
-            )}
+              {(!data.posisi_log || data.posisi_log.length === 0) ? (
+                <div className="flex flex-col items-center gap-2 py-6 text-text-light">
+                  <Icon name="MapPin" size={24} strokeWidth={1.5} className="opacity-20" />
+                  <div className="text-[11px] opacity-40 font-medium">Belum ada log perjalanan</div>
+                  <div className="text-[10px] opacity-30">Update via halaman Update Muatan</div>
+                </div>
+              ) : (
+                <div className="border-l-2 border-border-main/30 ml-2 space-y-0">
+                  {(data.posisi_log || []).map((log: any, idx: number) => {
+                    const dotColor = idx === 0 ? "#4A6FA5"
+                      : log.status === "Completed" ? "#6B8E23"
+                      : log.status === "Loading"   ? "#C4914A"
+                      : log.status === "On Going"  ? "#EB5E28"
+                      : "#E8E4DC";
+                    return (
+                      <div key={idx} className="relative pl-5 pb-4 last:pb-0">
+                        <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full border-2 border-white shadow-sm"
+                          style={{ backgroundColor: dotColor }} />
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <span className="text-[11px] font-black text-text-main leading-none">
+                            {log.location || log.status || "Log Entry"}
+                          </span>
+                          {log.status && (
+                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                              style={{ backgroundColor: dotColor + "18", color: dotColor }}>
+                              {log.status === "On Going" ? "In Transit" : log.status}
+                            </span>
+                          )}
+                        </div>
+                        {log.info && !log.info.includes("Status diperbarui via Stepper") && (
+                          <div className="text-[10px] font-medium text-text-med leading-tight">{log.info}</div>
+                        )}
+                        {log.foto_url && (
+                          <a href={log.foto_url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1 text-[9px] font-bold text-accent hover:underline">
+                            <Icon name="Paperclip" size={9} /> {log.foto_label || "Lihat Dokumen"}
+                          </a>
+                        )}
+                        <div className="text-[8px] font-bold text-text-light opacity-40 tabular-nums mt-0.5">
+                          {log.date}{log.time && ` @ ${log.time}`}
+                          {log.urgensi && log.urgensi !== "Normal" && (
+                            <span className="ml-1.5 text-warning font-black">· {log.urgensi}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* E. Dokumentasi Perjalanan (Google Drive links dari posisi_log) */}
+            {(() => {
+              const allDocs = [
+                ...(data.surat_jalan  ? [{ label: "Surat Jalan",  url: data.surat_jalan,  fase: "" }] : []),
+                ...(data.bukti_muatan ? [{ label: "Bukti Muatan", url: data.bukti_muatan, fase: "" }] : []),
+                ...(data.posisi_log || [])
+                  .filter((log: any) => log.foto_url)
+                  .map((log: any) => ({
+                    label: log.foto_label || "Dokumen",
+                    url:   log.foto_url,
+                    fase:  log.status || "",
+                    date:  log.date,
+                    time:  log.time,
+                  })),
+              ];
+              if (allDocs.length === 0) return null;
+              const FASE_HEX: Record<string, string> = {
+                "Loading":   "#C4914A",
+                "On Going":  "#EB5E28",
+                "Completed": "#6B8E23",
+              };
+              return (
+                <div className="bg-white rounded-2xl border border-border-main p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    <h4 className="text-[9px] font-black text-text-light uppercase tracking-widest">Dokumentasi Perjalanan</h4>
+                    <span className="text-[9px] text-text-light opacity-50 ml-auto">{allDocs.length} file</span>
+                  </div>
+                  <div className="space-y-2">
+                    {allDocs.map((doc, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#F5F4F1] border border-border-main/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: (FASE_HEX[doc.fase] || "#4A6FA5") + "18" }}>
+                            <Icon name="FileText" size={13} style={{ color: FASE_HEX[doc.fase] || "#4A6FA5" }} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-black text-text-main truncate">{doc.label}</div>
+                            {doc.date && (
+                              <div className="text-[9px] text-text-light opacity-60 tabular-nums">
+                                {doc.date}{doc.time && ` @ ${doc.time}`}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                          className="h-7 px-2.5 rounded-lg text-[9px] font-black text-accent bg-accent/10 hover:bg-accent hover:text-white transition-colors shrink-0 flex items-center gap-1">
+                          <Icon name="ExternalLink" size={10} /> Buka
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* ── KANAN (2/5): Keuangan + Invoice + Jurnal + Aksi ── */}
