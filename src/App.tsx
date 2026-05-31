@@ -547,12 +547,15 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
             {/* E. Dokumentasi Perjalanan (Google Drive links dari posisi_log) */}
             {(() => {
               const allDocs = [
-                ...(data.surat_jalan  ? [{ label: "Surat Jalan",  url: data.surat_jalan,  fase: "" }] : []),
-                ...(data.bukti_muatan ? [{ label: "Bukti Muatan", url: data.bukti_muatan, fase: "" }] : []),
+                ...(data.foto_muat       ? [{ label: "Foto Muat",           url: data.foto_muat,       fase: "Loading"   }] : []),
+                ...(data.foto_bongkar    ? [{ label: "Foto Bongkar / POD",   url: data.foto_bongkar,    fase: "Completed" }] : []),
+                ...(data.dokumen_asuransi? [{ label: "Dokumen Asuransi",     url: data.dokumen_asuransi,fase: ""          }] : []),
+                ...(data.surat_jalan     ? [{ label: "Surat Jalan",          url: data.surat_jalan,     fase: ""          }] : []),
+                ...(data.bukti_muatan    ? [{ label: "Bukti Muatan (Lama)",  url: data.bukti_muatan,    fase: ""          }] : []),
                 ...(data.posisi_log || [])
                   .filter((log: any) => log.foto_url)
                   .map((log: any) => ({
-                    label: log.foto_label || "Dokumen",
+                    label: log.foto_label || "Dokumen Checkpoint",
                     url:   log.foto_url,
                     fase:  log.status || "",
                     date:  log.date,

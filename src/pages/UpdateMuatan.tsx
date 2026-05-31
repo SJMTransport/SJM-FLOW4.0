@@ -65,17 +65,11 @@ const TerminalPanel = ({
   panelCheckpoint, setPanelCheckpoint,
   panelUrgensi, setPanelUrgensi,
   panelRemarks, setPanelRemarks,
-  panelFotoUrl, setPanelFotoUrl,
+  panelFotoMuat, setPanelFotoMuat,
+  panelFotoBongkar, setPanelFotoBongkar,
   loading, onSubmit, onCopy, onClose,
 }: any) => {
   const urgensiColor = URGENSI_HEX[panelUrgensi] || "#6B8E23";
-
-  // Label otomatis berdasarkan status
-  const fotoLabel =
-    panelStatus === "Loading"    ? "Foto Muat"   :
-    panelStatus === "Completed"  ? "Foto Bongkar / POD" :
-    panelStatus === "On Going"   ? "Foto Perjalanan" :
-    "Foto / Dokumen";
 
   return (
     <div className="border-t-2 border-accent/30 bg-bg">
@@ -244,30 +238,44 @@ const TerminalPanel = ({
             />
           </div>
 
-          {/* Link Foto / Dokumen Google Drive */}
-          <div className="mb-4">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-text-light mb-1.5 block flex items-center gap-1.5">
-              <Icon name="Paperclip" size={10} className="opacity-60" />
-              {fotoLabel} <span className="opacity-40 font-normal normal-case tracking-normal">(Google Drive link — opsional)</span>
-            </label>
-            <div className="flex gap-1.5">
-              <input
-                className="input flex-1 text-[11px] h-9"
-                placeholder="https://drive.google.com/..."
-                value={panelFotoUrl}
-                onChange={e => setPanelFotoUrl(e.target.value)}
-              />
-              {panelFotoUrl && (
-                <a
-                  href={panelFotoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0"
-                  title="Preview link"
-                >
-                  <Icon name="ExternalLink" size={13} />
-                </a>
-              )}
+          {/* Foto Muat & Bongkar — selalu tampil, tidak kondisional */}
+          <div className="mb-3 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70 flex items-center gap-1.5">
+              <Icon name="Camera" size={10} /> Dokumentasi (Google Drive)
+            </div>
+            <div>
+              <label className="text-[9px] font-bold uppercase tracking-widest text-text-light opacity-50 mb-1 block">Foto Muat</label>
+              <div className="flex gap-1.5">
+                <input
+                  className="input flex-1 text-[11px] h-8"
+                  placeholder="https://drive.google.com/..."
+                  value={panelFotoMuat}
+                  onChange={e => setPanelFotoMuat(e.target.value)}
+                />
+                {panelFotoMuat && (
+                  <a href={panelFotoMuat} target="_blank" rel="noopener noreferrer"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                    <Icon name="ExternalLink" size={11} />
+                  </a>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="text-[9px] font-bold uppercase tracking-widest text-text-light opacity-50 mb-1 block">Foto Bongkar / POD</label>
+              <div className="flex gap-1.5">
+                <input
+                  className="input flex-1 text-[11px] h-8"
+                  placeholder="https://drive.google.com/..."
+                  value={panelFotoBongkar}
+                  onChange={e => setPanelFotoBongkar(e.target.value)}
+                />
+                {panelFotoBongkar && (
+                  <a href={panelFotoBongkar} target="_blank" rel="noopener noreferrer"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                    <Icon name="ExternalLink" size={11} />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
@@ -377,13 +385,14 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
   const [statusFilter, setStatusFilter] = useState("all");
 
   // ── Panel state
-  const [expandedId, setExpandedId]       = useState<string | null>(null);
-  const [panelStatus, setPanelStatus]     = useState("");
+  const [expandedId, setExpandedId]         = useState<string | null>(null);
+  const [panelStatus, setPanelStatus]       = useState("");
   const [panelCheckpoint, setPanelCheckpoint] = useState("");
-  const [panelUrgensi, setPanelUrgensi]   = useState("Normal");
-  const [panelRemarks, setPanelRemarks]   = useState("");
-  const [panelFotoUrl, setPanelFotoUrl]   = useState("");
-  const [loading, setLoading]             = useState(false);
+  const [panelUrgensi, setPanelUrgensi]     = useState("Normal");
+  const [panelRemarks, setPanelRemarks]     = useState("");
+  const [panelFotoMuat, setPanelFotoMuat]   = useState("");
+  const [panelFotoBongkar, setPanelFotoBongkar] = useState("");
+  const [loading, setLoading]               = useState(false);
 
   // ── KPI data
   const allSO = so || [];
@@ -425,6 +434,8 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
     setPanelCheckpoint(s.posisi_log?.[0]?.location || "");
     setPanelUrgensi("Normal");
     setPanelRemarks("");
+    setPanelFotoMuat(s.foto_muat || "");
+    setPanelFotoBongkar(s.foto_bongkar || "");
   };
 
   // ── Submit log from terminal panel
@@ -435,10 +446,6 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
     setLoading(true);
     try {
       const now = new Date();
-      const fotoLabel =
-        panelStatus === "Loading"   ? "Foto Muat" :
-        panelStatus === "Completed" ? "Foto Bongkar / POD" :
-        panelStatus === "On Going"  ? "Foto Perjalanan" : "Foto / Dokumen";
       const logEntry: any = {
         date:    now.toISOString().split("T")[0],
         time:    now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
@@ -447,13 +454,11 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
         location: panelCheckpoint,
         urgensi: panelUrgensi,
       };
-      if (panelFotoUrl.trim()) {
-        logEntry.foto_url   = panelFotoUrl.trim();
-        logEntry.foto_label = fotoLabel;
-      }
       const updatedLog = [logEntry, ...(s.posisi_log || [])];
       const updates: any = { posisi_log: updatedLog };
       if (panelStatus !== s.status_muatan) updates.status_muatan = panelStatus;
+      if (panelFotoMuat   !== (s.foto_muat    || "")) updates.foto_muat    = panelFotoMuat    || null;
+      if (panelFotoBongkar !== (s.foto_bongkar || "")) updates.foto_bongkar = panelFotoBongkar || null;
 
       await api.updateSO(s.id, updates);
       setSo((prev: any[]) =>
@@ -465,7 +470,6 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
         urgensi: panelUrgensi,
       });
       setPanelRemarks("");
-      setPanelFotoUrl("");
       showToast("Log berhasil disimpan", "success");
     } catch (e: any) {
       showToast("Gagal simpan: " + e.message, "error");
@@ -732,8 +736,10 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                           setPanelUrgensi={setPanelUrgensi}
                           panelRemarks={panelRemarks}
                           setPanelRemarks={setPanelRemarks}
-                          panelFotoUrl={panelFotoUrl}
-                          setPanelFotoUrl={setPanelFotoUrl}
+                          panelFotoMuat={panelFotoMuat}
+                          setPanelFotoMuat={setPanelFotoMuat}
+                          panelFotoBongkar={panelFotoBongkar}
+                          setPanelFotoBongkar={setPanelFotoBongkar}
                           loading={loading}
                           onSubmit={() => submitLog(s)}
                           onCopy={() => copySJMText(s)}

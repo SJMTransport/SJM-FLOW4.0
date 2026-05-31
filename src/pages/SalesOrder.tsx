@@ -291,6 +291,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     harga_asuransi: "", pajak: "", nilai_pajak: "", nilai_asuransi: "",
     harga_pengiriman: "", total_harga: 0, total_harga_pajak: 0,
     is_posted: false, bukti_muatan: "", surat_jalan: "", spk: "", keterangan: "",
+    no_asuransi: "", nilai_tanggungan: "", dokumen_asuransi: "",
+    foto_muat: "", foto_bongkar: "",
     modal_legs: [],
   };
   const [form, setForm] = useState<any>(emptyForm);
@@ -1040,27 +1042,73 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
-               <Icon name="Paperclip" size={12} className="text-accent" /> Dokumen
+               <Icon name="Paperclip" size={12} className="text-accent" /> Dokumen & Referensi
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Foto Muat & Bongkar */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Bukti Muat (GDrive)</label>
-                <div className="relative">
-                  <Icon name="Link" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold" value={form.bukti_muatan || ""} onChange={e => setForm((f: any) => ({ ...f, bukti_muatan: e.target.value }))} placeholder="https://..." />
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Muat (GDrive)</label>
+                <div className="relative flex gap-1.5">
+                  <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_muat || ""} onChange={e => setForm((f: any) => ({ ...f, foto_muat: e.target.value }))} placeholder="https://drive.google.com/..." />
+                  {form.foto_muat && (
+                    <a href={form.foto_muat} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Bongkar / POD (GDrive)</label>
+                <div className="relative flex gap-1.5">
+                  <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, foto_bongkar: e.target.value }))} placeholder="https://drive.google.com/..." />
+                  {form.foto_bongkar && (
+                    <a href={form.foto_bongkar} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Surat Jalan & SPK */}
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Surat Jalan (GDrive)</label>
-                <div className="relative">
+                <div className="relative flex gap-1.5">
                   <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold" value={form.surat_jalan || ""} onChange={e => setForm((f: any) => ({ ...f, surat_jalan: e.target.value }))} placeholder="https://..." />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.surat_jalan || ""} onChange={e => setForm((f: any) => ({ ...f, surat_jalan: e.target.value }))} placeholder="https://..." />
+                  {form.surat_jalan && (
+                    <a href={form.surat_jalan} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. SPK</label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.spk || ""} onChange={e => setForm((f: any) => ({ ...f, spk: e.target.value }))} placeholder="Nomor SPK / Work Order..." />
               </div>
+
+              {/* Asuransi */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Asuransi</label>
+                <input className="input-field h-9 text-[11px] font-bold" value={form.no_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, no_asuransi: e.target.value }))} placeholder="Nomor polis asuransi..." />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Dokumen Asuransi (GDrive)</label>
+                <div className="relative flex gap-1.5">
+                  <Icon name="Shield" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.dokumen_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, dokumen_asuransi: e.target.value }))} placeholder="https://drive.google.com/..." />
+                  {form.dokumen_asuransi && (
+                    <a href={form.dokumen_asuransi} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Catatan */}
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Catatan Internal</label>
                 <textarea className="input-field h-16 pt-2 text-[11px] resize-none font-bold" value={form.keterangan || ""} onChange={e => setForm((f: any) => ({ ...f, keterangan: e.target.value }))} placeholder="..." />
