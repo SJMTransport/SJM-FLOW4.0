@@ -77,6 +77,8 @@ const LoginPage = ({ onLogin }: any) => {
                   onChange={e => setUsername(e.target.value)}
                   placeholder="Username"
                   onKeyDown={e => e.key === "Enter" && submit()}
+                  autoComplete="username"
+                  name="username"
                 />
               </div>
             </div>
