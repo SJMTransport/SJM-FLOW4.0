@@ -109,7 +109,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
         msg: `Apakah Anda yakin ingin menghapus jurnal ${no}? Ini akan menghapus transaksi dan detailnya secara permanen.`,
         onConfirm: async () => {
             try {
-                await api.deleteJurnal(id);
+                await api.deleteJurnal(id, currentUser?.nama || currentUser?.email || "—");
                 showToast("Jurnal berhasil dihapus");
                 logAction(`Hapus Jurnal Umum: ${no}`, buildMeta({
                   module: 'jurnal', action_type: 'DELETE', record_id: no,
