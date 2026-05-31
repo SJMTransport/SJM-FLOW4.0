@@ -120,12 +120,12 @@ export const api = {
     return [];
   },
   getJurnal: async () => {
-    const { data, error } = await supabaseManual.from("jurnal").select("*, jurnal_detail(*)").is("deleted_at", null).order("no_jurnal", { ascending: true });
+    const { data, error } = await supabaseManual.from("jurnal").select("*, jurnal_detail(*)").order("no_jurnal", { ascending: true });
     if (error) {
       console.error("getJurnal", error);
       throw new Error("Gagal memuat data jurnal: " + (error.message || JSON.stringify(error)));
     }
-    return (data || []).map((j: any) => ({
+    return (data || []).filter((j: any) => !j.deleted_at).map((j: any) => ({
       ...j,
       status: j.status || "Draft"
     }));
