@@ -59,6 +59,9 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const [sortKey, setSortKey] = useState<'no_jurnal' | 'tanggal'>('no_jurnal');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [reloading, setReloading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{id: string, no: string} | null>(null);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   React.useEffect(() => {
     if (prefill) {
@@ -102,30 +105,43 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
     setForm((f: any) => ({ ...f, entries }));
   };
 
-  const handleDelete = async (id: string, no: string) => {
-    const beforeSnap = (jurnal || []).find((j: any) => j.id === id);
+  const handleDelete = (id: string, no: string) => {
     askConfirmJurnal({
-        title: "Hapus Jurnal",
-        msg: `Apakah Anda yakin ingin menghapus jurnal ${no}? Ini akan menghapus transaksi dan detailnya secara permanen.`,
-        onConfirm: async () => {
-            try {
-                await api.deleteJurnal(id, currentUser?.nama || currentUser?.email || "—");
-                showToast("Jurnal berhasil dihapus");
-                logAction(`Hapus Jurnal Umum: ${no}`, buildMeta({
-                  module: 'jurnal', action_type: 'DELETE', record_id: no,
-                  before_data: beforeSnap ? { no_jurnal: beforeSnap.no_jurnal, tanggal: beforeSnap.tanggal, keterangan: beforeSnap.keterangan, total_debit: beforeSnap.total_debit } : { id },
-                }));
-                setReloading(true);
-                const updated = await api.getJurnal();
-                setJurnal(updated);
-            } catch (e: any) {
-                console.error('deleteJurnal error:', e);
-                showToast(getFriendlyError(e), "error");
-            } finally {
-                setReloading(false);
-            }
-        }
+      title: "Hapus Jurnal",
+      msg: `Jurnal ${no} akan dihapus. Data tidak akan hilang dari database tapi tidak akan muncul di aplikasi. Lanjutkan?`,
+      confirmLabel: "Ya, Lanjutkan",
+      cancelLabel: "Batal",
+      onConfirm: () => {
+        setDeleteConfirm({ id, no });
+        setDeleteInput("");
+      }
     });
+  };
+
+  const handleDeleteFinal = async () => {
+    if (!deleteConfirm) return;
+    if (deleteInput.trim() !== deleteConfirm.no) {
+      showToast("Nomor jurnal tidak cocok", "error");
+      return;
+    }
+    setDeleteLoading(true);
+    try {
+      await api.deleteJurnal(deleteConfirm.id, currentUser?.email || "unknown");
+      logAction(`Hapus Jurnal: ${deleteConfirm.no}`, buildMeta({
+        module: 'jurnal',
+        action_type: 'DELETE',
+        record_id: deleteConfirm.no,
+        before_data: { no_jurnal: deleteConfirm.no }
+      }));
+      showToast(`Jurnal ${deleteConfirm.no} berhasil dihapus`, "success");
+      setJurnal((prev: any[]) => prev.filter((j: any) => j.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
+      setDeleteInput("");
+    } catch (e: any) {
+      showToast(e.message || "Gagal menghapus jurnal", "error");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const doOpenEdit = (j: any) => {
@@ -916,6 +932,66 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
             </button>
           </div>
         </Card>
+      )}
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                <Icon name="AlertTriangle" size={20} style={{ color: "var(--color-error)" }} />
+              </div>
+              <div>
+                <div className="text-[14px] font-black text-text-main">Konfirmasi Hapus Jurnal</div>
+                <div className="text-[11px] text-text-med mt-0.5">Tindakan ini tidak dapat dibatalkan</div>
+              </div>
+            </div>
+
+            <div className="rounded-xl p-3 border" style={{ background: "var(--color-error-light)", borderColor: "var(--color-error)/20" }}>
+              <div className="text-[11px] font-medium" style={{ color: "var(--color-error)" }}>
+                Ketik nomor jurnal berikut untuk konfirmasi:
+              </div>
+              <div className="text-[13px] font-black mt-1 font-mono" style={{ color: "var(--color-error)" }}>
+                {deleteConfirm.no}
+              </div>
+            </div>
+
+            <input
+              className="input-field w-full text-[12px] font-mono"
+              placeholder={`Ketik: ${deleteConfirm.no}`}
+              value={deleteInput}
+              onChange={e => setDeleteInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleDeleteFinal()}
+              autoFocus
+            />
+
+            <div className="flex gap-2 pt-1">
+              <button
+                className="btn-ghost h-9 px-4 text-[12px] flex-1"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleteLoading}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteFinal}
+                disabled={deleteInput.trim() !== deleteConfirm.no || deleteLoading}
+                className="h-9 px-4 text-[12px] flex-1 flex items-center justify-center gap-2 rounded-lg font-bold transition-colors disabled:opacity-40"
+                style={{ background: "var(--color-error)", color: "#fff" }}
+              >
+                {deleteLoading
+                  ? <><Icon name="Loader2" size={14} className="animate-spin" /> Menghapus...</>
+                  : <><Icon name="Trash2" size={14} /> Hapus Jurnal</>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </PageShell>
   );
