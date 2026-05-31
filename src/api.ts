@@ -120,7 +120,7 @@ export const api = {
     return [];
   },
   getJurnal: async () => {
-    const { data, error } = await supabaseManual.from("jurnal").select("*, jurnal_detail(*)").order("no_jurnal", { ascending: true });
+    const { data, error } = await supabaseManual.from("jurnal").select("*, jurnal_detail(*)").is("deleted_at", null).order("no_jurnal", { ascending: true });
     if (error) {
       console.error("getJurnal", error);
       throw new Error("Gagal memuat data jurnal: " + (error.message || JSON.stringify(error)));
@@ -191,11 +191,12 @@ export const api = {
     if (error) throw new Error(error.message || "Gagal update jurnal");
     return [];
   },
-  deleteJurnal: async (id: string) => {
-    const { error: detailError } = await supabaseManual.from("jurnal_detail").delete().eq("jurnal_id", id);
-    if (detailError) throw new Error("Gagal menghapus detail jurnal: " + (detailError.message || JSON.stringify(detailError)));
-    const { error: headerError } = await supabaseManual.from("jurnal").delete().eq("id", id);
-    if (headerError) throw new Error("Gagal menghapus jurnal: " + (headerError.message || JSON.stringify(headerError)));
+  deleteJurnal: async (id: string, deletedBy: string) => {
+    const now = new Date().toISOString();
+    const { error } = await supabaseManual.from("jurnal")
+      .update({ deleted_at: now, deleted_by: deletedBy })
+      .eq("id", id);
+    if (error) throw new Error("Gagal menghapus jurnal: " + (error.message || JSON.stringify(error)));
     return [];
   },
   getPiutang: async () => {
