@@ -293,6 +293,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     is_posted: false, bukti_muatan: "", surat_jalan: "", spk: "", keterangan: "",
     no_asuransi: "", nilai_tanggungan: "", dokumen_asuransi: "",
     foto_muat: "", foto_bongkar: "",
+    scan_invoice: "", potong_pajak: "", invoice_vendor: "",
     modal_legs: [],
   };
   const [form, setForm] = useState<any>(emptyForm);
@@ -1102,6 +1103,48 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.dokumen_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, dokumen_asuransi: e.target.value }))} placeholder="https://drive.google.com/..." />
                   {form.dokumen_asuransi && (
                     <a href={form.dokumen_asuransi} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Scan Invoice */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Scan Invoice (GDrive)</label>
+                <div className="relative flex gap-1.5">
+                  <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.scan_invoice || ""} onChange={e => setForm((f: any) => ({ ...f, scan_invoice: e.target.value }))} placeholder="https://drive.google.com/..." />
+                  {form.scan_invoice && (
+                    <a href={form.scan_invoice} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Potong Pajak */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Potong Pajak (GDrive)</label>
+                <div className="relative flex gap-1.5">
+                  <Icon name="Receipt" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.potong_pajak || ""} onChange={e => setForm((f: any) => ({ ...f, potong_pajak: e.target.value }))} placeholder="https://drive.google.com/..." />
+                  {form.potong_pajak && (
+                    <a href={form.potong_pajak} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                      <Icon name="ExternalLink" size={11} />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Invoice Vendor */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Invoice Vendor (GDrive)</label>
+                <div className="relative flex gap-1.5">
+                  <Icon name="Truck" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.invoice_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, invoice_vendor: e.target.value }))} placeholder="https://drive.google.com/..." />
+                  {form.invoice_vendor && (
+                    <a href={form.invoice_vendor} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
                       <Icon name="ExternalLink" size={11} />
                     </a>
                   )}
