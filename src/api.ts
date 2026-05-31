@@ -321,7 +321,8 @@ export const api = {
       "harga_pengiriman", "total_harga", "muatan", "sn", "spk", "status_muatan", "tgl_bongkar",
       "no_asuransi", "nilai_tanggungan", "nilai_asuransi", "nilai_tanpa_asuransi", "total_harga_pajak",
       "keterangan", "update_ke_customer", "posisi_log", "modal_legs", "dokumen", "no_so_lama",
-      "is_posted", "bukti_muatan", "surat_jalan", "tonase", "harga_per_ton"]);
+      "is_posted", "bukti_muatan", "surat_jalan", "tonase", "harga_per_ton",
+      "foto_muat", "foto_bongkar", "dokumen_asuransi"]);
     Object.keys(rest).forEach(k => { if (!KNOWN_COLS.has(k)) delete rest[k]; });
     NUMERIC.forEach((k: any) => {
       const v = rest[k];
@@ -345,8 +346,9 @@ export const api = {
       "harga_pengiriman", "total_harga", "muatan", "sn", "spk", "status_muatan", "tgl_bongkar",
       "no_asuransi", "nilai_tanggungan", "nilai_asuransi", "nilai_tanpa_asuransi", "total_harga_pajak",
       "keterangan", "update_ke_customer", "posisi_log", "modal_legs", "dokumen", "no_so_lama",
-      "is_posted", "bukti_muatan", "surat_jalan", "tonase", "harga_per_ton"]);
-    
+      "is_posted", "bukti_muatan", "surat_jalan", "tonase", "harga_per_ton",
+      "foto_muat", "foto_bongkar", "dokumen_asuransi"]);
+
     // Process all rows first
     const processedRows = rows.map(data => {
       const { id: _drop, ...rest } = data;
