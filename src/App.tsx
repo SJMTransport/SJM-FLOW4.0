@@ -549,11 +549,14 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
             {/* E. Dokumentasi Perjalanan (Google Drive links dari posisi_log) */}
             {(() => {
               const allDocs = [
-                ...(data.foto_muat       ? [{ label: "Foto Muat",           url: data.foto_muat,       fase: "Loading"   }] : []),
-                ...(data.foto_bongkar    ? [{ label: "Foto Bongkar / POD",   url: data.foto_bongkar,    fase: "Completed" }] : []),
-                ...(data.dokumen_asuransi? [{ label: "Dokumen Asuransi",     url: data.dokumen_asuransi,fase: ""          }] : []),
-                ...(data.surat_jalan     ? [{ label: "Surat Jalan",          url: data.surat_jalan,     fase: ""          }] : []),
-                ...(data.bukti_muatan    ? [{ label: "Bukti Muatan (Lama)",  url: data.bukti_muatan,    fase: ""          }] : []),
+                ...(data.foto_muat       ? [{ label: "Foto Muat",           url: data.foto_muat,        fase: "Loading"   }] : []),
+                ...(data.foto_bongkar    ? [{ label: "Foto Bongkar / POD",   url: data.foto_bongkar,     fase: "Completed" }] : []),
+                ...(data.surat_jalan     ? [{ label: "Surat Jalan",          url: data.surat_jalan,      fase: ""          }] : []),
+                ...(data.scan_invoice    ? [{ label: "Scan Invoice",         url: data.scan_invoice,     fase: ""          }] : []),
+                ...(data.potong_pajak    ? [{ label: "Potong Pajak",         url: data.potong_pajak,     fase: ""          }] : []),
+                ...(data.invoice_vendor  ? [{ label: "Invoice Vendor",       url: data.invoice_vendor,   fase: ""          }] : []),
+                ...(data.dokumen_asuransi? [{ label: "Dokumen Asuransi",     url: data.dokumen_asuransi, fase: ""          }] : []),
+                ...(data.bukti_muatan    ? [{ label: "Bukti Muatan (Lama)",  url: data.bukti_muatan,     fase: ""          }] : []),
                 ...(data.posisi_log || [])
                   .filter((log: any) => log.foto_url)
                   .map((log: any) => ({

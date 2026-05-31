@@ -306,7 +306,10 @@ export const api = {
         status_muatan: validStatuses.includes(s.status_muatan) ? s.status_muatan : (s.status_muatan || "Order Confirmed"),
         is_posted: s.is_posted ?? false,
         bukti_muatan: s.bukti_muatan || null,
-        surat_jalan: s.surat_jalan || null
+        surat_jalan: s.surat_jalan || null,
+        scan_invoice: s.scan_invoice || null,
+        potong_pajak: s.potong_pajak || null,
+        invoice_vendor: s.invoice_vendor || null,
       }));
     } catch (e) { console.error('getSO', e); return []; }
   },
@@ -322,7 +325,8 @@ export const api = {
       "no_asuransi", "nilai_tanggungan", "nilai_asuransi", "nilai_tanpa_asuransi", "total_harga_pajak",
       "keterangan", "update_ke_customer", "posisi_log", "modal_legs", "dokumen", "no_so_lama",
       "is_posted", "bukti_muatan", "surat_jalan", "tonase", "harga_per_ton",
-      "foto_muat", "foto_bongkar", "dokumen_asuransi"]);
+      "foto_muat", "foto_bongkar", "dokumen_asuransi",
+      "scan_invoice", "potong_pajak", "invoice_vendor"]);
     Object.keys(rest).forEach(k => { if (!KNOWN_COLS.has(k)) delete rest[k]; });
     NUMERIC.forEach((k: any) => {
       const v = rest[k];
@@ -347,7 +351,8 @@ export const api = {
       "no_asuransi", "nilai_tanggungan", "nilai_asuransi", "nilai_tanpa_asuransi", "total_harga_pajak",
       "keterangan", "update_ke_customer", "posisi_log", "modal_legs", "dokumen", "no_so_lama",
       "is_posted", "bukti_muatan", "surat_jalan", "tonase", "harga_per_ton",
-      "foto_muat", "foto_bongkar", "dokumen_asuransi"]);
+      "foto_muat", "foto_bongkar", "dokumen_asuransi",
+      "scan_invoice", "potong_pajak", "invoice_vendor"]);
 
     // Process all rows first
     const processedRows = rows.map(data => {
