@@ -4,7 +4,7 @@ import { buildMeta } from '@/src/lib/activityLogger';
 import { api } from '@/src/api';
 import { generateQuotationNo } from '@/src/utils/quotationGenerator';
 import { generateQuotationPDF } from '@/src/utils/generateQuotationPDF';
-import { useToast, Icon, PageShell, EmptyState } from '@/src/components/SJMComponents';
+import { useToast, Icon, PageShell, EmptyState, PageHeader, ActionBar, KPIGrid, StatCard } from '@/src/components/SJMComponents';
 
 const fRp = (n: number) => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
 const fmtDate = (d: string) => {
@@ -204,53 +204,97 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       {ToastUI}
 
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-[22px] font-black text-text-main tracking-tight">Quotation</h1>
-          <p className="text-[12px] text-text-med mt-0.5">Penawaran harga kepada customer potensial</p>
-        </div>
-        <button
-          onClick={() => {
-            if (activeTab === 'buat') {
-              setForm({ ...EMPTY_FORM });
-              setEditItem(null);
-              setActiveTab('daftar');
-            } else {
-              setActiveTab('buat');
-            }
-          }}
-          className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2"
-        >
-          <Icon name={activeTab === 'buat' ? 'List' : 'Plus'} size={14} />
-          {activeTab === 'buat' ? 'Daftar Quotation' : 'Buat Quotation'}
-        </button>
-      </div>
+      <PageHeader
+        title="Quotation"
+        sub="Penawaran harga kepada customer potensial"
+        action={
+          <button
+            onClick={() => {
+              if (activeTab === 'buat') {
+                setForm({ ...EMPTY_FORM });
+                setEditItem(null);
+                setActiveTab('daftar');
+              } else {
+                setActiveTab('buat');
+              }
+            }}
+            className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2"
+          >
+            <Icon name={activeTab === 'buat' ? 'List' : 'Plus'} size={14} />
+            {activeTab === 'buat' ? 'Daftar Quotation' : 'Buat Quotation'}
+          </button>
+        }
+      />
 
       {/* VIEW: DAFTAR */}
       {activeTab === 'daftar' && (
         <div className="space-y-4">
-          <div className="bg-white border border-border-main rounded-xl px-4 py-3 flex items-center gap-2 flex-wrap mb-4 shadow-xs">
-            <input
-              placeholder="Cari customer atau no quotation..."
-              value={filterText}
-              onChange={e => setFilterText(e.target.value)}
-              className="input h-9 text-[12px] w-64"
+          {/* KPI Cards */}
+          <KPIGrid cols={5}>
+            <StatCard
+              label="Total Quotation"
+              value={String(quotations.length)}
+              icon="FileText"
+              color="var(--color-accent)"
             />
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input h-9 text-[12px] w-32">
-              <option value="all">Semua Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Terkirim">Terkirim</option>
-              <option value="Diterima">Diterima</option>
-              <option value="Ditolak">Ditolak</option>
-            </select>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[11px] text-text-light">{filtered.length} quotation</span>
-              <button onClick={loadQuotations} disabled={loading}
-                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
-                <Icon name="RefreshCw" size={13} /> Refresh
-              </button>
-            </div>
-          </div>
+            <StatCard
+              label="Draft"
+              value={String(quotations.filter(q => q.status === 'Draft').length)}
+              icon="FilePen"
+              color="var(--color-text-light)"
+            />
+            <StatCard
+              label="Terkirim"
+              value={String(quotations.filter(q => q.status === 'Terkirim').length)}
+              icon="Send"
+              color="var(--color-info)"
+            />
+            <StatCard
+              label="Diterima"
+              value={String(quotations.filter(q => q.status === 'Diterima').length)}
+              icon="CheckCircle"
+              color="var(--color-success)"
+            />
+            <StatCard
+              label="Ditolak"
+              value={String(quotations.filter(q => q.status === 'Ditolak').length)}
+              icon="XCircle"
+              color="var(--color-error)"
+            />
+          </KPIGrid>
+
+          {/* Filter Bar */}
+          <ActionBar
+            left={
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                  <input
+                    placeholder="Cari customer atau no quotation..."
+                    value={filterText}
+                    onChange={e => setFilterText(e.target.value)}
+                    className="input-field h-9 w-full pl-9 text-[12px]"
+                  />
+                </div>
+                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input-field h-9 text-[12px]">
+                  <option value="all">Semua Status</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Terkirim">Terkirim</option>
+                  <option value="Diterima">Diterima</option>
+                  <option value="Ditolak">Ditolak</option>
+                </select>
+              </div>
+            }
+            right={
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-text-light">{filtered.length} quotation</span>
+                <button onClick={loadQuotations} disabled={loading}
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                  <Icon name="RefreshCw" size={13} /> Refresh
+                </button>
+              </div>
+            }
+          />
 
           {loading ? (
             <div className="text-center py-12 text-text-light text-[13px]">Memuat...</div>

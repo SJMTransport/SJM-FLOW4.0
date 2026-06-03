@@ -583,21 +583,6 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
       {(tab === "list" || tab === "form") && (
         <div>
-          <ActionBar
-            left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />}
-            right={canEdit && selected.length > 0 && (
-              <div className="flex items-center gap-2 px-3 h-10 bg-slate-50 border border-border-main rounded-xl">
-                <span className="text-[10px] font-bold text-text-med italic">{selected.length} Selected</span>
-                <button className="btn-ghost !px-3 border-red-brand/20 text-red-brand hover:bg-red-brand-light" onClick={deleteBulk} disabled={processing}>
-                  <Icon name="Trash2" size={12} /> Hapus
-                </button>
-                <button className="btn-primary !px-3" onClick={approveBulk} disabled={processing}>
-                  <Icon name="Send" size={12} /> Posting
-                </button>
-              </div>
-            )}
-          />
-
           {/* KPI Cards */}
           <div className="grid grid-cols-6 gap-3 mb-4">
             {([
@@ -641,6 +626,21 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               );
             })}
           </div>
+
+          <ActionBar
+            left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />}
+            right={canEdit && selected.length > 0 && (
+              <div className="flex items-center gap-2 px-3 h-10 bg-slate-50 border border-border-main rounded-xl">
+                <span className="text-[10px] font-bold text-text-med italic">{selected.length} Selected</span>
+                <button className="btn-ghost !px-3 border-red-brand/20 text-red-brand hover:bg-red-brand-light" onClick={deleteBulk} disabled={processing}>
+                  <Icon name="Trash2" size={12} /> Hapus
+                </button>
+                <button className="btn-primary !px-3" onClick={approveBulk} disabled={processing}>
+                  <Icon name="Send" size={12} /> Posting
+                </button>
+              </div>
+            )}
+          />
 
           {/* Invoice filter pills + reset */}
           <div className="flex items-center gap-2 px-1 pb-2 flex-wrap">
