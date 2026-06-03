@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { STATUS_COLOR } from "../constants";
 import {
-  Icon, useToast, EmptyState, PageShell, KPIGrid, StatCard
+  Icon, useToast, EmptyState, PageShell, KPIGrid, StatCard, PageHeader, ActionBar
 } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
 
@@ -508,22 +508,10 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
       {ToastUI}
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-[22px] font-black text-text-main tracking-tight">
-            Update Muatan Operasional
-          </h1>
-          <p className="text-[12px] text-text-med mt-0.5">
-            Manajemen rantai pasok logistik dan penjejakan status pengiriman armada
-          </p>
-        </div>
-        <button
-          onClick={() => { setSearch(""); setStatusFilter("all"); }}
-          className="btn-ghost h-9 px-4 text-[12px] flex items-center gap-2"
-        >
-          <Icon name="RefreshCw" size={13} /> Reset Filter
-        </button>
-      </div>
+      <PageHeader
+        title="Update Muatan Operasional"
+        sub="Manajemen rantai pasok logistik dan penjejakan status pengiriman armada"
+      />
 
       {/* ── KPI Grid ── */}
       <KPIGrid cols={4}>
@@ -558,31 +546,31 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
       </KPIGrid>
 
       {/* ── Filter Bar ── */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-[200px]">
-          <Icon
-            name="Search"
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light"
-          />
-          <input
-            className="input h-9 w-full pl-9 text-[12px]"
-            placeholder="Cari SO, Customer, Sopir, Plat..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <select
-          className="input h-9 text-[12px]"
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-        >
-          <option value="all">Semua Status ({allSO.length})</option>
-          {["Order Confirmed", "Loading", "On Going", "Completed", "Cancelled"].map(st => (
-            <option key={st} value={st}>{getStatusLabel(st)}</option>
-          ))}
-        </select>
-        {(search || statusFilter !== "all") && (
+      <ActionBar
+        left={
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative flex-1 min-w-[200px]">
+              <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+              <input
+                className="input-field h-9 w-full pl-9 text-[12px]"
+                placeholder="Cari SO, Customer, Sopir, Plat..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <select
+              className="input-field h-9 text-[12px]"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="all">Semua Status ({allSO.length})</option>
+              {["Order Confirmed", "Loading", "On Going", "Completed", "Cancelled"].map(st => (
+                <option key={st} value={st}>{getStatusLabel(st)}</option>
+              ))}
+            </select>
+          </div>
+        }
+        right={(search || statusFilter !== "all") && (
           <button
             onClick={() => { setSearch(""); setStatusFilter("all"); }}
             className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
@@ -590,7 +578,7 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
             <Icon name="X" size={13} /> Reset
           </button>
         )}
-      </div>
+      />
 
       {/* ── Table ── */}
       <div className="table-container max-h-[calc(100vh-360px)]">
