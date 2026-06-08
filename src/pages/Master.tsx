@@ -3,10 +3,10 @@ import { C } from "@/src/constants";
 import { Card, SectionHeader, EmptyState, statusBadge, useConfirm, useToast, Icon, PageShell, ActionBar } from "@/src/components/SJMComponents";
 import { CurrencyInput } from "@/src/components/SJMModals";
 import { fmt } from "@/src/utils";
-import { api, authActions } from "@/src/api";
+import { api, authActions, supabaseManual } from "@/src/api";
 import { buildMeta } from "@/src/lib/activityLogger";
 
-export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal, setSaldoAwal, logAction }: any) => {
+export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal, setSaldoAwal, logAction, currentUser }: any) => {
   const { showToast, ToastUI } = useToast();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -108,15 +108,22 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
   };
 
   const updatePassword = async () => {
+    if (!currentUser?.id) return showToast("Sesi user tidak ditemukan. Silakan login ulang.", "error");
+    if (!form.old?.trim()) return showToast("Password lama wajib diisi", "error");
+    if (!form.new?.trim()) return showToast("Password baru wajib diisi", "error");
     if (form.new !== form.cnf) return showToast("Konfirmasi password tidak cocok", "error");
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1000));
+      const { data, error } = await supabaseManual.from("user_profiles").select("password_hash").eq("id", currentUser.id).single();
+      if (error || !data) throw new Error("Gagal memverifikasi user: " + (error?.message || "data tidak ditemukan"));
+      if (data.password_hash !== form.old) throw new Error("Password lama salah");
+      const { error: updError } = await supabaseManual.from("user_profiles").update({ password_hash: form.new }).eq("id", currentUser.id);
+      if (updError) throw new Error("Gagal memperbarui password: " + updError.message);
       logAction(`Update Password`, buildMeta({ module: 'auth', action_type: 'UPDATE', record_id: 'password' }));
       showToast("Password berhasil diperbarui!");
       setForm({});
-    } catch (e: any) { 
-        showToast(e.message, "error"); 
+    } catch (e: any) {
+        showToast(e.message || "Gagal memperbarui password", "error");
     }
     setLoading(false);
   };
