@@ -1760,7 +1760,7 @@ export default function App() {
                 <>
                   {activeSub === "kontak" && <KontakPage so={so} connected={connected} />}
                   {["coa", "saldoawal"].includes(activeSub) && (
-                    <MasterPage activeSub={activeSub} coa={coa} setCoa={setCoa} users={users} setUsers={setUsers} saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal} logAction={logAction} />
+                    <MasterPage activeSub={activeSub} coa={coa} setCoa={setCoa} users={users} setUsers={setUsers} saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal} logAction={logAction} currentUser={currentUser} />
                   )}
                 </>
               )}
@@ -1772,6 +1772,7 @@ export default function App() {
                   saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
                   logAction={logAction}
                   auditLogs={auditLogs}
+                  currentUser={currentUser}
                 />
               )}
               {activeModule === "activity" && (
@@ -1788,6 +1789,7 @@ export default function App() {
                   saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal}
                   logAction={logAction}
                   auditLogs={auditLogs}
+                  currentUser={currentUser}
                 />
               )}
               {activeModule && MODULE_PERMISSION_MAP[activeModule] &&
