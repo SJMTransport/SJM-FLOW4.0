@@ -739,10 +739,13 @@ export const api = {
 };
 
 export const authActions = {
-  signIn: async (username: string) => {
+  signIn: async (username: string, password: string) => {
     const email = username.toLowerCase().trim() + "@sjm.internal";
-    const { data, error } = await supabaseManual.from("user_profiles").select("*").eq("email", email).single();
+    const { data, error } = await supabaseManual.from("user_profiles")
+      .select("*").eq("email", email).single();
     if (error || !data) throw new Error("Username tidak ditemukan");
+    if (!data.password_hash) throw new Error("Password belum diatur. Hubungi Admin.");
+    if (data.password_hash !== password) throw new Error("Password salah");
     return { access_token: "ok", user: { id: data.id, email: data.email } };
   },
   signOut: async () => { },

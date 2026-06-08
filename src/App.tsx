@@ -30,15 +30,18 @@ import { canView, getAccess, type ModuleKey } from "@/src/permissions";
 // ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
 const LoginPage = ({ onLogin }: any) => {
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
   const submit = async () => {
     setErr("");
     if (!username.trim()) return setErr("Username wajib diisi");
+    if (!password.trim()) return setErr("Password wajib diisi");
     setLoading(true);
     try {
-      const session = await authActions.signIn(username);
+      const session = await authActions.signIn(username, password);
       const profile = await authActions.getProfile(null, session.user.email);
       if (!profile) throw new Error("Akun tidak ditemukan");
       if (profile.status === "Nonaktif") throw new Error("Akun tidak aktif. Hubungi Admin.");
@@ -82,7 +85,29 @@ const LoginPage = ({ onLogin }: any) => {
                 />
               </div>
             </div>
-            
+
+            <div className="space-y-1.5">
+              <div className="relative w-full">
+                <input
+                  className="input-field h-12 text-[14px] font-medium tracking-tight bg-bg border-border-dark placeholder:opacity-50 w-full pr-12"
+                  type={showPassword ? "text" : "password"}
+                  value={password || ""}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Password"
+                  onKeyDown={e => e.key === "Enter" && submit()}
+                  autoComplete="current-password"
+                  name="password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-light hover:text-text-main transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <Icon name={showPassword ? "EyeOff" : "Eye"} size={14} />
+                </button>
+              </div>
+            </div>
+
             {err && (
               <div className="text-center">
                 <div className="text-[11px] font-bold text-red-brand bg-red-brand-light py-2 px-3 rounded-lg inline-block border border-red-brand/10">
