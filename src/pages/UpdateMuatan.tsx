@@ -381,8 +381,10 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
   const { showToast, ToastUI } = useToast();
 
   // ── Filters
-  const [search, setSearch]           = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch]                       = useState("");
+  const [selectedStatuses, setSelectedStatuses]   = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey]                     = useState<'order_id' | 'tgl_muat'>('order_id');
+  const [sortDir, setSortDir]                     = useState<'asc' | 'desc'>('desc');
 
   // ── Panel state
   const [expandedId, setExpandedId]         = useState<string | null>(null);
@@ -412,19 +414,38 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
     } catch { return false; }
   }).length, [activeSO]);
 
+  const toggleSort = (key: 'order_id' | 'tgl_muat') => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const toggleStatus = (st: string) => {
+    setSelectedStatuses(prev => {
+      const next = new Set(prev);
+      if (next.has(st)) next.delete(st); else next.add(st);
+      return next;
+    });
+  };
+
   // ── Filtered list
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return allSO.filter((s: any) => {
+    const base = allSO.filter((s: any) => {
       const matchSearch = !search ||
         s.order_id?.toLowerCase().includes(q) ||
         s.customer?.toLowerCase().includes(q) ||
         s.no_polisi?.toLowerCase().includes(q) ||
         s.nama_sopir?.toLowerCase().includes(q);
-      const matchStatus = statusFilter === "all" || s.status_muatan === statusFilter;
+      const matchStatus = selectedStatuses.size === 0 || selectedStatuses.has(s.status_muatan);
       return matchSearch && matchStatus;
     });
-  }, [allSO, search, statusFilter]);
+    return [...base].sort((a: any, b: any) => {
+      const aVal = sortKey === 'tgl_muat' ? (a.tgl_muat || '') : (a.order_id || '');
+      const bVal = sortKey === 'tgl_muat' ? (b.tgl_muat || '') : (b.order_id || '');
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [allSO, search, selectedStatuses, sortKey, sortDir]);
 
   // ── Open / close terminal panel
   const openPanel = (s: any) => {
@@ -548,8 +569,8 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
       {/* ── Filter Bar ── */}
       <ActionBar
         left={
-          <div className="flex items-center gap-2 flex-1">
-            <div className="relative flex-1 min-w-[200px]">
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            <div className="relative min-w-[200px]">
               <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
               <input
                 className="input-field h-9 w-full pl-9 text-[12px]"
@@ -558,38 +579,76 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <select
-              className="input-field h-9 text-[12px]"
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Semua Status ({allSO.length})</option>
-              {["Order Confirmed", "Loading", "On Going", "Completed", "Cancelled"].map(st => (
-                <option key={st} value={st}>{getStatusLabel(st)}</option>
-              ))}
-            </select>
+            {/* Multi-select status pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(["Order Confirmed", "Loading", "On Going", "Completed", "Cancelled"] as const).map(st => {
+                const count = allSO.filter((s: any) => s.status_muatan === st).length;
+                const hex   = getStatusHex(st);
+                const active = selectedStatuses.has(st);
+                return (
+                  <button
+                    key={st}
+                    onClick={() => toggleStatus(st)}
+                    className="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[10px] font-bold border transition-all"
+                    style={active ? {
+                      background: hex + '18',
+                      borderColor: hex,
+                      color: hex,
+                    } : {
+                      background: 'white',
+                      borderColor: 'var(--color-border-main)',
+                      color: 'var(--color-text-light)',
+                    }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: hex }} />
+                    {getStatusLabel(st)}
+                    <span className="font-black opacity-70">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         }
-        right={(search || statusFilter !== "all") && (
+        right={(search || selectedStatuses.size > 0) ? (
           <button
-            onClick={() => { setSearch(""); setStatusFilter("all"); }}
+            onClick={() => { setSearch(""); setSelectedStatuses(new Set()); }}
             className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
           >
             <Icon name="X" size={13} /> Reset
           </button>
-        )}
+        ) : undefined}
       />
 
       {/* ── Table ── */}
       <div className="table-container max-h-[calc(100vh-360px)]">
         <table className="w-full border-collapse">
           <thead>
-            <tr>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70 whitespace-nowrap">No. SO</th>
+            <tr className="bg-slate-50 border-b-2 border-border-main">
+              <th
+                className={`text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                onClick={() => toggleSort('order_id')}
+              >
+                <span className="flex items-center gap-1">
+                  No. SO
+                  {sortKey !== 'order_id' && <Icon name="ArrowUpDown" size={9} className="opacity-40" />}
+                  {sortKey === 'order_id' && sortDir === 'asc' && <Icon name="ArrowUp" size={9} className="text-accent" />}
+                  {sortKey === 'order_id' && sortDir === 'desc' && <Icon name="ArrowDown" size={9} className="text-accent" />}
+                </span>
+              </th>
               <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Sopir</th>
               <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Plat &amp; Armada</th>
               <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Customer &amp; Barang</th>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Rute</th>
+              <th
+                className={`text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'tgl_muat' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                onClick={() => toggleSort('tgl_muat')}
+              >
+                <span className="flex items-center gap-1">
+                  Rute
+                  {sortKey !== 'tgl_muat' && <Icon name="ArrowUpDown" size={9} className="opacity-40" />}
+                  {sortKey === 'tgl_muat' && sortDir === 'asc' && <Icon name="ArrowUp" size={9} className="text-accent" />}
+                  {sortKey === 'tgl_muat' && sortDir === 'desc' && <Icon name="ArrowDown" size={9} className="text-accent" />}
+                </span>
+              </th>
               <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Posisi Terakhir</th>
               <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Status</th>
               <th className="text-right py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Aksi</th>
