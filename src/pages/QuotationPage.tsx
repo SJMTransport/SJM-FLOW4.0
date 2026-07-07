@@ -206,7 +206,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       {/* HEADER */}
       <PageHeader
         title="Quotation"
-        sub="Penawaran harga kepada customer potensial"
+        sub="Penawaran harga"
         action={
           <button
             onClick={() => {
