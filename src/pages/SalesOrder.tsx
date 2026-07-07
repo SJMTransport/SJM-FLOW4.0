@@ -581,7 +581,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         </div>
       )}
 
-      {(tab === "list" || tab === "form") && (
+      {tab === "list" && (
         <div>
           {/* KPI Cards */}
           <div className="grid grid-cols-6 gap-3 mb-4">
@@ -822,160 +822,179 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         </div>
       )}
 
-      <ModalShell isOpen={tab === "form"} onClose={() => setTab("list")}>
-        <div className="p-4 border-b border-border-main flex justify-between items-center bg-white sticky top-0 z-20">
-           <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-brand/10 text-blue-brand flex items-center justify-center">
-                <Icon name="FilePlus2" size={18} />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-text-main tracking-tight leading-none">{editItem ? "Update Sales Order" : "Input SO Baru"}</h3>
-                <p className="text-[9px] font-bold text-text-light mt-1 opacity-60 italic">Rincian pengiriman armada</p>
-              </div>
-           </div>
-           <button className="p-2 rounded-full hover:bg-slate-100 transition-colors" onClick={() => setTab("list")}>
-              <Icon name="X" size={20} className="text-text-main" />
-           </button>
-        </div>
+      {tab === "form" && (
+        <div className="max-w-3xl space-y-6 pb-12">
 
-        <div className="flex-1 overflow-y-auto p-6 no-scrollbar space-y-8 bg-white">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
-               <Icon name="Hash" size={12} className="text-accent" /> Identitas Order
+          {/* ── Form header ── */}
+          <div className="flex items-center gap-3 pb-4 border-b border-border-main">
+            <div className="w-9 h-9 rounded-xl bg-blue-brand/10 text-blue-brand flex items-center justify-center shrink-0">
+              <Icon name={editItem ? "Edit3" : "FilePlus2"} size={18} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Order ID</label>
-                <input 
-                  className="input-field h-9 text-[11px] font-bold" 
-                  value={form.order_id || ""} 
-                  onChange={e => setForm((f: any) => ({ ...f, order_id: e.target.value }))} 
-                  placeholder={form.is_posted ? "Wajib diisi" : "Auto-Generate"}
-                />
-              </div>
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer <span className="text-red-brand">*</span> & Tanggal</label>
-                <div className="flex gap-2">
-                  {(() => {
-                    const allNames: string[] = [
-                      ...customer.map((c: any) => c.nama as string),
-                      ...localCustomers.filter((n: string) => !customer.some((c: any) => c.nama === n)),
-                    ];
-                    const q = customerQuery.toLowerCase().trim();
-                    const matches = q ? allNames.filter(n => n.toLowerCase().includes(q)) : allNames;
-                    const isNew = customerQuery.trim() && !allNames.some(n => n.toLowerCase() === customerQuery.toLowerCase().trim());
-                    const confirmNew = () => {
-                      const name = customerQuery.trim();
-                      if (!name) return;
-                      setLocalCustomers(prev => prev.includes(name) ? prev : [...prev, name]);
-                      setForm((f: any) => ({ ...f, customer: name }));
-                      setCustomerOpen(false);
-                    };
-                    return (
-                      <div className="relative flex-1">
-                        <input
-                          className="input-field h-9 w-full text-[11px] font-bold"
-                          placeholder="Cari atau ketik nama customer..."
-                          value={customerQuery}
-                          onChange={e => { setCustomerQuery(e.target.value); setForm((f: any) => ({ ...f, customer: e.target.value })); setCustomerOpen(true); }}
-                          onFocus={() => setCustomerOpen(true)}
-                          onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
-                          onKeyDown={e => {
-                            if (e.key === 'Escape') setCustomerOpen(false);
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (matches.length > 0) { setCustomerQuery(matches[0]); setForm((f: any) => ({ ...f, customer: matches[0] })); setCustomerOpen(false); }
-                              else confirmNew();
-                            }
-                          }}
-                        />
-                        {customerOpen && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto">
-                            {matches.map((name, i) => (
-                              <button key={i} type="button"
-                                className="w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                                onMouseDown={e => { e.preventDefault(); setCustomerQuery(name); setForm((f: any) => ({ ...f, customer: name })); setCustomerOpen(false); }}>
-                                {name}
-                              </button>
-                            ))}
-                            {isNew && (
-                              <button type="button"
-                                className="w-full text-left px-3 py-2 text-[11px] font-black text-accent hover:bg-accent/5 transition-colors flex items-center gap-2 border-t border-border-main/30"
-                                onMouseDown={e => { e.preventDefault(); confirmNew(); }}>
-                                <Icon name="Plus" size={11} /> Tambah &ldquo;{customerQuery.trim()}&rdquo;
-                              </button>
-                            )}
-                            {matches.length === 0 && !isNew && (
-                              <div className="px-3 py-2 text-[11px] text-text-light italic opacity-50">Tidak ada hasil</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  <input type="date" className="input-field h-9 w-36 text-[11px] font-bold" value={form.tgl_order || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_order: e.target.value }))} />
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer <span className="text-red-brand">*</span></label>
-                <input
-                  className="input-field h-9 text-[11px] font-bold"
-                  value={form.pic_cust || ""}
-                  onChange={e => setForm((f: any) => ({ ...f, pic_cust: e.target.value }))}
-                  placeholder="Nama PIC / Contact Person..."
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC <span className="text-red-brand">*</span></label>
-                <input
-                  className="input-field h-9 text-[11px] font-bold"
-                  value={form.no_pic || ""}
-                  onChange={e => setForm((f: any) => ({ ...f, no_pic: e.target.value }))}
-                  placeholder="08xx-xxxx-xxxx"
-                />
-              </div>
+            <div>
+              <h3 className="text-sm font-black text-text-main tracking-tight leading-none">
+                {editItem ? `Edit SO — ${editItem.order_id || "Draft"}` : "Input SO Baru"}
+              </h3>
+              <p className="text-[9px] font-bold text-text-light mt-1 opacity-60 italic">
+                {editItem ? "Perbarui data Sales Order" : "Isi detail pengiriman baru"}
+              </p>
             </div>
           </div>
 
+          {/* ── Identitas Order ── */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
-               <Icon name="Truck" size={12} className="text-accent" /> Logistik & Rute
+              <Icon name="Hash" size={12} className="text-accent" /> Identitas Order
+            </div>
+
+            {/* Order ID — edit only */}
+            {editItem && (
+              <div className="space-y-1.5 max-w-xs">
+                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Order ID</label>
+                <input
+                  className="input-field h-9 text-[11px] font-bold"
+                  value={form.order_id || ""}
+                  onChange={e => setForm((f: any) => ({ ...f, order_id: e.target.value }))}
+                  placeholder={form.is_posted ? "Wajib diisi" : "Auto-Generate"}
+                />
+              </div>
+            )}
+
+            {/* Customer + Tanggal — always */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer <span className="text-red-brand">*</span> & Tanggal</label>
+              <div className="flex gap-2">
+                {(() => {
+                  const allNames: string[] = [
+                    ...customer.map((c: any) => c.nama as string),
+                    ...localCustomers.filter((n: string) => !customer.some((c: any) => c.nama === n)),
+                  ];
+                  const q = customerQuery.toLowerCase().trim();
+                  const matches = q ? allNames.filter(n => n.toLowerCase().includes(q)) : allNames;
+                  const isNew = customerQuery.trim() && !allNames.some(n => n.toLowerCase() === customerQuery.toLowerCase().trim());
+                  const confirmNew = () => {
+                    const name = customerQuery.trim();
+                    if (!name) return;
+                    setLocalCustomers(prev => prev.includes(name) ? prev : [...prev, name]);
+                    setForm((f: any) => ({ ...f, customer: name }));
+                    setCustomerOpen(false);
+                  };
+                  return (
+                    <div className="relative flex-1">
+                      <input
+                        className="input-field h-9 w-full text-[11px] font-bold"
+                        placeholder="Cari atau ketik nama customer..."
+                        value={customerQuery}
+                        onChange={e => { setCustomerQuery(e.target.value); setForm((f: any) => ({ ...f, customer: e.target.value })); setCustomerOpen(true); }}
+                        onFocus={() => setCustomerOpen(true)}
+                        onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
+                        onKeyDown={e => {
+                          if (e.key === 'Escape') setCustomerOpen(false);
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (matches.length > 0) { setCustomerQuery(matches[0]); setForm((f: any) => ({ ...f, customer: matches[0] })); setCustomerOpen(false); }
+                            else confirmNew();
+                          }
+                        }}
+                      />
+                      {customerOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto">
+                          {matches.map((name, i) => (
+                            <button key={i} type="button"
+                              className="w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                              onMouseDown={e => { e.preventDefault(); setCustomerQuery(name); setForm((f: any) => ({ ...f, customer: name })); setCustomerOpen(false); }}>
+                              {name}
+                            </button>
+                          ))}
+                          {isNew && (
+                            <button type="button"
+                              className="w-full text-left px-3 py-2 text-[11px] font-black text-accent hover:bg-accent/5 transition-colors flex items-center gap-2 border-t border-border-main/30"
+                              onMouseDown={e => { e.preventDefault(); confirmNew(); }}>
+                              <Icon name="Plus" size={11} /> Tambah &ldquo;{customerQuery.trim()}&rdquo;
+                            </button>
+                          )}
+                          {matches.length === 0 && !isNew && (
+                            <div className="px-3 py-2 text-[11px] text-text-light italic opacity-50">Tidak ada hasil</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <input type="date" className="input-field h-9 w-36 text-[11px] font-bold" value={form.tgl_order || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_order: e.target.value }))} />
+              </div>
+            </div>
+
+            {/* PIC + Phone — edit only */}
+            {editItem && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer <span className="text-red-brand">*</span></label>
+                  <input
+                    className="input-field h-9 text-[11px] font-bold"
+                    value={form.pic_cust || ""}
+                    onChange={e => setForm((f: any) => ({ ...f, pic_cust: e.target.value }))}
+                    placeholder="Nama PIC / Contact Person..."
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC <span className="text-red-brand">*</span></label>
+                  <input
+                    className="input-field h-9 text-[11px] font-bold"
+                    value={form.no_pic || ""}
+                    onChange={e => setForm((f: any) => ({ ...f, no_pic: e.target.value }))}
+                    placeholder="08xx-xxxx-xxxx"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Logistik & Rute ── */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
+              <Icon name="Truck" size={12} className="text-accent" /> Logistik & Rute
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Row 1: Jenis Truk | No. Polisi */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Jenis Truk <span className="text-red-brand">*</span></label>
-                <select
-                  className="input-field h-9 text-[11px] font-bold"
-                  value={form.jenis_truk || ''}
-                  onChange={e => setForm((f: any) => ({ ...f, jenis_truk: e.target.value }))}
-                >
-                  <option value="">Pilih Jenis Truk</option>
-                  <option value="Selfloader">Selfloader</option>
-                  <option value="Selfloader Kecil">Selfloader Kecil</option>
-                  <option value="Towing">Towing</option>
-                  <option value="Lowbed">Lowbed</option>
-                  <option value="Dolly">Dolly</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Polisi <span className="text-red-brand">*</span></label>
-                <input list="armada-list" className="input-field h-9 text-[11px] font-bold" value={form.no_polisi || ""} onChange={e => setForm((f: any) => ({ ...f, no_polisi: e.target.value }))} placeholder="Cari No Polisi..." />
-                <datalist id="armada-list">{armada.map((a: any) => <option key={a.id} value={a.no_polisi} />)}</datalist>
-              </div>
-              {/* Row 2: Nama Sopir | Expedisi */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Nama Sopir</label>
-                <input list="sopir-list" className="input-field h-9 text-[11px] font-bold" value={form.nama_sopir || ""} onChange={e => setForm((f: any) => ({ ...f, nama_sopir: e.target.value }))} placeholder="Cari Sopir..." />
-                <datalist id="sopir-list">{sopir.map((s: any) => <option key={s.id} value={s.nama} />)}</datalist>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Expedisi Pelaksana</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.nama_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, nama_vendor: e.target.value }))} placeholder="..." />
-              </div>
-              {/* Row 3: Lokasi Muat | Lokasi Tujuan */}
+              {/* Jenis Truk + No Polisi — edit only */}
+              {editItem && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Jenis Truk <span className="text-red-brand">*</span></label>
+                    <select
+                      className="input-field h-9 text-[11px] font-bold"
+                      value={form.jenis_truk || ''}
+                      onChange={e => setForm((f: any) => ({ ...f, jenis_truk: e.target.value }))}
+                    >
+                      <option value="">Pilih Jenis Truk</option>
+                      <option value="Selfloader">Selfloader</option>
+                      <option value="Selfloader Kecil">Selfloader Kecil</option>
+                      <option value="Towing">Towing</option>
+                      <option value="Lowbed">Lowbed</option>
+                      <option value="Dolly">Dolly</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Polisi <span className="text-red-brand">*</span></label>
+                    <input list="armada-list" className="input-field h-9 text-[11px] font-bold" value={form.no_polisi || ""} onChange={e => setForm((f: any) => ({ ...f, no_polisi: e.target.value }))} placeholder="Cari No Polisi..." />
+                    <datalist id="armada-list">{armada.map((a: any) => <option key={a.id} value={a.no_polisi} />)}</datalist>
+                  </div>
+                </>
+              )}
+              {/* Sopir + Ekspedisi — edit only */}
+              {editItem && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Nama Sopir</label>
+                    <input list="sopir-list" className="input-field h-9 text-[11px] font-bold" value={form.nama_sopir || ""} onChange={e => setForm((f: any) => ({ ...f, nama_sopir: e.target.value }))} placeholder="Cari Sopir..." />
+                    <datalist id="sopir-list">{sopir.map((s: any) => <option key={s.id} value={s.nama} />)}</datalist>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Expedisi Pelaksana</label>
+                    <input className="input-field h-9 text-[11px] font-bold" value={form.nama_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, nama_vendor: e.target.value }))} placeholder="..." />
+                  </div>
+                </>
+              )}
+              {/* Lokasi Muat + Tujuan — always */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Lokasi Muat <span className="text-red-brand">*</span></label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_muat || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_muat: e.target.value }))} />
@@ -984,16 +1003,19 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Lokasi Tujuan <span className="text-red-brand">*</span></label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_bongkar: e.target.value }))} />
               </div>
-              {/* Row 4: Tgl Muat | Tgl Bongkar */}
+              {/* Tgl Muat — always */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Muat <span className="text-red-brand">*</span></label>
                 <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_muat || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_muat: e.target.value }))} />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Bongkar</label>
-                <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_bongkar: e.target.value }))} />
-              </div>
-              {/* Row 5: Muatan / Volume | SN */}
+              {/* Tgl Bongkar — edit only */}
+              {editItem && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Bongkar</label>
+                  <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_bongkar: e.target.value }))} />
+                </div>
+              )}
+              {/* Muatan / Volume — always */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Muatan / Volume</label>
                 <div className="flex gap-2">
@@ -1001,190 +1023,195 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                   <input className="input-field h-9 w-20 text-[11px] font-bold" value={form.unit_muatan || ""} onChange={e => setForm((f: any) => ({ ...f, unit_muatan: e.target.value }))} placeholder="Unit" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">SN / No. Seri</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.sn || ""} onChange={e => setForm((f: any) => ({ ...f, sn: e.target.value }))} placeholder="Serial number muatan..." />
-              </div>
+              {/* SN — edit only */}
+              {editItem && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">SN / No. Seri</label>
+                  <input className="input-field h-9 text-[11px] font-bold" value={form.sn || ""} onChange={e => setForm((f: any) => ({ ...f, sn: e.target.value }))} placeholder="Serial number muatan..." />
+                </div>
+              )}
             </div>
           </div>
 
+          {/* ── Biaya & Keuangan ── */}
           <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-border-main/50 relative overflow-hidden ring-1 ring-black/[0.02]">
             <div className="flex items-center gap-2 text-[11px] font-black text-navy uppercase tracking-widest px-1 italic">
-               <div className="w-1 h-3 bg-accent rounded-full" />
-               <Icon name="DollarSign" size={13} className="text-accent" /> Biaya & Keuangan
+              <div className="w-1 h-3 bg-accent rounded-full" />
+              <Icon name="DollarSign" size={13} className="text-accent" /> Biaya & Keuangan
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">Harga Pengiriman <span className="text-red-brand">*</span></label>
                 <CurrencyInput value={form.harga_pengiriman} onChange={(v: any) => handleNumChange("harga_pengiriman", v)} className="h-11 text-[13px] font-black bg-white shadow-sm border-slate-200" />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">Asuransi Trip</label>
-                <CurrencyInput value={form.harga_asuransi} onChange={(v: any) => handleNumChange("harga_asuransi", v)} className="h-11 text-[13px] font-black bg-white shadow-sm border-slate-200" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">PPN (1,1%)</label>
-                <CurrencyInput value={form.nilai_pajak} readOnly className="h-11 text-[13px] font-black bg-slate-100/50 border-slate-200" />
-              </div>
-
-              <div className="md:col-span-3 p-5 bg-navy border border-white/10 rounded-xl flex items-center justify-between gap-4 shadow-xl overflow-hidden relative mt-2 group">
-                <div className="absolute top-0 right-0 w-32 h-full bg-white/5 -skew-x-12 translate-x-8 transition-transform group-hover:translate-x-4" />
-                <div className="flex flex-col gap-0 relative z-10">
-                   <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest italic">Total Billable Amount</span>
-                   <span className="text-2xl font-black text-white tabular-nums tracking-tighter">{fmt(form.total_harga_pajak || form.total_harga || 0)}</span>
-                </div>
-                <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
-                   <Icon name={isPajakApply(form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
-                   {isPajakApply(form.tgl_order) ? "Taxable (1,1%)" : "Non-Taxable"}
-                </div>
-              </div>
+              {/* Asuransi + PPN + Total — edit only */}
+              {editItem && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">Asuransi Trip</label>
+                    <CurrencyInput value={form.harga_asuransi} onChange={(v: any) => handleNumChange("harga_asuransi", v)} className="h-11 text-[13px] font-black bg-white shadow-sm border-slate-200" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-text-main px-1 uppercase tracking-tight">PPN (1,1%)</label>
+                    <CurrencyInput value={form.nilai_pajak} readOnly className="h-11 text-[13px] font-black bg-slate-100/50 border-slate-200" />
+                  </div>
+                  <div className="md:col-span-3 p-5 bg-navy border border-white/10 rounded-xl flex items-center justify-between gap-4 shadow-xl overflow-hidden relative mt-2 group">
+                    <div className="absolute top-0 right-0 w-32 h-full bg-white/5 -skew-x-12 translate-x-8 transition-transform group-hover:translate-x-4" />
+                    <div className="flex flex-col gap-0 relative z-10">
+                      <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest italic">Total Billable Amount</span>
+                      <span className="text-2xl font-black text-white tabular-nums tracking-tighter">{fmt(form.total_harga_pajak || form.total_harga || 0)}</span>
+                    </div>
+                    <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
+                      <Icon name={isPajakApply(form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
+                      {isPajakApply(form.tgl_order) ? "Taxable (1,1%)" : "Non-Taxable"}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
-               <Icon name="Paperclip" size={12} className="text-accent" /> Dokumen & Referensi
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              {/* Foto Muat & Bongkar */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Muat (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_muat || ""} onChange={e => setForm((f: any) => ({ ...f, foto_muat: e.target.value }))} placeholder="https://drive.google.com/..." />
-                  {form.foto_muat && (
-                    <a href={form.foto_muat} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Bongkar / POD (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, foto_bongkar: e.target.value }))} placeholder="https://drive.google.com/..." />
-                  {form.foto_bongkar && (
-                    <a href={form.foto_bongkar} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Surat Jalan & SPK */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Surat Jalan (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.surat_jalan || ""} onChange={e => setForm((f: any) => ({ ...f, surat_jalan: e.target.value }))} placeholder="https://..." />
-                  {form.surat_jalan && (
-                    <a href={form.surat_jalan} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. SPK</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.spk || ""} onChange={e => setForm((f: any) => ({ ...f, spk: e.target.value }))} placeholder="Nomor SPK / Work Order..." />
-              </div>
-
-              {/* Asuransi */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Asuransi</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.no_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, no_asuransi: e.target.value }))} placeholder="Nomor polis asuransi..." />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Dokumen Asuransi (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="Shield" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.dokumen_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, dokumen_asuransi: e.target.value }))} placeholder="https://drive.google.com/..." />
-                  {form.dokumen_asuransi && (
-                    <a href={form.dokumen_asuransi} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Scan Invoice */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Scan Invoice (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.scan_invoice || ""} onChange={e => setForm((f: any) => ({ ...f, scan_invoice: e.target.value }))} placeholder="https://drive.google.com/..." />
-                  {form.scan_invoice && (
-                    <a href={form.scan_invoice} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Potong Pajak */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Potong Pajak (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="Receipt" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.potong_pajak || ""} onChange={e => setForm((f: any) => ({ ...f, potong_pajak: e.target.value }))} placeholder="https://drive.google.com/..." />
-                  {form.potong_pajak && (
-                    <a href={form.potong_pajak} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Invoice Vendor */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Invoice Vendor (GDrive)</label>
-                <div className="relative flex gap-1.5">
-                  <Icon name="Truck" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
-                  <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.invoice_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, invoice_vendor: e.target.value }))} placeholder="https://drive.google.com/..." />
-                  {form.invoice_vendor && (
-                    <a href={form.invoice_vendor} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
-                      <Icon name="ExternalLink" size={11} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Catatan */}
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Catatan Internal</label>
-                <textarea className="input-field h-16 pt-2 text-[11px] resize-none font-bold" value={form.keterangan || ""} onChange={e => setForm((f: any) => ({ ...f, keterangan: e.target.value }))} placeholder="..." />
-              </div>
-            </div>
+          {/* ── Catatan Internal — always ── */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Catatan Internal</label>
+            <textarea className="input-field h-20 pt-2 text-[11px] resize-none font-bold w-full" value={form.keterangan || ""} onChange={e => setForm((f: any) => ({ ...f, keterangan: e.target.value }))} placeholder="Catatan untuk keperluan internal..." />
           </div>
+
+          {/* ── Dokumen & Referensi — edit only ── */}
+          {editItem && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
+                <Icon name="Paperclip" size={12} className="text-accent" /> Dokumen & Referensi
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Muat (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_muat || ""} onChange={e => setForm((f: any) => ({ ...f, foto_muat: e.target.value }))} placeholder="https://drive.google.com/..." />
+                    {form.foto_muat && (
+                      <a href={form.foto_muat} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Bongkar / POD (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, foto_bongkar: e.target.value }))} placeholder="https://drive.google.com/..." />
+                    {form.foto_bongkar && (
+                      <a href={form.foto_bongkar} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Surat Jalan (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.surat_jalan || ""} onChange={e => setForm((f: any) => ({ ...f, surat_jalan: e.target.value }))} placeholder="https://..." />
+                    {form.surat_jalan && (
+                      <a href={form.surat_jalan} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. SPK</label>
+                  <input className="input-field h-9 text-[11px] font-bold" value={form.spk || ""} onChange={e => setForm((f: any) => ({ ...f, spk: e.target.value }))} placeholder="Nomor SPK / Work Order..." />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Asuransi</label>
+                  <input className="input-field h-9 text-[11px] font-bold" value={form.no_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, no_asuransi: e.target.value }))} placeholder="Nomor polis asuransi..." />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Dokumen Asuransi (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="Shield" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.dokumen_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, dokumen_asuransi: e.target.value }))} placeholder="https://drive.google.com/..." />
+                    {form.dokumen_asuransi && (
+                      <a href={form.dokumen_asuransi} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Scan Invoice (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.scan_invoice || ""} onChange={e => setForm((f: any) => ({ ...f, scan_invoice: e.target.value }))} placeholder="https://drive.google.com/..." />
+                    {form.scan_invoice && (
+                      <a href={form.scan_invoice} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Potong Pajak (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="Receipt" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.potong_pajak || ""} onChange={e => setForm((f: any) => ({ ...f, potong_pajak: e.target.value }))} placeholder="https://drive.google.com/..." />
+                    {form.potong_pajak && (
+                      <a href={form.potong_pajak} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Invoice Vendor (GDrive)</label>
+                  <div className="relative flex gap-1.5">
+                    <Icon name="Truck" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+                    <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.invoice_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, invoice_vendor: e.target.value }))} placeholder="https://drive.google.com/..." />
+                    {form.invoice_vendor && (
+                      <a href={form.invoice_vendor} target="_blank" rel="noopener noreferrer" className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-main text-text-light hover:text-accent hover:border-accent transition-colors shrink-0">
+                        <Icon name="ExternalLink" size={11} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {err && (
             <div className="flex items-center gap-2 p-3 bg-red-brand-light text-red-brand rounded-xl border border-red-brand/10 font-black text-[10px] tracking-tight">
               <Icon name="AlertCircle" size={14} /> {err}
             </div>
           )}
-        </div>
 
-        <div className="p-6 border-t border-border-main bg-slate-50/50 flex flex-col sm:flex-row gap-3">
-          <FeedbackButton 
-            className="flex-1 h-10 text-[10px] uppercase font-black tracking-widest gap-2 flex items-center justify-center order-2 sm:order-1" 
-            onClick={() => submit(true)} 
-            loading={saving}
-            success={saveSuccess}
-            error={saveError}
-          >
-            <Icon name="Zap" size={14} />
-            {editItem ? "Update & Posting" : "Simpan & Posting"}
-          </FeedbackButton>
-          <button className="btn-ghost flex-1 h-10 text-[10px] uppercase font-black tracking-widest order-3 sm:order-2" onClick={() => submit(false)} disabled={saving || saveSuccess}>
-            Simpan Draft
-          </button>
-          <button className="h-10 px-6 rounded-xl text-text-light font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors order-1 sm:order-3" onClick={() => setTab("list")}>
-            Batal
-          </button>
+          {/* ── Footer buttons ── */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border-main">
+            <FeedbackButton
+              className="flex-1 h-10 text-[10px] uppercase font-black tracking-widest gap-2 flex items-center justify-center order-2 sm:order-1"
+              onClick={() => submit(true)}
+              loading={saving}
+              success={saveSuccess}
+              error={saveError}
+            >
+              <Icon name="Zap" size={14} />
+              {editItem ? "Update & Posting" : "Simpan & Posting"}
+            </FeedbackButton>
+            <button className="btn-ghost flex-1 h-10 text-[10px] uppercase font-black tracking-widest order-3 sm:order-2" onClick={() => submit(false)} disabled={saving || saveSuccess}>
+              Simpan Draft
+            </button>
+            <button className="h-10 px-6 rounded-xl text-text-light font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors order-1 sm:order-3" onClick={() => setTab("list")}>
+              Batal
+            </button>
+          </div>
         </div>
-      </ModalShell>
+      )}
     </PageShell>
   );
 };
