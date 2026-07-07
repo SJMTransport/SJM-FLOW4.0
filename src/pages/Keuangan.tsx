@@ -40,8 +40,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
             <SectionHeader title="Hutang Vendor" sub="Rincian tagihan dari supplier/vendor" />
             <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />} />
 
-            <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm">
-                <div className="overflow-auto max-h-[calc(100vh-340px)]">
+            <div className="table-container max-h-[calc(100vh-340px)]">
                 <table className="w-full border-collapse">
                     <thead>
                         <tr>
@@ -78,8 +77,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
                         ))}
                     </tbody>
                 </table>
-                </div>
-            </Card>
+            </div>
         </PageShell>
       );
   }
@@ -139,8 +137,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
               </div>
             } />
             
-            <Card className="p-0 overflow-hidden">
-                <div className="overflow-auto max-h-[calc(100vh-340px)]">
+            <div className="table-container max-h-[calc(100vh-340px)]">
                 <table className="w-full border-collapse">
                     <thead>
                         <tr>
@@ -168,8 +165,7 @@ export const KeuanganPage = ({ activeSub, jurnal, coa, so, connected }: any) => 
                         ))}
                     </tbody>
                 </table>
-                </div>
-            </Card>
+            </div>
         </PageShell>
       );
   }

@@ -141,6 +141,10 @@
     @apply bg-bg text-text-main font-sans antialiased selection:bg-accent/20 selection:text-accent leading-tight;
   }
 
+  main {
+    scrollbar-gutter: stable;
+  }
+
   h1, h2, h3, h4 {
     @apply tracking-tight font-bold text-text-main;
   }
@@ -249,7 +253,7 @@
   }
 
   .table-container {
-    @apply w-full overflow-x-auto rounded-xl border border-border-main/40 bg-white;
+    @apply w-full overflow-auto rounded-xl border border-border-main/40 bg-white;
   }
   .table-container::-webkit-scrollbar { height: 4px; width: 4px; }
   .table-container::-webkit-scrollbar-thumb {
@@ -353,7 +357,7 @@
   .tab-btn {
     @apply py-2 px-4 border-none bg-transparent cursor-pointer text-[11px] font-bold
            text-text-light border-b-2 border-transparent transition-all duration-200
-           active:scale-95 transform-gpu;
+           active:scale-95 transform-gpu uppercase tracking-widest;
   }
   .tab-btn.active {
     @apply text-accent border-b-accent font-black;

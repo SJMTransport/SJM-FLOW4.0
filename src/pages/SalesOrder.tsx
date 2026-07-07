@@ -611,22 +611,20 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       <PageHeader title="Sales Order" sub={`${so.length} SO tersimpan`}
         action={canEdit && <button className="btn-primary" onClick={openNew}><Icon name="Plus" size={16} /> SO Baru</button>} />
 
-      {tab !== "list" && (
-        <div className="tab-bar">
-          {[
-             ["list", "Daftar SO"],
-             canEdit && ["form", editItem ? "Edit SO" : "Input SO"],
-          ].filter(Boolean).map(([k, l]: any) => (
-            <button
-              key={k}
-              className={`tab-btn ${tab === k ? "active" : ""}`}
-              onClick={() => handleTabChange(k)}
-            >
-              {l.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="tab-bar">
+        {[
+           ["list", "Daftar SO"],
+           canEdit && ["form", editItem ? "Edit SO" : "Input SO"],
+        ].filter(Boolean).map(([k, l]: any) => (
+          <button
+            key={k}
+            className={`tab-btn ${tab === k ? "active" : ""}`}
+            onClick={() => handleTabChange(k)}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
 
       {(tab === "list" || tab === "form") && (
         <div>
@@ -721,13 +719,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </div>
 
           {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
-          <div className="bg-white border border-border-main rounded-xl overflow-hidden shadow-xs">
           <div className="table-container max-h-[calc(100vh-380px)]">
             <table className="w-full border-collapse">
-              <thead className="bg-slate-50 border-b-2 border-border-main sticky top-0 z-10">
+              <thead>
                   <tr>
                     {canEdit && (
-                      <th className="w-10 font-black text-text-med uppercase tracking-widest">
+                      <th className="w-10">
                         <input
                           type="checkbox"
                           className="w-3.5 h-3.5 rounded border-border-main text-accent focus:ring-accent"
@@ -737,7 +734,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </th>
                     )}
                     <th
-                      className={`cursor-pointer select-none transition-colors font-black text-text-med uppercase tracking-widest ${sortKey === 'order_id' ? 'bg-slate-200' : ''}`}
+                      className={`cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-grey-300' : ''}`}
                       onClick={() => toggleSort('order_id')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -748,7 +745,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </span>
                     </th>
                     <th
-                      className={`cursor-pointer select-none transition-colors font-black text-text-med uppercase tracking-widest ${sortKey === 'tgl_muat' ? 'bg-slate-200' : ''}`}
+                      className={`cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-grey-300' : ''}`}
                       onClick={() => toggleSort('tgl_muat')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -758,13 +755,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         {sortKey === 'tgl_muat' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
                       </span>
                     </th>
-                    <th className="font-black text-text-med uppercase tracking-widest">Rute</th>
-                    <th className="font-black text-text-med uppercase tracking-widest">Customer</th>
-                    <th className="font-black text-text-med uppercase tracking-widest">Unit / Sopir</th>
-                    <th className="font-black text-text-med uppercase tracking-widest">Status</th>
-                    <th className="text-right font-black text-text-med uppercase tracking-widest">Biaya</th>
-                    <th className="font-black text-text-med uppercase tracking-widest">Invoice</th>
-                    <th className="text-center font-black text-text-med uppercase tracking-widest">Aksi</th>
+                    <th>Rute</th>
+                    <th>Customer</th>
+                    <th>Unit / Sopir</th>
+                    <th>Status</th>
+                    <th className="text-right">Biaya</th>
+                    <th>Invoice</th>
+                    <th className="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/20">
@@ -865,7 +862,6 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </tfoot>
               </table>
             </div>
-          </div>
         </div>
       )}
 

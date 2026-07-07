@@ -151,9 +151,8 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
             </div>
         } />
 
-        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-            <div className="overflow-auto max-h-[calc(100vh-360px)]">
-                <table className="w-full border-collapse">
+        <div className="table-container max-h-[calc(100vh-360px)]">
+            <table className="w-full border-collapse">
                     <thead>
                         <tr>
                             <th>Kode</th>
@@ -193,7 +192,6 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                     </tbody>
                 </table>
             </div>
-        </Card>
 
         {showModal === 'coa' && (
           <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">
@@ -289,9 +287,8 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
             } 
         />
         
-        <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm">
-            <div className="overflow-auto max-h-[calc(100vh-320px)]">
-                <table className="w-full border-collapse">
+        <div className="table-container max-h-[calc(100vh-320px)]">
+            <table className="w-full border-collapse">
                     <thead>
                         <tr>
                             <th>Kode Akun</th>
@@ -334,7 +331,6 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                     </tbody>
                 </table>
             </div>
-        </Card>
       </PageShell>
     );
   }
@@ -362,9 +358,8 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
             </div>
         } />
 
-        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-            <div className="overflow-auto max-h-[calc(100vh-360px)]">
-                <table className="w-full border-collapse">
+        <div className="table-container max-h-[calc(100vh-360px)]">
+            <table className="w-full border-collapse">
                     <thead>
                         <tr>
                             <th>Nama Pengguna</th>
@@ -408,7 +403,6 @@ export const MasterPage = ({ activeSub, coa, setCoa, users, setUsers, saldoAwal,
                     </tbody>
                 </table>
             </div>
-        </Card>
 
         {showModal === 'user' && (
           <div className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[1100] flex justify-center items-center p-4">

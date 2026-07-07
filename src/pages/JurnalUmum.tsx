@@ -524,7 +524,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
               setTab(k);
             }}
           >
-            {l.toUpperCase()}
+            {l}
           </button>
         ))}
       </div>
@@ -534,13 +534,12 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
           <ActionBar left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />} />
           {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
           
-          <div className="table-container max-h-[calc(100vh-340px)] overflow-y-auto">
+          <div className="table-container max-h-[calc(100vh-340px)]">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
                   <th
-                    className="cursor-pointer select-none transition-colors"
-                    style={{ background: sortKey === 'tanggal' ? '#e2e8f0' : undefined }}
+                    className={`cursor-pointer select-none transition-colors ${sortKey === 'tanggal' ? '!bg-grey-300' : ''}`}
                     onClick={() => toggleSort('tanggal')}
                   >
                     <span className="flex items-center gap-1 pointer-events-none">
@@ -551,8 +550,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                     </span>
                   </th>
                   <th
-                    className="cursor-pointer select-none transition-colors"
-                    style={{ background: sortKey === 'no_jurnal' ? '#e2e8f0' : undefined }}
+                    className={`cursor-pointer select-none transition-colors ${sortKey === 'no_jurnal' ? '!bg-grey-300' : ''}`}
                     onClick={() => toggleSort('no_jurnal')}
                   >
                     <span className="flex items-center gap-1 pointer-events-none">

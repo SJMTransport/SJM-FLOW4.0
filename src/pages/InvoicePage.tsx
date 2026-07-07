@@ -608,23 +608,23 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           {loadingInvoices ? (
             <div className="text-center py-12 text-text-light text-[13px]">Memuat invoice...</div>
           ) : (
-            <div className="bg-white border border-border-main rounded-xl overflow-hidden shadow-xs">
-              <div className="table-container max-h-[calc(100vh-380px)]">
+            <div className="table-container max-h-[calc(100vh-380px)]">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b-2 border-border-main">
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest min-w-[160px]">No Invoice</th>
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Tgl Invoice</th>
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Customer</th>
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Sales Order</th>
-                    <th className="text-right py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-32">Total</th>
-                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-28">Status Bayar</th>
-                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-20">Aksi</th>
+                  <tr>
+                    <th className="min-w-[160px]">No Invoice</th>
+                    <th className="w-24">Tgl Invoice</th>
+                    <th>Customer</th>
+                    <th>Sales Order</th>
+                    <th className="text-center w-20">Tipe</th>
+                    <th className="text-right w-32">Total</th>
+                    <th className="text-center w-28">Status Bayar</th>
+                    <th className="text-center w-20">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-main/30">
                   {filteredInvoices.length === 0 ? (
-                    <tr><td colSpan={7}><EmptyState colSpan={7} /></td></tr>
+                    <tr><td colSpan={8}><EmptyState colSpan={8} /></td></tr>
                   ) : filteredInvoices.map(inv => {
                     const sc = STATUS_COLOR[getInvStatus(inv)] || '#666';
                     return (
@@ -699,7 +699,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   </tr>
                 </tfoot>
               </table>
-            </div>
             </div>
           )}
         </div>

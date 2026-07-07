@@ -182,8 +182,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                     </div>
                  </div>
                  <div className="flex-1 overflow-auto p-6 bg-slate-50/30">
-                    <Card className="p-0 overflow-hidden border-border-main/50 shadow-none">
-                    <div className="overflow-auto max-h-[70vh]">
+                    <div className="table-container max-h-[70vh]">
                     <table className="w-full border-collapse">
                        <thead>
                           <tr>
@@ -205,7 +204,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                        </tbody>
                     </table>
                     </div>
-                    </Card>
                  </div>
               </div>
            </div>
@@ -709,8 +707,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            <StatCardLocal label="Selisih Neraca" value={fmt(selisih)} color={balanced ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="Activity" subLabel={balanced ? "Struktur Data Stabil" : "Data Tidak Seimbang / Periksa Jurnal"} />
         </KPIGrid>
         
-        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-          <div className="overflow-auto max-h-[calc(100vh-420px)]">
+        <div className="table-container max-h-[calc(100vh-420px)]">
           <table className="w-full border-collapse">
             <thead>
               <tr>
@@ -745,7 +742,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             </tfoot>
           </table>
           </div>
-        </Card>
       </PageShell>
     );
   }
@@ -876,7 +872,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 doc.rect(x, kpiY, kpiW, kpiH, 'FD');
                 doc.setFontSize(6); doc.setFont('helvetica', 'bold'); doc.setTextColor(...b.tx);
                 doc.text(b.label, x + kpiW / 2, kpiY + 4.5, { align: 'center' });
-                doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(40,40,40);
+                doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...EBLACK);
                 doc.text(b.value, x + kpiW / 2, kpiY + 11, { align: 'center' });
             });
 
@@ -1050,8 +1046,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            <StatCardLocal label="Laba Rugi Bersih" value={fmt(labaBersih)} color={labaBersih >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="CheckCircle" variant={labaBersih >= 0 ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
 
-        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-          <div className="overflow-auto max-h-[calc(100vh-420px)]">
+        <div className="table-container max-h-[calc(100vh-420px)]">
           <table className="w-full border-collapse">
             <thead>
               <tr>
@@ -1098,7 +1093,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             </tbody>
           </table>
           </div>
-        </Card>
       </PageShell>
     );
   }
@@ -1132,8 +1126,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
            <StatCardLocal label="Profit Bruto" value={fmt(totalProfit)} color={totalProfit >= 0 ? "var(--color-green-brand)" : "var(--color-red-brand)"} icon="PieChart" subLabel={`Berdasarkan analisis ${tbProfit.length} order muatan`} variant={totalProfit >= 0 ? "balance-positive" : "balance-negative"} />
         </KPIGrid>
 
-        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-          <div className="overflow-auto max-h-[calc(100vh-420px)] border-b border-border-main/10">
+        <div className="table-container max-h-[calc(100vh-420px)]">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
@@ -1164,7 +1157,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               </tbody>
             </table>
           </div>
-        </Card>
       </PageShell>
     );
   }
@@ -1259,8 +1251,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
           ) : undefined}
         />
 
-        <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-           <div className="overflow-auto max-h-[calc(100vh-340px)]">
+        <div className="table-container max-h-[calc(100vh-340px)]">
            <table className="w-full border-collapse">
               <thead>
                  <tr>
@@ -1330,7 +1321,6 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
               </tbody>
            </table>
            </div>
-        </Card>
       </PageShell>
     );
   }
@@ -1736,17 +1726,16 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                <span className="opacity-20">/</span>
                <span>{activeCoa.nama}</span>
             </h4>
-            <Card className="p-0 border-border-main/40 overflow-hidden shadow-sm">
-              <div className="overflow-auto max-h-[calc(100vh-450px)]">
+            <div className="table-container max-h-[calc(100vh-450px)]">
                 <table className="w-full border-collapse">
-                  <thead className="sticky top-0 z-10">
+                  <thead>
                     <tr>
-                      <th className="w-28 bg-grey-50">TANGGAL</th>
-                      <th className="w-32 bg-grey-50">NO. JURNAL</th>
-                      <th className="bg-grey-50">KETERANGAN TRANSAKSI</th>
-                      <th className="text-right w-36 bg-grey-50">DEBIT</th>
-                      <th className="text-right w-36 bg-grey-50">KREDIT</th>
-                      <th className="text-right w-44 font-black bg-grey-50">SALDO</th>
+                      <th className="w-28">TANGGAL</th>
+                      <th className="w-32">NO. JURNAL</th>
+                      <th>KETERANGAN TRANSAKSI</th>
+                      <th className="text-right w-36">DEBIT</th>
+                      <th className="text-right w-36">KREDIT</th>
+                      <th className="text-right w-44 font-black">SALDO</th>
                     </tr>
                   </thead>
                   <tbody className="text-[11px]">
@@ -1802,8 +1791,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                      </tr>
                   </tfoot>
                 </table>
-              </div>
-            </Card>
+            </div>
 
             {/* Summary Footer */}
             <div className="mt-2 pt-3 border-t border-border-main/30">

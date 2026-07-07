@@ -299,18 +299,17 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
           {loading ? (
             <div className="text-center py-12 text-text-light text-[13px]">Memuat...</div>
           ) : (
-            <div className="bg-white border border-border-main rounded-xl overflow-hidden shadow-xs">
-              <div className="table-container max-h-[calc(100vh-320px)]">
+            <div className="table-container max-h-[calc(100vh-320px)]">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b-2 border-border-main">
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest min-w-[160px]">No Quotation</th>
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-28">Tgl</th>
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Customer</th>
-                    <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Rute</th>
-                    <th className="text-right py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-32">Harga</th>
-                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Status</th>
-                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Aksi</th>
+                  <tr>
+                    <th className="min-w-[160px]">No Quotation</th>
+                    <th className="w-28">Tgl</th>
+                    <th>Customer</th>
+                    <th>Rute</th>
+                    <th className="text-right w-32">Harga</th>
+                    <th className="text-center w-24">Status</th>
+                    <th className="text-center w-24">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-main/30">
@@ -353,7 +352,6 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                   })}
                 </tbody>
               </table>
-              </div>
             </div>
           )}
         </div>
