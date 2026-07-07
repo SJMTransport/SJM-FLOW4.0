@@ -56,6 +56,10 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
   const [filterText, setFilterText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loadingNo, setLoadingNo] = useState(false);
+  const [customerList, setCustomerList] = useState<any[]>([]);
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [localCustomers, setLocalCustomers] = useState<string[]>([]);
 
   const loadQuotations = async () => {
     setLoading(true);
@@ -64,7 +68,53 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadQuotations(); }, []);
+  useEffect(() => {
+    loadQuotations();
+    const fetchCustomers = async () => {
+      try {
+        const res = await api.getCustomer();
+        setCustomerList(res);
+      } catch {}
+    };
+    fetchCustomers();
+  }, []);
+
+  const allNames = useMemo(() => {
+    const dbNames = customerList.map(c => c.nama as string);
+    const qNames = quotations.map(q => q.customer as string);
+    const local = localCustomers;
+    return Array.from(new Set([...dbNames, ...qNames, ...local])).filter(Boolean);
+  }, [customerList, quotations, localCustomers]);
+
+  const pickCustomer = (name: string) => {
+    setCustomerQuery(name);
+    setCustomerOpen(false);
+    
+    let foundPic = '';
+    let foundTlp = '';
+    
+    const recentQ = [...quotations]
+      .sort((a, b) => (b.tgl_quotation || '').localeCompare(a.tgl_quotation || ''))
+      .find(q => q.customer === name && q.pic);
+    
+    if (recentQ) {
+      foundPic = recentQ.pic || '';
+      foundTlp = recentQ.no_tlp || '';
+    } else {
+      const dbCust = customerList.find(c => c.nama === name);
+      if (dbCust) {
+        foundPic = dbCust.pic || '';
+        foundTlp = dbCust.telepon || dbCust.hp || '';
+      }
+    }
+    
+    setForm(f => ({
+      ...f,
+      customer: name,
+      pic: foundPic || f.pic,
+      no_tlp: foundTlp || f.no_tlp
+    }));
+  };
 
   useEffect(() => {
     if (activeTab !== 'buat' || editItem) return;
@@ -127,6 +177,8 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       }
       setForm({ ...EMPTY_FORM });
       setEditItem(null);
+      setCustomerQuery('');
+      setCustomerOpen(false);
       setActiveTab('daftar');
       await loadQuotations();
     } catch (err: any) {
@@ -155,6 +207,8 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       include_asuransi: q.include_asuransi || false,
       status: q.status || 'Draft',
     });
+    setCustomerQuery(q.customer || '');
+    setCustomerOpen(false);
     setActiveTab('buat');
   };
 
@@ -213,8 +267,14 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
               if (activeTab === 'buat') {
                 setForm({ ...EMPTY_FORM });
                 setEditItem(null);
+                setCustomerQuery('');
+                setCustomerOpen(false);
                 setActiveTab('daftar');
               } else {
+                setForm({ ...EMPTY_FORM });
+                setEditItem(null);
+                setCustomerQuery('');
+                setCustomerOpen(false);
                 setActiveTab('buat');
               }
             }}
@@ -420,7 +480,64 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Customer *</label>
-                  <input value={form.customer} onChange={e => setF('customer', e.target.value)} placeholder="Nama perusahaan customer" className="input-field h-9 text-[11px] font-bold" />
+                  {(() => {
+                    const q = customerQuery.toLowerCase().trim();
+                    const matches = q ? allNames.filter(n => n.toLowerCase().includes(q)) : allNames;
+                    const isNew = customerQuery.trim() && !allNames.some(n => n.toLowerCase() === customerQuery.toLowerCase().trim());
+                    
+                    const confirmNew = () => {
+                      const name = customerQuery.trim();
+                      if (!name) return;
+                      setLocalCustomers(prev => prev.includes(name) ? prev : [...prev, name]);
+                      pickCustomer(name);
+                    };
+
+                    return (
+                      <div className="relative">
+                        <input
+                          className="input-field h-9 w-full text-[11px] font-bold"
+                          placeholder="Cari atau ketik nama customer..."
+                          value={customerQuery}
+                          onChange={e => {
+                            setCustomerQuery(e.target.value);
+                            setForm(f => ({ ...f, customer: e.target.value }));
+                            setCustomerOpen(true);
+                          }}
+                          onFocus={() => setCustomerOpen(true)}
+                          onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
+                          onKeyDown={e => {
+                            if (e.key === 'Escape') setCustomerOpen(false);
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (matches.length > 0) { pickCustomer(matches[0]); }
+                              else confirmNew();
+                            }
+                          }}
+                        />
+                        {customerOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto">
+                            {matches.map((name, i) => (
+                              <button key={i} type="button"
+                                className="w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                                onMouseDown={e => { e.preventDefault(); pickCustomer(name); }}>
+                                {name}
+                              </button>
+                            ))}
+                            {isNew && (
+                              <button type="button"
+                                className="w-full text-left px-3 py-2 text-[11px] font-black text-accent hover:bg-accent/5 transition-colors flex items-center gap-2 border-t border-border-main/30"
+                                onMouseDown={e => { e.preventDefault(); confirmNew(); }}>
+                                <Icon name="Plus" size={11} /> Tambah &ldquo;{customerQuery.trim()}&rdquo;
+                              </button>
+                            )}
+                            {matches.length === 0 && !isNew && (
+                              <div className="px-3 py-2 text-[11px] text-text-light italic opacity-50">Tidak ada hasil</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
