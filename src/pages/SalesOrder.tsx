@@ -876,12 +876,12 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
         <div className="p-6 space-y-8 overflow-y-auto max-h-[calc(100vh-270px)] no-scrollbar bg-white">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
+            <div className="flex items-center gap-2 text-[10px] font-black text-accent uppercase tracking-widest px-1 italic">
                <Icon name="Hash" size={12} className="text-accent" /> Identitas Order
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Order ID</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Order ID</label>
                 <input 
                   className="input-field h-9 text-[11px] font-bold" 
                   value={form.order_id || ""} 
@@ -890,7 +890,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 />
               </div>
               <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Customer <span className="text-red-brand">*</span> & Tanggal</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Customer <span className="text-red-brand">*</span> & Tanggal</label>
                 <div className="flex gap-2">
                   {(() => {
                     const allNames: string[] = [
@@ -962,7 +962,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               {/* PIC Customer — dropdown dari histori SO customer ini */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">PIC Customer <span className="text-red-brand">*</span></label>
                 {(() => {
                   const q = picQuery.toLowerCase().trim();
                   const matches = q ? customerPics.filter(p => p.pic.toLowerCase().includes(q)) : customerPics;
@@ -1009,7 +1009,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 })()}
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">No. Telepon PIC <span className="text-red-brand">*</span></label>
                 <input
                   className="input-field h-9 text-[11px] font-bold"
                   value={form.no_pic || ""}
@@ -1021,13 +1021,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
+            <div className="flex items-center gap-2 text-[10px] font-black text-accent uppercase tracking-widest px-1 italic">
                <Icon name="Truck" size={12} className="text-accent" /> Logistik & Rute
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Row 1: Jenis Truk | No. Polisi */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Jenis Truk <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Jenis Truk <span className="text-red-brand">*</span></label>
                 <select
                   className="input-field h-9 text-[11px] font-bold"
                   value={form.jenis_truk || ''}
@@ -1042,19 +1042,19 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Polisi <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">No. Polisi <span className="text-red-brand">*</span></label>
                 <input list="armada-list" className="input-field h-9 text-[11px] font-bold" value={form.no_polisi || ""} onChange={e => setForm((f: any) => ({ ...f, no_polisi: e.target.value }))} placeholder="Cari No Polisi..." />
                 <datalist id="armada-list">{armada.map((a: any) => <option key={a.id} value={a.no_polisi} />)}</datalist>
               </div>
               {/* Row 2: Nama Sopir | Expedisi */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Nama Sopir</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Nama Sopir</label>
                 <input list="sopir-list" className="input-field h-9 text-[11px] font-bold" value={form.nama_sopir || ""} onChange={e => setForm((f: any) => ({ ...f, nama_sopir: e.target.value }))} placeholder="Cari Sopir..." />
                 <datalist id="sopir-list">{sopir.map((s: any) => <option key={s.id} value={s.nama} />)}</datalist>
               </div>
               {/* Ekspedisi Pelaksana — dropdown dari histori SO */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Expedisi Pelaksana</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Expedisi Pelaksana</label>
                 {(() => {
                   const q = vendorQuery.toLowerCase().trim();
                   const matches = q ? vendorOptions.filter(v => v.toLowerCase().includes(q)) : vendorOptions;
@@ -1100,32 +1100,32 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               </div>
               {/* Row 3: Lokasi Muat | Lokasi Tujuan */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Lokasi Muat <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Lokasi Muat <span className="text-red-brand">*</span></label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_muat || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_muat: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Lokasi Tujuan <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Lokasi Tujuan <span className="text-red-brand">*</span></label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.lokasi_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, lokasi_bongkar: e.target.value }))} />
               </div>
               {/* Row 4: Tgl Muat | Tgl Bongkar */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Muat <span className="text-red-brand">*</span></label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Tgl Muat <span className="text-red-brand">*</span></label>
                 <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_muat || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_muat: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Tgl Bongkar</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Tgl Bongkar</label>
                 <input type="date" className="input-field h-9 text-[11px] font-bold" value={form.tgl_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, tgl_bongkar: e.target.value }))} />
               </div>
               {/* Row 5: Muatan / Volume | SN */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Muatan / Volume</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Muatan / Volume</label>
                 <div className="flex gap-2">
                   <input className="input-field h-9 flex-1 text-[11px] font-bold" value={form.muatan || ""} onChange={e => setForm((f: any) => ({ ...f, muatan: e.target.value }))} placeholder="Jenis" />
                   <input className="input-field h-9 w-20 text-[11px] font-bold" value={form.unit_muatan || ""} onChange={e => setForm((f: any) => ({ ...f, unit_muatan: e.target.value }))} placeholder="Unit" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">SN / No. Seri</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">SN / No. Seri</label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.sn || ""} onChange={e => setForm((f: any) => ({ ...f, sn: e.target.value }))} placeholder="Serial number muatan..." />
               </div>
             </div>
@@ -1165,14 +1165,14 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
+            <div className="flex items-center gap-2 text-[10px] font-black text-accent uppercase tracking-widest px-1 italic">
                <Icon name="Paperclip" size={12} className="text-accent" /> Dokumen & Referensi
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               {/* Foto Muat & Bongkar */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Muat (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Foto Muat (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_muat || ""} onChange={e => setForm((f: any) => ({ ...f, foto_muat: e.target.value }))} placeholder="https://drive.google.com/..." />
@@ -1184,7 +1184,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Foto Bongkar / POD (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Foto Bongkar / POD (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="Camera" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.foto_bongkar || ""} onChange={e => setForm((f: any) => ({ ...f, foto_bongkar: e.target.value }))} placeholder="https://drive.google.com/..." />
@@ -1198,7 +1198,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
               {/* Surat Jalan & SPK */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Surat Jalan (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Surat Jalan (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.surat_jalan || ""} onChange={e => setForm((f: any) => ({ ...f, surat_jalan: e.target.value }))} placeholder="https://..." />
@@ -1210,17 +1210,17 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. SPK</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">No. SPK</label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.spk || ""} onChange={e => setForm((f: any) => ({ ...f, spk: e.target.value }))} placeholder="Nomor SPK / Work Order..." />
               </div>
 
               {/* Asuransi */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Asuransi</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">No. Asuransi</label>
                 <input className="input-field h-9 text-[11px] font-bold" value={form.no_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, no_asuransi: e.target.value }))} placeholder="Nomor polis asuransi..." />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Dokumen Asuransi (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Dokumen Asuransi (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="Shield" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.dokumen_asuransi || ""} onChange={e => setForm((f: any) => ({ ...f, dokumen_asuransi: e.target.value }))} placeholder="https://drive.google.com/..." />
@@ -1234,7 +1234,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
               {/* Scan Invoice */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Scan Invoice (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Scan Invoice (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="FileText" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.scan_invoice || ""} onChange={e => setForm((f: any) => ({ ...f, scan_invoice: e.target.value }))} placeholder="https://drive.google.com/..." />
@@ -1248,7 +1248,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
               {/* Potong Pajak */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Potong Pajak (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Potong Pajak (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="Receipt" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.potong_pajak || ""} onChange={e => setForm((f: any) => ({ ...f, potong_pajak: e.target.value }))} placeholder="https://drive.google.com/..." />
@@ -1262,7 +1262,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
               {/* Invoice Vendor */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Invoice Vendor (GDrive)</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Invoice Vendor (GDrive)</label>
                 <div className="relative flex gap-1.5">
                   <Icon name="Truck" size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
                   <input className="input-field h-9 pl-9 text-[11px] font-bold flex-1" value={form.invoice_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, invoice_vendor: e.target.value }))} placeholder="https://drive.google.com/..." />
@@ -1276,7 +1276,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
               {/* Catatan */}
               <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Catatan Internal</label>
+                <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Catatan Internal</label>
                 <textarea className="input-field h-16 pt-2 text-[11px] resize-none font-bold" value={form.keterangan || ""} onChange={e => setForm((f: any) => ({ ...f, keterangan: e.target.value }))} placeholder="..." />
               </div>
             </div>
