@@ -8,7 +8,6 @@ import { Card, SectionHeader, StatCard, useToast, Icon, PageShell,
 } from '@/src/components/SJMComponents';
 import { buildMeta } from '@/src/lib/activityLogger';
 
-type InvoiceTipe = 'normal' | 'dp' | 'pelunasan';
 type TabType = 'daftar' | 'buat';
 
 const fRp = (n: number) => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
@@ -48,20 +47,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [activeTab, setActiveTab] = useState<TabType>('daftar');
 
   // ── Buat Invoice state
-  const [invoiceTipe, setInvoiceTipe] = useState<InvoiceTipe>('normal');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filterCustomer, setFilterCustomer] = useState('');
-  const [dpNominal, setDpNominal] = useState('');
-  const [dpKeterangan, setDpKeterangan] = useState('');
   const [tglInvoice, setTglInvoice] = useState(new Date().toISOString().split('T')[0]);
   const [manualInvoiceNo, setManualInvoiceNo] = useState('');
   const [loadingInvoiceNo, setLoadingInvoiceNo] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [pendingInvoiceNo, setPendingInvoiceNo] = useState('');
-  const [pendingTipe, setPendingTipe] = useState<InvoiceTipe>('normal');
-  const [pendingKeterangan, setPendingKeterangan] = useState('');
   const [preparing, setPreparing] = useState(false);
+  const [sortSOKey, setSortSOKey] = useState<'order_id' | 'tgl_muat'>('order_id');
+  const [sortSODir, setSortSODir] = useState<'asc' | 'desc'>('desc');
 
   // ── Daftar Invoice state
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -69,7 +65,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [paymentStatusMap, setPaymentStatusMap] = useState<Record<string, any>>({});
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [filterInvCustomer, setFilterInvCustomer] = useState('');
-  const [filterInvTipe, setFilterInvTipe] = useState('all');
   const [filterInvStatus, setFilterInvStatus] = useState('all');
   const [activeKpi, setActiveKpi] = useState<string>('all');
   const [filterPeriodStart, setFilterPeriodStart] = useState('');
@@ -181,28 +176,29 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     }
   };
 
-  // ── Buat Invoice: available SO by tipe
+  // ── Buat Invoice: SO yang belum punya invoice
   const availableSO = useMemo(() => {
-    if (invoiceTipe === 'normal') {
-      return so.filter(s =>
-        s.status_muatan === 'Completed' &&
-        (s.invoice_count === 0 || !s.invoice_count) &&
-        (!s.no_invoice || s.no_invoice === '')
-      );
-    } else if (invoiceTipe === 'dp') {
-      return so.filter(s =>
-        (s.invoice_count === 0 || !s.invoice_count) &&
-        (!s.no_invoice || s.no_invoice === '')
-      );
-    } else {
-      return so.filter(s => s.invoice_count === 1);
-    }
-  }, [so, invoiceTipe]);
+    return so.filter(s =>
+      (s.invoice_count === 0 || !s.invoice_count) &&
+      (!s.no_invoice || s.no_invoice === '')
+    );
+  }, [so]);
 
-  const filteredSO = useMemo(() =>
-    !filterCustomer ? availableSO
-    : availableSO.filter(s => s.customer?.toLowerCase().includes(filterCustomer.toLowerCase())),
-  [availableSO, filterCustomer]);
+  const toggleSortSO = (key: 'order_id' | 'tgl_muat') => {
+    if (sortSOKey === key) setSortSODir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortSOKey(key); setSortSODir('desc'); }
+  };
+
+  const filteredSO = useMemo(() => {
+    const base = !filterCustomer ? availableSO
+      : availableSO.filter(s => s.customer?.toLowerCase().includes(filterCustomer.toLowerCase()));
+    return [...base].sort((a, b) => {
+      const aVal = sortSOKey === 'tgl_muat' ? (a.tgl_muat || '') : (a.order_id || '');
+      const bVal = sortSOKey === 'tgl_muat' ? (b.tgl_muat || '') : (b.order_id || '');
+      const cmp = aVal.localeCompare(bVal);
+      return sortSODir === 'asc' ? cmp : -cmp;
+    });
+  }, [availableSO, filterCustomer, sortSOKey, sortSODir]);
 
   const selectedSOList = useMemo(() => so.filter(s => selectedIds.has(s.id)), [so, selectedIds]);
 
@@ -210,10 +206,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) { next.delete(id); return next; }
-      if (invoiceTipe !== 'normal' && next.size >= 1) {
-        showToast('Invoice DP/Pelunasan hanya untuk 1 SO', 'error');
-        return prev;
-      }
       next.add(id);
       return next;
     });
@@ -222,13 +214,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const validate = (): string | null => {
     if (selectedIds.size === 0) return 'Pilih minimal 1 Sales Order';
     if (new Set(selectedSOList.map(s => s.customer)).size > 1) return 'Semua SO harus dari customer yang sama';
-    if (invoiceTipe === 'dp') {
-      if (selectedIds.size > 1) return 'Invoice DP hanya untuk 1 SO';
-      const nom = parseFloat(dpNominal);
-      if (!nom || nom < 100000) return 'Nominal DP minimal Rp 100.000';
-      if (nom >= (selectedSOList[0]?.total_harga_pajak || 0)) return 'Nominal DP harus kurang dari total SO';
-    }
-    if (invoiceTipe === 'pelunasan' && selectedIds.size > 1) return 'Invoice Pelunasan hanya untuk 1 SO';
     return null;
   };
 
@@ -250,70 +235,33 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         return;
       }
       setPendingInvoiceNo(invoiceNo);
-      setPendingTipe(invoiceTipe);
       const firstSO = selectedSOList[0];
       const invDateStr = fmtDate(tglInvoice);
 
-      let items: InvoiceData['items'];
-      let subTotal = 0, ppn = 0, total = 0;
-      let keteranganInv = '';
-
-      if (invoiceTipe === 'dp') {
-        const dpAmount = parseFloat(dpNominal);
-        keteranganInv = dpKeterangan ? `DP ${dpKeterangan}` : 'DP';
-        setPendingKeterangan(keteranganInv);
-        items = selectedSOList.map((s, i) => ({
+      const items: InvoiceData['items'] = [...selectedSOList]
+        .sort((a, b) => {
+          const cmp = (a.tgl_muat || '').localeCompare(b.tgl_muat || '');
+          return cmp !== 0 ? cmp : (a.order_id || '').localeCompare(b.order_id || '');
+        })
+        .map((s, i) => ({
           rowNo: i + 1, tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
           noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
           muatan: s.muatan || '-', sn: s.sn || '-',
           lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
-          hargaPengiriman: dpAmount, nilaiPajak: 0, hargaAsuransi: null, total: dpAmount,
+          hargaPengiriman: Number(s.harga_pengiriman) || 0,
+          nilaiPajak: calcNilaiPajak(s),
+          hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
+          total: (Number(s.harga_pengiriman) || 0) + (Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : 0),
         }));
-        subTotal = dpAmount; ppn = 0; total = dpAmount;
-
-      } else if (invoiceTipe === 'pelunasan') {
-        keteranganInv = 'Pelunasan';
-        setPendingKeterangan(keteranganInv);
-        const existing = await api.getInvoicesBySO([firstSO.order_id]);
-        const dpInv = existing.find((inv: any) => inv.tipe === 'dp');
-        const sisa = (firstSO.total_harga_pajak || 0) - (dpInv?.total_setelah_pajak || 0);
-        items = selectedSOList.map((s, i) => ({
-          rowNo: i + 1, tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
-          noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
-          muatan: s.muatan || '-', sn: s.sn || '-',
-          lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
-          hargaPengiriman: sisa, nilaiPajak: 0, hargaAsuransi: null, total: sisa,
-        }));
-        subTotal = sisa; ppn = 0; total = sisa;
-
-      } else {
-        keteranganInv = '';
-        setPendingKeterangan('');
-        items = [...selectedSOList]
-          .sort((a, b) => {
-            const cmp = (a.tgl_muat || '').localeCompare(b.tgl_muat || '');
-            return cmp !== 0 ? cmp : (a.order_id || '').localeCompare(b.order_id || '');
-          })
-          .map((s, i) => ({
-            rowNo: i + 1, tglMuat: fmtDate(s.tgl_muat), tglTiba: fmtDate(s.tgl_bongkar),
-            noSO: s.order_id, armada: s.jenis_truk || '-', noPol: s.no_polisi || '-',
-            muatan: s.muatan || '-', sn: s.sn || '-',
-            lokasiMuat: s.lokasi_muat || '-', lokasiTujuan: s.lokasi_bongkar || '-',
-            hargaPengiriman: Number(s.harga_pengiriman) || 0,
-            nilaiPajak: calcNilaiPajak(s),
-            hargaAsuransi: Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : null,
-            total: (Number(s.harga_pengiriman) || 0) + (Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : 0),
-          }));
-        subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman + (i.hargaAsuransi || 0), 0);
-        ppn = items.reduce((acc, i) => acc + (i.nilaiPajak || 0), 0);
-        total = subTotal + ppn;
-      }
+      const subTotal = items.reduce((acc, i) => acc + i.hargaPengiriman + (i.hargaAsuransi || 0), 0);
+      const ppn = items.reduce((acc, i) => acc + (i.nilaiPajak || 0), 0);
+      const total = subTotal + ppn;
 
       setPreviewData({
         invoiceNumber: invoiceNo, invoiceDate: invDateStr,
         customer: firstSO.customer,
         picCust: `${firstSO.pic_cust || ''} ${firstSO.no_pic || ''}`.trim(),
-        items, subTotal, ppn, total, keterangan: keteranganInv,
+        items, subTotal, ppn, total, keterangan: '',
       });
       setShowPreview(true);
     } catch (err: any) {
@@ -336,8 +284,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       total_sebelum_pajak: previewData.subTotal,
       ppn: previewData.ppn,
       total_setelah_pajak: previewData.total,
-      tipe: pendingTipe,
-      keterangan_invoice: pendingKeterangan,
+      tipe: 'normal',
+      keterangan_invoice: '',
     });
     for (const s of selectedSOList) {
       await api.updateSOInvoiceCount(s.id, (s.invoice_count || 0) + 1);
@@ -345,11 +293,9 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     await api.updateSOInvoiceNo(selectedSOList.map(s => s.id), pendingInvoiceNo);
     logAction(`Generate Invoice: ${pendingInvoiceNo}`, buildMeta({
       module: 'invoice' as any, action_type: 'CREATE', record_id: pendingInvoiceNo,
-      after_data: { customer: firstSO.customer, total: previewData.total, so_count: selectedIds.size, tipe: pendingTipe },
+      after_data: { customer: firstSO.customer, total: previewData.total, so_count: selectedIds.size, tipe: 'normal' },
     }));
     setSelectedIds(new Set());
-    setDpNominal('');
-    setDpKeterangan('');
     await loadInvoices();
     try {
       const newNo = await generateInvoiceNo(new Date(tglInvoice));
@@ -444,17 +390,16 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const filteredInvoices = useMemo(() => {
     return invoices.filter(inv => {
       const matchCustomer = !filterInvCustomer || inv.customer?.toLowerCase().includes(filterInvCustomer.toLowerCase());
-      const matchTipe = filterInvTipe === 'all' || inv.tipe === filterInvTipe;
       const matchStatus = filterInvStatus === 'all' || getInvStatus(inv) === filterInvStatus;
       const matchStart = !filterPeriodStart || inv.tgl_invoice >= filterPeriodStart;
       const matchEnd = !filterPeriodEnd || inv.tgl_invoice <= filterPeriodEnd;
       const matchKpi = activeKpi === 'all' || getInvStatus(inv) === activeKpi;
-      return matchCustomer && matchTipe && matchStatus && matchStart && matchEnd && matchKpi;
+      return matchCustomer && matchStatus && matchStart && matchEnd && matchKpi;
     }).sort((a, b) => {
       const extractNum = (s: string) => { const m = (s || '').match(/^(\d+)\//); return m ? parseInt(m[1], 10) : 0; };
       return extractNum(b.no_invoice) - extractNum(a.no_invoice);
     });
-  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvTipe, filterInvStatus, filterPeriodStart, filterPeriodEnd, activeKpi]);
+  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvStatus, filterPeriodStart, filterPeriodEnd, activeKpi]);
 
   const kpiData = useMemo(() => {
     const soBelumiInvoice = so.filter(s =>
@@ -608,12 +553,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input h-9 text-[12px] w-36" />
             <span className="text-text-light text-[11px]">–</span>
             <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input h-9 text-[12px] w-36" />
-            <select value={filterInvTipe} onChange={e => setFilterInvTipe(e.target.value)} className="input h-9 text-[12px] w-28">
-              <option value="all">Semua Tipe</option>
-              <option value="normal">Normal</option>
-              <option value="dp">DP</option>
-              <option value="pelunasan">Pelunasan</option>
-            </select>
             <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input h-9 text-[12px] w-36">
               <option value="all">Semua Status</option>
               <option value="Belum Bayar">Belum Bayar</option>
@@ -657,7 +596,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-24">Tgl Invoice</th>
                     <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Customer</th>
                     <th className="text-left py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">Sales Order</th>
-                    <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-20">Tipe</th>
                     <th className="text-right py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-32">Total</th>
                     <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-28">Status Bayar</th>
                     <th className="text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest w-20">Aksi</th>
@@ -665,7 +603,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </thead>
                 <tbody className="divide-y divide-border-main/30">
                   {filteredInvoices.length === 0 ? (
-                    <tr><td colSpan={8}><EmptyState colSpan={8} /></td></tr>
+                    <tr><td colSpan={7}><EmptyState colSpan={7} /></td></tr>
                   ) : filteredInvoices.map(inv => {
                     const sc = STATUS_COLOR[getInvStatus(inv)] || '#666';
                     return (
@@ -700,11 +638,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className={`badge text-[8px] ${inv.tipe === 'dp' ? 'bg-amber-100 text-amber-700' : inv.tipe === 'pelunasan' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
-                            {inv.tipe}
-                          </span>
-                        </td>
                         <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">
                           {fRp(inv.total_setelah_pajak || 0)}
                         </td>
@@ -737,7 +670,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 border-t-2 border-border-main">
-                    <td colSpan={5} className="py-3 px-4 text-right text-[9px] italic opacity-50 uppercase tracking-widest">Total Terfilter</td>
+                    <td colSpan={4} className="py-3 px-4 text-right text-[9px] italic opacity-50 uppercase tracking-widest">Total Terfilter</td>
                     <td className="py-3 px-4 text-right text-[12px] font-black text-accent tabular-nums">
                       {fRp(filteredInvoices.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0))}
                     </td>
@@ -760,25 +693,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           {/* Sticky top panel */}
           <div className="sticky top-0 z-10 bg-white border-b border-border-main pb-3">
 
-            {/* Type pills + tanggal invoice inline */}
+            {/* No Invoice + Tgl Invoice */}
             <div className="flex items-center gap-2 py-2 flex-wrap">
-              {([
-                { key: 'normal' as InvoiceTipe, label: 'Normal' },
-                { key: 'dp' as InvoiceTipe, label: 'DP' },
-                { key: 'pelunasan' as InvoiceTipe, label: 'Pelunasan' },
-              ]).map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => { setInvoiceTipe(key); setSelectedIds(new Set()); setDpNominal(''); setDpKeterangan(''); }}
-                  className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold border transition-colors ${
-                    invoiceTipe === key
-                      ? 'bg-accent text-white border-accent'
-                      : 'bg-white text-text-med border-border-main hover:border-accent'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
               <div className="flex items-center gap-2">
                 <label className="text-[10px] font-bold text-text-light opacity-60 uppercase tracking-widest whitespace-nowrap">No Invoice</label>
                 <div className="relative">
@@ -803,30 +719,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
             {/* Description */}
             <div className="text-[11px] text-text-med bg-blue-50 rounded-lg px-3 py-2 mb-2">
-              {invoiceTipe === 'normal' && 'SO sudah Completed, belum punya invoice. Bisa pilih lebih dari 1 SO dari customer yang sama.'}
-              {invoiceTipe === 'dp' && 'SO apapun, belum punya invoice. Isi nominal DP minimal Rp 100.000.'}
-              {invoiceTipe === 'pelunasan' && 'SO yang sudah punya invoice DP, belum lunas. Nominal otomatis = Total SO − DP.'}
+              SO yang belum punya invoice. Bisa pilih lebih dari 1 SO dari customer yang sama.
             </div>
-
-            {/* DP form */}
-            {invoiceTipe === 'dp' && (
-              <Card className="p-3 border-amber-200 bg-amber-50/40 mb-2">
-                <div className="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-2">Detail Invoice DP</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-text-light opacity-60 px-1">Nominal DP (Rp) * min Rp 100.000</label>
-                    <input type="number" min={100000} value={dpNominal} onChange={e => setDpNominal(e.target.value)}
-                      placeholder="5000000" className="input-field h-9 text-[11px] font-bold" />
-                    {dpNominal && <div className="text-[10px] text-text-light px-1">= {fRp(parseFloat(dpNominal) || 0)}</div>}
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-text-light opacity-60 px-1">Keterangan (opsional)</label>
-                    <input type="text" value={dpKeterangan} onChange={e => setDpKeterangan(e.target.value)}
-                      placeholder="50% atau sesuai kesepakatan" className="input-field h-9 text-[11px] font-bold" />
-                  </div>
-                </div>
-              </Card>
-            )}
 
             {/* Customer filter + count + Preview button */}
             <div className="flex items-center gap-3 flex-wrap">
@@ -840,9 +734,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   <div>
                     <div className="text-[11px] text-text-med">{selectedIds.size} SO dipilih · {selectedSOList[0]?.customer}</div>
                     <div className="font-black text-[15px] text-accent">
-                      {invoiceTipe === 'normal' && fRp(selectedSOList.reduce((s, x) => s + (x.total_harga_pajak || 0), 0))}
-                      {invoiceTipe === 'dp' && dpNominal && `DP: ${fRp(parseFloat(dpNominal) || 0)}`}
-                      {invoiceTipe === 'pelunasan' && 'Lihat preview untuk nominal'}
+                      {fRp(selectedSOList.reduce((s, x) => s + (x.total_harga_pajak || 0), 0))}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -850,8 +742,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                       onClick={() => {
                         setSelectedIds(new Set());
                         setFilterCustomer('');
-                        setDpNominal('');
-                        setDpKeterangan('');
                       }}
                       className="btn-ghost h-9 px-4 text-[12px] flex items-center gap-2"
                       disabled={preparing}
@@ -872,14 +762,34 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           <div className="table-container mt-2" style={{ flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
             <table className="w-full border-collapse">
               <thead>
-                <tr>
-                  <th className="w-10 text-center">☐</th>
-                  <th>No SO</th>
-                  <th>Customer</th>
-                  <th>Rute</th>
-                  <th>Tgl Muat</th>
-                  <th>Status</th>
-                  <th className="text-right">Total</th>
+                <tr className="bg-slate-50 border-b-2 border-border-main">
+                  <th className="w-10 text-center py-3 px-4 text-[10px] font-black text-text-med uppercase tracking-widest">☐</th>
+                  <th
+                    className="py-3 px-4 text-left text-[10px] font-black text-text-med uppercase tracking-widest cursor-pointer select-none hover:bg-slate-100 transition-colors"
+                    onClick={() => toggleSortSO('order_id')}
+                  >
+                    <span className="flex items-center gap-1">
+                      No SO
+                      {sortSOKey !== 'order_id' && <Icon name="ArrowUpDown" size={10} className="opacity-30" />}
+                      {sortSOKey === 'order_id' && sortSODir === 'asc' && <Icon name="ArrowUp" size={10} className="text-accent" />}
+                      {sortSOKey === 'order_id' && sortSODir === 'desc' && <Icon name="ArrowDown" size={10} className="text-accent" />}
+                    </span>
+                  </th>
+                  <th className="py-3 px-4 text-left text-[10px] font-black text-text-med uppercase tracking-widest">Customer</th>
+                  <th className="py-3 px-4 text-left text-[10px] font-black text-text-med uppercase tracking-widest">Rute</th>
+                  <th
+                    className="py-3 px-4 text-left text-[10px] font-black text-text-med uppercase tracking-widest cursor-pointer select-none hover:bg-slate-100 transition-colors"
+                    onClick={() => toggleSortSO('tgl_muat')}
+                  >
+                    <span className="flex items-center gap-1">
+                      Tgl Muat
+                      {sortSOKey !== 'tgl_muat' && <Icon name="ArrowUpDown" size={10} className="opacity-30" />}
+                      {sortSOKey === 'tgl_muat' && sortSODir === 'asc' && <Icon name="ArrowUp" size={10} className="text-accent" />}
+                      {sortSOKey === 'tgl_muat' && sortSODir === 'desc' && <Icon name="ArrowDown" size={10} className="text-accent" />}
+                    </span>
+                  </th>
+                  <th className="py-3 px-4 text-left text-[10px] font-black text-text-med uppercase tracking-widest">Status</th>
+                  <th className="py-3 px-4 text-right text-[10px] font-black text-text-med uppercase tracking-widest">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-main/20">
