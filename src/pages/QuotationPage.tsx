@@ -323,13 +323,13 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                           <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{q.no_quotation}</div>
                         </td>
                         <td className="py-3 px-4 text-[11px] text-text-med whitespace-nowrap">{fmtDate(q.tgl_quotation)}</td>
-                        <td className="py-3 px-4">
-                          <div className="text-[12px] font-bold text-text-main">{q.customer}</div>
-                          {q.pic && <div className="text-[10px] text-text-light">{q.pic} {q.no_tlp}</div>}
+                        <td className="py-3 px-4 max-w-[180px]">
+                          <div className="text-[12px] font-bold text-text-main truncate" title={q.customer}>{q.customer}</div>
+                          {q.pic && <div className="text-[10px] text-text-light truncate" title={`${q.pic} ${q.no_tlp}`}>{q.pic} {q.no_tlp}</div>}
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="text-[11px] text-text-main">{q.lokasi_muat || '-'}</div>
-                          <div className="text-[10px] text-text-light italic">→ {q.lokasi_tujuan || '-'}</div>
+                        <td className="py-3 px-4 max-w-[150px]">
+                          <div className="text-[11px] text-text-main truncate" title={q.lokasi_muat}>{q.lokasi_muat || '-'}</div>
+                          <div className="text-[10px] text-text-light italic truncate" title={q.lokasi_tujuan ? `Ke ${q.lokasi_tujuan}` : ''}>→ {q.lokasi_tujuan || '-'}</div>
                         </td>
                         <td className="py-3 px-4 text-right font-bold tabular-nums text-[12px]">{fRp(q.harga || 0)}</td>
                         <td className="py-3 px-4 text-center">

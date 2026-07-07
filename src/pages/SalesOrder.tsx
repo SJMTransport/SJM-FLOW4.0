@@ -794,22 +794,23 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                             {s.tgl_muat}
                           </div>
                         </td>
-                        <td className="max-w-[200px]">
-                          <div className="text-[12px] font-bold text-text-main truncate group-hover:text-blue-brand transition-colors" title={s.lokasi_muat}>{s.lokasi_muat}</div>
-                          <div className="text-[10px] font-medium text-text-light opacity-70 italic truncate" title={s.lokasi_bongkar}>to {s.lokasi_bongkar}</div>
+                        <td className="max-w-[150px]">
+                          <div className="text-[12px] font-bold text-text-main truncate group-hover:text-blue-brand transition-colors" title={`Dari ${s.lokasi_muat} ke ${s.lokasi_bongkar}`}>{s.lokasi_muat}</div>
+                          <div className="text-[10px] font-medium text-text-light opacity-70 italic truncate" title={`Dari ${s.lokasi_muat} ke ${s.lokasi_bongkar}`}>to {s.lokasi_bongkar}</div>
                         </td>
-                        <td>
-                          <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors">{s.customer}</div>
+                        <td className="max-w-[180px]">
+                          <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors truncate" title={s.customer}>{s.customer}</div>
                           <div className={`badge text-[8px] mt-1 ${s.is_posted ? "bg-green-brand-light text-green-brand" : "bg-slate-100 text-slate-500"}`}>
                             {s.is_posted ? "Posted" : "Draft"}
                           </div>
                         </td>
-                        <td>
+                        <td className="max-w-[120px]">
                            <button
-                             className="text-[12px] font-black text-accent hover:underline tabular-nums tracking-tight"
+                             className="text-[12px] font-black text-accent hover:underline tabular-nums tracking-tight truncate w-full text-left"
                              onClick={(e) => { e.stopPropagation(); onArmadaClick && onArmadaClick(s.no_polisi); }}
+                             title={s.no_polisi}
                            >{s.no_polisi}</button>
-                           <div className="text-[10px] text-text-light font-medium">{s.nama_sopir}</div>
+                           <div className="text-[10px] text-text-light font-medium truncate" title={s.nama_sopir}>{s.nama_sopir}</div>
                         </td>
                         <td>{statusBadge(s.status_muatan)}</td>
                         <td className="text-right tabular-nums">
@@ -818,10 +819,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                             <div className="text-[9px] text-text-light opacity-60 italic">+PPN {fmt(s.nilai_pajak)}</div>
                           )}
                         </td>
-                        <td>
+                        <td className="max-w-[140px]">
                           {s.no_invoice ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-lg whitespace-nowrap">
-                              <Icon name="CheckCircle" size={9} /> {s.no_invoice}
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-lg truncate w-full" title={s.no_invoice}>
+                              <Icon name="CheckCircle" size={9} className="shrink-0" /> <span className="truncate">{s.no_invoice}</span>
                             </span>
                           ) : (
                             <span className="text-[9px] text-text-light italic opacity-50">—</span>

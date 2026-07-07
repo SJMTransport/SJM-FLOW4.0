@@ -626,7 +626,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         </td>
                         <td className="py-3 px-4 text-[11px] text-text-med whitespace-nowrap">{fmtDate(inv.tgl_invoice)}</td>
                         <td className="py-3 px-4 max-w-[180px]">
-                          <div className="text-[12px] font-bold text-text-main truncate">{inv.customer}</div>
+                          <div className="text-[12px] font-bold text-text-main truncate" title={inv.customer}>{inv.customer}</div>
                         </td>
                         <td className="py-3 px-4 max-w-[200px]">
                           <div className="flex gap-1 flex-wrap">
@@ -640,9 +640,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                               </button>
                             ))}
                             {(inv.so_order_ids || []).length > 2 && (
-                              <span className="px-1.5 py-0.5 bg-slate-100 text-text-light rounded-full text-[9px] font-bold">+{(inv.so_order_ids || []).length - 2}</span>
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-text-light rounded-full text-[9px] font-bold" title={(inv.so_order_ids || []).join(', ')}>+{(inv.so_order_ids || []).length - 2}</span>
                             )}
                           </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                            inv.tipe === 'dp' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : inv.tipe === 'pelunasan' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-slate-100 text-slate-700'
+                          }`} title={inv.tipe || 'normal'}>
+                            {inv.tipe || 'normal'}
+                          </span>
                         </td>
                         <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">
                           {fRp(inv.total_setelah_pajak || 0)}
