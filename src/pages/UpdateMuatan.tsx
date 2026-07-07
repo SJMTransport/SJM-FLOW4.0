@@ -685,41 +685,42 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                     </td>
 
                     {/* Sopir */}
-                    <td className="py-3 px-4">
-                      <div className="text-[12px] font-medium text-text-main">
+                    <td className="py-3 px-4 max-w-[120px]">
+                      <div className="text-[12px] font-medium text-text-main truncate" title={s.nama_sopir || "—"}>
                         {s.nama_sopir || "—"}
                       </div>
                     </td>
 
                     {/* Plat & Armada */}
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 max-w-[130px]">
                       {s.no_polisi ? (
                         <button
                           onClick={() => onArmadaClick && onArmadaClick(s.no_polisi)}
-                          className="text-[11px] font-black font-mono px-2 py-0.5 rounded text-white tracking-wider hover:bg-accent transition-colors"
+                          className="text-[11px] font-black font-mono px-2 py-0.5 rounded text-white tracking-wider hover:bg-accent transition-colors truncate max-w-full"
                           style={{ background: "#252422" }}
+                          title={s.no_polisi}
                         >
                           {s.no_polisi}
                         </button>
                       ) : <span className="text-text-light text-[11px]">—</span>}
-                      <div className="text-[10px] text-text-light mt-0.5">
+                      <div className="text-[10px] text-text-light mt-0.5 truncate" title={s.jenis_truk || s.unit_muatan || "—"}>
                         {s.jenis_truk || s.unit_muatan || "—"}
                       </div>
                     </td>
 
                     {/* Customer & Barang */}
-                    <td className="py-3 px-4 max-w-[160px]">
-                      <div className="text-[12px] font-medium text-text-main truncate">
+                    <td className="py-3 px-4 max-w-[180px]">
+                      <div className="text-[12px] font-medium text-text-main truncate" title={s.customer || "—"}>
                         {s.customer || "—"}
                       </div>
-                      <div className="text-[10px] text-text-light truncate">
+                      <div className="text-[10px] text-text-light truncate" title={s.muatan || s.unit_muatan || "—"}>
                         {s.muatan || s.unit_muatan || "—"}
                       </div>
                     </td>
 
                     {/* Rute */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5 text-[11px] text-text-med">
+                    <td className="py-3 px-4 max-w-[150px]">
+                      <div className="flex items-center gap-1.5 text-[11px] text-text-med w-full" title={`Dari ${s.lokasi_muat || "—"} ke ${s.lokasi_bongkar || "—"}`}>
                         <span className="truncate max-w-[80px]">{s.lokasi_muat || "—"}</span>
                         <Icon name="ArrowRight" size={10} className="text-text-light shrink-0" />
                         <span className="truncate max-w-[80px]">{s.lokasi_bongkar || "—"}</span>
@@ -730,7 +731,7 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                     <td className="py-3 px-4 max-w-[160px]">
                       {lastLog ? (
                         <>
-                          <div className="text-[11px] text-text-main truncate">
+                          <div className="text-[11px] text-text-main truncate" title={lastLog.location || "—"}>
                             {lastLog.location || "—"}
                           </div>
                           <div className="text-[10px] text-text-light tabular-nums">
