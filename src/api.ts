@@ -672,9 +672,14 @@ export const api = {
       await supabase.from('invoices').update({ status_bayar: u.status_bayar }).eq('id', u.id);
     }
   },
-  deleteInvoice: async (id: string) => {
+  deleteInvoice: async (id: string, soIds: string[] = []) => {
     const { error } = await supabase.from('invoices').delete().eq('id', id);
     if (error) throw new Error(error.message || 'Gagal hapus invoice');
+    for (const soId of soIds) {
+      await supabaseManual.from("sales_order")
+        .update({ no_invoice: null, invoice_count: 0 })
+        .eq("id", soId);
+    }
   },
 
   updateInvoiceDokumen: async (id: string, data: {
