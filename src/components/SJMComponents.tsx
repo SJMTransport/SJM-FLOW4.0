@@ -71,13 +71,23 @@ export const KPIGrid = ({ children, cols = 3, className = "" }: any) => (
 );
 
 /** Fixed-height KPI card (128px). Icon top-right, label top-left, value middle, sub bottom. */
-export const StatCard = ({ label, value, sub, color, delay = 0, sparkData, sparkColor, icon }: any) => (
-  <div className="kpi-card fade-up" style={{ animationDelay: `${delay}ms` }}>
+export const StatCard = ({ label, value, sub, color, delay = 0, sparkData, sparkColor, icon, onClick, isActive }: any) => (
+  <div
+    onClick={onClick}
+    className={`kpi-card fade-up relative ${onClick ? 'cursor-pointer select-none transition-all hover:shadow-md' : ''} ${isActive ? 'ring-2 ring-offset-1' : ''}`}
+    style={{
+      animationDelay: `${delay}ms`,
+      ...(isActive && color ? { outlineColor: color, boxShadow: `0 0 0 2px ${color}` } : {})
+    }}
+  >
+    {isActive && (
+      <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-accent animate-pulse" />
+    )}
     <div className="flex items-start justify-between gap-2">
       <div className="kpi-card-label flex-1 min-w-0">{label}</div>
       {icon && (
         <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
           style={{ background: `${color || "var(--color-accent)"}18`, color: color || "var(--color-accent)" }}
         >
           <Icon name={icon} size={16} />

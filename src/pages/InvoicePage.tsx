@@ -477,9 +477,9 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         <div className="space-y-4">
 
           {/* KPI Cards — Baris 1: Status pembayaran */}
-          <div className="grid grid-cols-5 gap-3 mb-3">
+          <KPIGrid cols={5} className="mb-3">
             {([
-              { key: 'all',              label: 'Total Invoice',    value: String(kpiData.total),           icon: 'FileText',    color: 'var(--color-text-main)' },
+              { key: 'all',              label: 'Total Invoice',    value: String(kpiData.total),           icon: 'Database',    color: 'var(--color-text-main)' },
               { key: 'Lunas',            label: 'Lunas',            value: String(kpiData.lunas),           icon: 'CheckCircle', color: 'var(--color-success)'   },
               { key: 'Belum Bayar',      label: 'Belum Bayar',      value: String(kpiData.belumBayar),      icon: 'Clock',       color: 'var(--color-error)'     },
               { key: 'Parsial',          label: 'Parsial',          value: String(kpiData.parsial),         icon: 'PieChart',    color: 'var(--color-warning)'   },
@@ -487,36 +487,21 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             ] as const).map(({ key, label, value, icon, color }) => {
               const isActive = activeKpi === key;
               return (
-                <div
+                <StatCard
                   key={key}
+                  label={label}
+                  value={value}
+                  icon={icon}
+                  color={color}
+                  isActive={isActive}
                   onClick={() => {
                     setActiveKpi(prev => prev === key ? 'all' : key);
                     setFilterInvStatus('all');
                   }}
-                  className={`kpi-card relative cursor-pointer transition-all ${isActive ? 'ring-2 ring-offset-1' : 'hover:shadow-md'}`}
-                  style={{
-                    padding: '10px 14px',
-                    borderLeftColor: color,
-                    borderLeftWidth: '3px',
-                    ...(isActive ? { boxShadow: `0 0 0 2px ${color}` } : {}),
-                  }}
-                >
-                  {isActive && key !== 'all' && (
-                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full animate-pulse"
-                      style={{ backgroundColor: color }} />
-                  )}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="kpi-card-label">{label}</div>
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: color + '18', color }}>
-                      <Icon name={icon} size={14} />
-                    </div>
-                  </div>
-                  <div className="kpi-card-value" style={{ color, fontSize: '1.25rem' }}>{value}</div>
-                </div>
+                />
               );
             })}
-          </div>
+          </KPIGrid>
 
           {/* KPI Baris 2: Financial summary — flat layout */}
           <div className="flex items-stretch gap-6 px-1 mb-4">

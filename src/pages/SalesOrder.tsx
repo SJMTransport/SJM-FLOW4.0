@@ -629,22 +629,28 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       {(tab === "list" || tab === "form") && (
         <div>
           {/* KPI Cards */}
-          <div className="grid grid-cols-6 gap-3 mb-4">
+          <KPIGrid cols={6} className="mb-4">
             {([
-              { key: 'all',       label: 'Total SO',      value: periodBase.length,          color: 'var(--color-accent)',     icon: 'Package'     },
-              { key: 'On Going',  label: 'On Going',      value: kpiCount['On Going'],       color: 'var(--color-info)',       icon: 'Truck'       },
-              { key: 'Loading',   label: 'Loading',       value: kpiCount['Loading'],        color: 'var(--color-warning)',    icon: 'PackageOpen' },
-              { key: 'Completed', label: 'Completed',     value: kpiCount['Completed'],      color: 'var(--color-success)',    icon: 'CheckCircle' },
-              { key: 'Cancelled', label: 'Cancelled',     value: kpiCount['Cancelled'],      color: 'var(--color-error)',      icon: 'XCircle'     },
-              { key: '__belum__', label: 'Belum Invoice', value: kpiBelumInvoice,            color: 'var(--color-teal, #0d9488)', icon: 'FileX'    },
-            ] as const).map(({ key, label, value, color, icon }) => {
+              { key: 'all',       label: 'Total SO',      value: String(periodBase.length),                  color: 'var(--color-accent)',     icon: 'Database'    },
+              { key: 'On Going',  label: 'On Going',      value: String(kpiCount['On Going']),               color: '#4A6FA5',                 icon: 'Navigation'  },
+              { key: 'Loading',   label: 'Loading',       value: String(kpiCount['Loading']),                color: 'var(--color-warning)',    icon: 'Package'     },
+              { key: 'Completed', label: 'Completed',     value: String(kpiCount['Completed']),              color: 'var(--color-success)',    icon: 'CheckCircle' },
+              { key: 'Cancelled', label: 'Cancelled',     value: String(kpiCount['Cancelled']),              color: 'var(--color-error)',      icon: 'AlertTriangle' },
+              { key: '__belum__', label: 'Belum Invoice', value: String(kpiBelumInvoice),                    color: 'var(--color-teal, #0d9488)', icon: 'FileText', sub: `+${kpiMasihBerjalan} SO masih berjalan` },
+            ] as const).map(({ key, label, value, color, icon, ...extra }) => {
               const isActive =
                 key === '__belum__'
                   ? invoiceFilter === 'uninvoiced'
                   : statusFilter === key;
               return (
-                <div
+                <StatCard
                   key={key}
+                  label={label}
+                  value={value}
+                  icon={icon}
+                  color={color}
+                  sub={'sub' in extra ? extra.sub : undefined}
+                  isActive={isActive}
                   onClick={() => {
                     if (key === '__belum__') {
                       setInvoiceFilter(invoiceFilter === 'uninvoiced' ? 'all' : 'uninvoiced');
@@ -654,23 +660,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       setInvoiceFilter('all');
                     }
                   }}
-                  className={`kpi-card relative cursor-pointer select-none transition-all hover:shadow-md ${isActive ? 'ring-2 ring-offset-1' : ''}`}
-                  style={{ padding: '10px 14px', ...(isActive ? { outlineColor: color, boxShadow: `0 0 0 2px ${color}` } : {}) }}
-                >
-                  {isActive && (
-                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent animate-pulse" />
-                  )}
-                  <span className="kpi-card-label">{label}</span>
-                  <span className="kpi-card-value" style={{ color }}>{value}</span>
-                  {key === '__belum__' && (
-                    <div className="kpi-card-sub" style={{ color: '#64748b' }}>
-                      +{kpiMasihBerjalan} SO masih berjalan
-                    </div>
-                  )}
-                </div>
+                />
               );
             })}
-          </div>
+          </KPIGrid>
 
           <ActionBar
             left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />}
