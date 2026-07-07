@@ -539,7 +539,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
               <thead>
                 <tr>
                   <th
-                    className={`cursor-pointer select-none transition-colors ${sortKey === 'tanggal' ? '!bg-grey-300' : ''}`}
+                    className={`cursor-pointer select-none transition-colors ${sortKey === 'tanggal' ? '!bg-slate-100 !text-accent' : ''}`}
                     onClick={() => toggleSort('tanggal')}
                   >
                     <span className="flex items-center gap-1 pointer-events-none">
@@ -550,7 +550,7 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
                     </span>
                   </th>
                   <th
-                    className={`cursor-pointer select-none transition-colors ${sortKey === 'no_jurnal' ? '!bg-grey-300' : ''}`}
+                    className={`cursor-pointer select-none transition-colors ${sortKey === 'no_jurnal' ? '!bg-slate-100 !text-accent' : ''}`}
                     onClick={() => toggleSort('no_jurnal')}
                   >
                     <span className="flex items-center gap-1 pointer-events-none">

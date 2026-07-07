@@ -734,7 +734,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </th>
                     )}
                     <th
-                      className={`cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-grey-300' : ''}`}
+                      className={`cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-slate-100 !text-accent' : ''}`}
                       onClick={() => toggleSort('order_id')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -745,7 +745,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </span>
                     </th>
                     <th
-                      className={`cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-grey-300' : ''}`}
+                      className={`cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-slate-100 !text-accent' : ''}`}
                       onClick={() => toggleSort('tgl_muat')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
