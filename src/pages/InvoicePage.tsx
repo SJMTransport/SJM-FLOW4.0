@@ -594,17 +594,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
             <div className="text-center py-12 text-text-light text-[13px]">Memuat invoice...</div>
           ) : (
             <div className="table-container max-h-[calc(100vh-380px)]">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed">
                 <thead>
                   <tr>
-                    <th className="min-w-[160px]">No Invoice</th>
-                    <th className="w-24">Tgl Invoice</th>
-                    <th>Customer</th>
-                    <th>Sales Order</th>
-                    <th className="text-center w-20">Tipe</th>
-                    <th className="text-right w-32">Total</th>
-                    <th className="text-center w-28">Status Bayar</th>
-                    <th className="text-center w-20">Aksi</th>
+                    <th className="w-[160px]">No Invoice</th>
+                    <th className="w-[100px]">Tgl Invoice</th>
+                    <th className="w-[180px]">Customer</th>
+                    <th className="w-[150px]">Sales Order</th>
+                    <th className="w-[80px] text-center">Tipe</th>
+                    <th className="w-[120px] text-right">Total</th>
+                    <th className="w-[110px] text-center">Status Bayar</th>
+                    <th className="w-[80px] text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-main/30">

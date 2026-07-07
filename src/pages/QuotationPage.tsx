@@ -300,16 +300,16 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
             <div className="text-center py-12 text-text-light text-[13px]">Memuat...</div>
           ) : (
             <div className="table-container max-h-[calc(100vh-320px)]">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed">
                 <thead>
                   <tr>
-                    <th className="min-w-[160px]">No Quotation</th>
-                    <th className="w-28">Tgl</th>
-                    <th>Customer</th>
-                    <th>Rute</th>
-                    <th className="text-right w-32">Harga</th>
-                    <th className="text-center w-24">Status</th>
-                    <th className="text-center w-24">Aksi</th>
+                    <th className="w-[160px]">No Quotation</th>
+                    <th className="w-[100px]">Tgl</th>
+                    <th className="w-[180px]">Customer</th>
+                    <th className="w-[150px]">Rute</th>
+                    <th className="w-[120px] text-right">Harga</th>
+                    <th className="w-[100px] text-center">Status</th>
+                    <th className="w-[80px] text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-main/30">

@@ -713,7 +713,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
 
           {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
           <div className="table-container max-h-[calc(100vh-380px)]">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse table-fixed">
               <thead>
                   <tr>
                     {canEdit && (
@@ -727,7 +727,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </th>
                     )}
                     <th
-                      className={`cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-slate-100 !text-accent' : ''}`}
+                      className={`w-[110px] cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-slate-100 !text-accent' : ''}`}
                       onClick={() => toggleSort('order_id')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -738,7 +738,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </span>
                     </th>
                     <th
-                      className={`cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-slate-100 !text-accent' : ''}`}
+                      className={`w-[90px] cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-slate-100 !text-accent' : ''}`}
                       onClick={() => toggleSort('tgl_muat')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -748,13 +748,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         {sortKey === 'tgl_muat' && sortDir === 'desc' && <ArrowDown size={10} className="text-accent" />}
                       </span>
                     </th>
-                    <th>Rute</th>
-                    <th>Customer</th>
-                    <th>Unit / Sopir</th>
-                    <th>Status</th>
-                    <th className="text-right">Biaya</th>
-                    <th>Invoice</th>
-                    <th className="text-center">Aksi</th>
+                    <th className="w-[160px]">Rute</th>
+                    <th className="w-[180px]">Customer</th>
+                    <th className="w-[130px]">Unit / Sopir</th>
+                    <th className="w-[100px]">Status</th>
+                    <th className="w-[110px] text-right">Biaya</th>
+                    <th className="w-[150px]">Invoice</th>
+                    <th className="w-[80px] text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody key={`${sortKey}-${sortDir}`} className="divide-y divide-border-main/20">

@@ -621,11 +621,11 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
 
       {/* ── Table ── */}
       <div className="table-container max-h-[calc(100vh-360px)]">
-        <table className="w-full border-collapse">
+        <table className="w-full border-collapse table-fixed">
           <thead>
             <tr className="bg-slate-50 border-b-2 border-border-main">
               <th
-                className={`text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                className={`w-[110px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
                 onClick={() => toggleSort('order_id')}
               >
                 <span className="flex items-center gap-1">
@@ -635,11 +635,11 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                   {sortKey === 'order_id' && sortDir === 'desc' && <Icon name="ArrowDown" size={9} className="text-accent" />}
                 </span>
               </th>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Sopir</th>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Plat &amp; Armada</th>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Customer &amp; Barang</th>
+              <th className="w-[120px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Sopir</th>
+              <th className="w-[130px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Plat &amp; Armada</th>
+              <th className="w-[180px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Customer &amp; Barang</th>
               <th
-                className={`text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'tgl_muat' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                className={`w-[150px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'tgl_muat' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
                 onClick={() => toggleSort('tgl_muat')}
               >
                 <span className="flex items-center gap-1">
@@ -649,9 +649,9 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                   {sortKey === 'tgl_muat' && sortDir === 'desc' && <Icon name="ArrowDown" size={9} className="text-accent" />}
                 </span>
               </th>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Posisi Terakhir</th>
-              <th className="text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Status</th>
-              <th className="text-right py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Aksi</th>
+              <th className="w-[160px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Posisi Terakhir</th>
+              <th className="w-[100px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Status</th>
+              <th className="w-[80px] text-right py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-main/20">
