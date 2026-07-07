@@ -530,8 +530,8 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
 
       {/* ── Header ── */}
       <PageHeader
-        title="Update Muatan Operasional"
-        sub="Manajemen rantai pasok logistik dan penjejakan status pengiriman armada"
+        title="Update Muatan"
+        sub="Lakukan Update Status Muatan secara Berkala"
       />
 
       {/* ── KPI Grid ── */}
