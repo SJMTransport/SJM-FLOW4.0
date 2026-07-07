@@ -39,9 +39,10 @@ interface InvoicePageProps {
   currentUser: any;
   logAction: (msg: string, meta?: any) => void;
   onSOClick?: (orderId: string) => void;
+  onRefreshSO?: () => Promise<void>;
 }
 
-export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAction, onSOClick }) => {
+export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAction, onSOClick, onRefreshSO }) => {
   const { showToast, ToastUI } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabType>('daftar');
@@ -297,6 +298,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     }));
     setSelectedIds(new Set());
     await loadInvoices();
+    await onRefreshSO?.();
     try {
       const newNo = await generateInvoiceNo(new Date(tglInvoice));
       setManualInvoiceNo(newNo);
@@ -306,7 +308,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const handleDeleteInvoice = async (inv: any) => {
     setDeletingInvoiceId(inv.id);
     try {
-      await api.deleteInvoice(inv.id);
+      await api.deleteInvoice(inv.id, inv.so_ids || []);
       logAction(`Hapus Invoice: ${inv.no_invoice}`, buildMeta({
         module: 'invoice', action_type: 'DELETE', record_id: inv.no_invoice,
         before_data: { customer: inv.customer, total: inv.total_setelah_pajak },
@@ -314,6 +316,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       showToast(`Invoice ${inv.no_invoice} berhasil dihapus`, 'success');
       setConfirmDelete(null);
       await loadInvoices();
+      await onRefreshSO?.();
     } catch (err: any) {
       showToast('Gagal hapus invoice: ' + err.message, 'error');
     } finally {
