@@ -281,6 +281,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [localCustomers, setLocalCustomers] = useState<string[]>([]);
+  const [picOpen, setPicOpen] = useState(false);
+  const [picQuery, setPicQuery] = useState("");
+  const [vendorOpen, setVendorOpen] = useState(false);
+  const [vendorQuery, setVendorQuery] = useState("");
   
   const emptyForm = {
     order_id: "", no_invoice: "", kode_invoice: "", laporan_keuangan: "",
@@ -297,6 +301,33 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     modal_legs: [],
   };
   const [form, setForm] = useState<any>(emptyForm);
+
+  // Unique PIC+phone pairs for the currently selected customer (most recent first)
+  const customerPics = useMemo(() => {
+    const cust = form.customer;
+    if (!cust) return [];
+    const seen = new Set<string>();
+    const result: { pic: string; no: string }[] = [];
+    [...(so || [])].sort((a: any, b: any) => (b.tgl_order || '').localeCompare(a.tgl_order || ''))
+      .forEach((s: any) => {
+        if (s.customer === cust && s.pic_cust) {
+          const key = s.pic_cust.toLowerCase().trim();
+          if (!seen.has(key)) { seen.add(key); result.push({ pic: s.pic_cust, no: s.no_pic || '' }); }
+        }
+      });
+    return result;
+  }, [so, form.customer]);
+
+  // Unique ekspedisi (vendor) values from SO history
+  const vendorOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    (so || []).forEach((s: any) => {
+      const v = (s.nama_vendor || '').trim();
+      if (v && !seen.has(v.toLowerCase())) { seen.add(v.toLowerCase()); result.push(v); }
+    });
+    return result.sort();
+  }, [so]);
 
   const isPajakApply = (tgl_order: string) => {
     if (!tgl_order) return false;
@@ -399,11 +430,13 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
   };
   const resetCustomerCombo = (name = "") => { setCustomerQuery(name); setCustomerOpen(false); };
+  const resetPicCombo = (name = "") => { setPicQuery(name); setPicOpen(false); };
+  const resetVendorCombo = (name = "") => { setVendorQuery(name); setVendorOpen(false); };
 
   const openNew = () => {
     setForm(emptyForm);
     setEditItem(null); setErr(""); setTab("form");
-    resetCustomerCombo();
+    resetCustomerCombo(); resetPicCombo(); resetVendorCombo();
   };
 
   const openDuplicate = (s: any) => {
@@ -411,6 +444,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     setForm({ ...rest, order_id: "", is_posted: false, tgl_order: today(), tgl_muat: today() });
     setEditItem(null); setErr(""); setTab("form");
     resetCustomerCombo(s.customer || "");
+    resetPicCombo(s.pic_cust || ""); resetVendorCombo(s.nama_vendor || "");
     showToast("Data disalin (Order ID dikosongkan untuk pendaftaran baru)", "info");
   };
 
@@ -420,6 +454,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       setErr("");
       setTab("form");
       resetCustomerCombo(s.customer || "");
+      resetPicCombo(s.pic_cust || ""); resetVendorCombo(s.nama_vendor || "");
   };
 
   useEffect(() => {
@@ -864,12 +899,18 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                     const q = customerQuery.toLowerCase().trim();
                     const matches = q ? allNames.filter(n => n.toLowerCase().includes(q)) : allNames;
                     const isNew = customerQuery.trim() && !allNames.some(n => n.toLowerCase() === customerQuery.toLowerCase().trim());
+                    const pickCustomer = (name: string) => {
+                      setCustomerQuery(name);
+                      setCustomerOpen(false);
+                      const recent = [...(so || [])].sort((a: any, b: any) => (b.tgl_order || '').localeCompare(a.tgl_order || '')).find((s: any) => s.customer === name && s.pic_cust);
+                      setForm((f: any) => ({ ...f, customer: name, pic_cust: recent?.pic_cust || f.pic_cust, no_pic: recent?.no_pic || f.no_pic }));
+                      if (recent?.pic_cust) { setPicQuery(recent.pic_cust); }
+                    };
                     const confirmNew = () => {
                       const name = customerQuery.trim();
                       if (!name) return;
                       setLocalCustomers(prev => prev.includes(name) ? prev : [...prev, name]);
-                      setForm((f: any) => ({ ...f, customer: name }));
-                      setCustomerOpen(false);
+                      pickCustomer(name);
                     };
                     return (
                       <div className="relative flex-1">
@@ -884,7 +925,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                             if (e.key === 'Escape') setCustomerOpen(false);
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              if (matches.length > 0) { setCustomerQuery(matches[0]); setForm((f: any) => ({ ...f, customer: matches[0] })); setCustomerOpen(false); }
+                              if (matches.length > 0) { pickCustomer(matches[0]); }
                               else confirmNew();
                             }
                           }}
@@ -894,7 +935,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                             {matches.map((name, i) => (
                               <button key={i} type="button"
                                 className="w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                                onMouseDown={e => { e.preventDefault(); setCustomerQuery(name); setForm((f: any) => ({ ...f, customer: name })); setCustomerOpen(false); }}>
+                                onMouseDown={e => { e.preventDefault(); pickCustomer(name); }}>
                                 {name}
                               </button>
                             ))}
@@ -918,14 +959,53 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              {/* PIC Customer — dropdown dari histori SO customer ini */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">PIC Customer <span className="text-red-brand">*</span></label>
-                <input
-                  className="input-field h-9 text-[11px] font-bold"
-                  value={form.pic_cust || ""}
-                  onChange={e => setForm((f: any) => ({ ...f, pic_cust: e.target.value }))}
-                  placeholder="Nama PIC / Contact Person..."
-                />
+                {(() => {
+                  const q = picQuery.toLowerCase().trim();
+                  const matches = q ? customerPics.filter(p => p.pic.toLowerCase().includes(q)) : customerPics;
+                  const isNew = picQuery.trim() && !customerPics.some(p => p.pic.toLowerCase() === picQuery.toLowerCase().trim());
+                  return (
+                    <div className="relative">
+                      <input
+                        className="input-field h-9 w-full text-[11px] font-bold"
+                        placeholder="Nama PIC / Contact Person..."
+                        value={picQuery}
+                        onChange={e => { setPicQuery(e.target.value); setForm((f: any) => ({ ...f, pic_cust: e.target.value })); setPicOpen(true); }}
+                        onFocus={() => { if (customerPics.length > 0) setPicOpen(true); }}
+                        onBlur={() => setTimeout(() => setPicOpen(false), 150)}
+                        onKeyDown={e => {
+                          if (e.key === 'Escape') setPicOpen(false);
+                          if (e.key === 'Enter' && matches.length > 0) {
+                            e.preventDefault();
+                            const p = matches[0];
+                            setPicQuery(p.pic); setForm((f: any) => ({ ...f, pic_cust: p.pic, no_pic: p.no })); setPicOpen(false);
+                          }
+                        }}
+                      />
+                      {picOpen && (matches.length > 0 || isNew) && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+                          {matches.map((p, i) => (
+                            <button key={i} type="button"
+                              className="w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                              onMouseDown={e => { e.preventDefault(); setPicQuery(p.pic); setForm((f: any) => ({ ...f, pic_cust: p.pic, no_pic: p.no })); setPicOpen(false); }}>
+                              <div className="text-[11px] font-bold text-text-main">{p.pic}</div>
+                              {p.no && <div className="text-[10px] text-text-light opacity-70">{p.no}</div>}
+                            </button>
+                          ))}
+                          {isNew && (
+                            <button type="button"
+                              className="w-full text-left px-3 py-2 text-[11px] font-black text-accent hover:bg-accent/5 transition-colors flex items-center gap-2 border-t border-border-main/30"
+                              onMouseDown={e => { e.preventDefault(); setForm((f: any) => ({ ...f, pic_cust: picQuery.trim() })); setPicOpen(false); }}>
+                              <Icon name="Plus" size={11} /> Tambah &ldquo;{picQuery.trim()}&rdquo;
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">No. Telepon PIC <span className="text-red-brand">*</span></label>
@@ -971,9 +1051,51 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                 <input list="sopir-list" className="input-field h-9 text-[11px] font-bold" value={form.nama_sopir || ""} onChange={e => setForm((f: any) => ({ ...f, nama_sopir: e.target.value }))} placeholder="Cari Sopir..." />
                 <datalist id="sopir-list">{sopir.map((s: any) => <option key={s.id} value={s.nama} />)}</datalist>
               </div>
+              {/* Ekspedisi Pelaksana — dropdown dari histori SO */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-text-light px-1 opacity-60">Expedisi Pelaksana</label>
-                <input className="input-field h-9 text-[11px] font-bold" value={form.nama_vendor || ""} onChange={e => setForm((f: any) => ({ ...f, nama_vendor: e.target.value }))} placeholder="..." />
+                {(() => {
+                  const q = vendorQuery.toLowerCase().trim();
+                  const matches = q ? vendorOptions.filter(v => v.toLowerCase().includes(q)) : vendorOptions;
+                  const isNew = vendorQuery.trim() && !vendorOptions.some(v => v.toLowerCase() === vendorQuery.toLowerCase().trim());
+                  return (
+                    <div className="relative">
+                      <input
+                        className="input-field h-9 w-full text-[11px] font-bold"
+                        placeholder="Cari atau ketik ekspedisi..."
+                        value={vendorQuery}
+                        onChange={e => { setVendorQuery(e.target.value); setForm((f: any) => ({ ...f, nama_vendor: e.target.value })); setVendorOpen(true); }}
+                        onFocus={() => { if (vendorOptions.length > 0) setVendorOpen(true); }}
+                        onBlur={() => setTimeout(() => setVendorOpen(false), 150)}
+                        onKeyDown={e => {
+                          if (e.key === 'Escape') setVendorOpen(false);
+                          if (e.key === 'Enter' && matches.length > 0) {
+                            e.preventDefault();
+                            setVendorQuery(matches[0]); setForm((f: any) => ({ ...f, nama_vendor: matches[0] })); setVendorOpen(false);
+                          }
+                        }}
+                      />
+                      {vendorOpen && (matches.length > 0 || isNew) && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+                          {matches.map((v, i) => (
+                            <button key={i} type="button"
+                              className="w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                              onMouseDown={e => { e.preventDefault(); setVendorQuery(v); setForm((f: any) => ({ ...f, nama_vendor: v })); setVendorOpen(false); }}>
+                              {v}
+                            </button>
+                          ))}
+                          {isNew && (
+                            <button type="button"
+                              className="w-full text-left px-3 py-2 text-[11px] font-black text-accent hover:bg-accent/5 transition-colors flex items-center gap-2 border-t border-border-main/30"
+                              onMouseDown={e => { e.preventDefault(); setForm((f: any) => ({ ...f, nama_vendor: vendorQuery.trim() })); setVendorOpen(false); }}>
+                              <Icon name="Plus" size={11} /> Tambah &ldquo;{vendorQuery.trim()}&rdquo;
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               {/* Row 3: Lokasi Muat | Lokasi Tujuan */}
               <div className="space-y-1.5">
