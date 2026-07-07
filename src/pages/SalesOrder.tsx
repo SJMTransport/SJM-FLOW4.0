@@ -626,7 +626,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         ))}
       </div>
 
-      {(tab === "list" || tab === "form") && (
+      {tab === "list" ? (
         <div>
           {/* KPI Cards */}
           <KPIGrid cols={6} className="mb-4">
@@ -856,9 +856,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               </table>
             </div>
         </div>
-      )}
-
-      <ModalShell isOpen={tab === "form"} onClose={() => setTab("list")}>
+      ) : (
+        <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm animate-fade-left bg-white">
         <div className="p-4 border-b border-border-main flex justify-between items-center bg-white sticky top-0 z-20">
            <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-blue-brand/10 text-blue-brand flex items-center justify-center">
@@ -874,7 +873,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
            </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 no-scrollbar space-y-8 bg-white">
+        <div className="p-6 space-y-8 overflow-y-auto max-h-[calc(100vh-270px)] no-scrollbar bg-white">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-[10px] font-bold text-text-light px-1 opacity-60 italic">
                <Icon name="Hash" size={12} className="text-accent" /> Identitas Order
@@ -1307,7 +1306,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
             Batal
           </button>
         </div>
-      </ModalShell>
+      </Card>
+      )}
     </PageShell>
   );
 };
