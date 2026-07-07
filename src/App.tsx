@@ -1737,7 +1737,7 @@ export default function App() {
                 <>
                   {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
                   {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} />}
-                  {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onRefreshSO={async () => { try { setSo(await api.getSO()); } catch {} }} />}
+                  {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} invoices={invoices} setInvoices={setInvoices} onRefreshSO={async () => { try { setSo(await api.getSO()); } catch {} }} />}
                   {activeSub === "quotation" && <QuotationPage currentUser={currentUser} logAction={logAction} />}
                 </>
               )}

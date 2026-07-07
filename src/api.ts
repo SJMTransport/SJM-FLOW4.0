@@ -667,9 +667,11 @@ export const api = {
     if (error) throw new Error(error.message || "Gagal update status invoice");
   },
 
-  updateInvoiceStatusBatch: async (updates: Array<{id: string, status_bayar: string}>) => {
+  updateInvoiceStatusBatch: async (updates: Array<{id: string, status_bayar: string, total_terbayar?: number}>) => {
     for (const u of updates) {
-      await supabase.from('invoices').update({ status_bayar: u.status_bayar }).eq('id', u.id);
+      const payload: any = { status_bayar: u.status_bayar };
+      if (u.total_terbayar !== undefined) payload.total_terbayar = u.total_terbayar;
+      await supabase.from('invoices').update(payload).eq('id', u.id);
     }
   },
   deleteInvoice: async (id: string, soIds: string[] = []) => {

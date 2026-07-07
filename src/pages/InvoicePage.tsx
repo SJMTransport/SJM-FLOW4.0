@@ -41,9 +41,11 @@ interface InvoicePageProps {
   logAction: (msg: string, meta?: any) => void;
   onSOClick?: (orderId: string) => void;
   onRefreshSO?: () => Promise<void>;
+  invoices: any[];
+  setInvoices: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAction, onSOClick, onRefreshSO }) => {
+export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAction, onSOClick, invoices, setInvoices, onRefreshSO }) => {
   const { showToast, ToastUI } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabType>('daftar');
@@ -62,7 +64,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [sortSODir, setSortSODir] = useState<'asc' | 'desc'>('desc');
 
   // ── Daftar Invoice state
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [paymentStatusMap, setPaymentStatusMap] = useState<Record<string, any>>({});
   const [loadingStatus, setLoadingStatus] = useState(false);
@@ -99,17 +100,33 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         try {
           const map = await api.getPaymentStatusBatch(noInvoices);
           setPaymentStatusMap(map);
-          // Sync status_bayar ke DB agar halaman lain bisa baca status terkini
-          const statusMap = map;
+          
+          // Map latest statuses and payments from RPC to local state
+          const updatedList = list.map((inv: any) => {
+            const ps = map[inv.no_invoice];
+            if (ps) {
+              return {
+                ...inv,
+                status_bayar: ps.status,
+                total_terbayar: Number(ps.total_paid || 0),
+              };
+            }
+            return inv;
+          });
+          setInvoices(updatedList);
+
+          // Find only rows where database is stale (status or paid amount differs)
           const updates = list
             .filter((inv: any) => {
-              const ps = statusMap[inv.no_invoice];
-              return ps && ps.status !== inv.status_bayar;
+              const ps = map[inv.no_invoice];
+              return ps && (ps.status !== inv.status_bayar || Number(ps.total_paid || 0) !== Number(inv.total_terbayar || 0));
             })
             .map((inv: any) => ({
               id: inv.id,
-              status_bayar: statusMap[inv.no_invoice].status,
+              status_bayar: map[inv.no_invoice].status,
+              total_terbayar: Number(map[inv.no_invoice].total_paid || 0),
             }));
+
           if (updates.length > 0) {
             api.updateInvoiceStatusBatch(updates).catch(() => {});
           }

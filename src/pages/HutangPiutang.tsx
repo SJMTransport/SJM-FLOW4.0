@@ -375,9 +375,9 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
       .sort((a: any, b: any) => b.umur - a.umur);
   }, [invoices, so]);
 
-  // Aging Logic
   const piutangOutstanding = useMemo(() => {
     const todayDate = new Date();
+    const piutangCoas = (coa || []).filter((c: any) => c.sub_kelompok === "Piutang Usaha" || c.kode === "112").map((c: any) => c.kode);
     if (piutang.length > 0) {
       return piutang
         .filter((p: any) => Number(p.sisa_piutang || 0) > 0 && p.status !== "Lunas")
@@ -391,7 +391,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
     const map: any = {};
     jurnal.forEach((j: any) => {
       (j.jurnal_detail || []).forEach((d: any) => {
-        if (d.coa_kode === "112") {
+        if (piutangCoas.includes(d.coa_kode)) {
           const key = j.no_so || j.no_bukti || j.id;
           if (!map[key]) {
             const soRef = (so || []).find((s: any) => s.order_id === j.no_so || s.no_invoice === j.no_bukti);
@@ -408,7 +408,7 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
       const umur = Math.floor((todayDate.getTime() - tgl.getTime()) / (1000 * 60 * 60 * 24));
       return { ...r, saldo, umur };
     }).filter((r: any) => r.saldo > 0).sort((a: any, b: any) => b.umur - a.umur);
-  }, [jurnal, piutang, so]);
+  }, [jurnal, piutang, so, coa]);
 
   const hutangVendorOutstanding = useMemo(() => {
     const todayDate = new Date();
