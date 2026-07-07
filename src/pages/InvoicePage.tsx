@@ -23,7 +23,8 @@ const calcNilaiPajak = (s: any): number => {
   const tgl = s.tgl_muat || s.tgl_order;
   if (!tgl) return 0;
   const isPajak = new Date(tgl) >= new Date('2026-02-01');
-  return isPajak ? Math.round(Number(s.harga_pengiriman) * 0.011) : 0;
+  const base = (Number(s.harga_pengiriman) || 0) + (Number(s.harga_asuransi) || Number(s.nilai_asuransi) || 0);
+  return isPajak ? Math.round(base * 0.011) : 0;
 };
 
 const STATUS_COLOR: Record<string, string> = {

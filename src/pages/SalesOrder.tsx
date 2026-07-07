@@ -302,6 +302,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   };
   const [form, setForm] = useState<any>(emptyForm);
 
+
   // Unique PIC+phone pairs for the currently selected customer (most recent first)
   const customerPics = useMemo(() => {
     const cust = form.customer;
@@ -329,9 +330,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     return result.sort();
   }, [so]);
 
-  const isPajakApply = (tgl_order: string) => {
-    if (!tgl_order) return false;
-    const d = new Date(tgl_order);
+  const isPajakApply = (tgl_muat: string, tgl_order?: string) => {
+    const tgl = tgl_muat || tgl_order || "";
+    if (!tgl) return false;
+    const d = new Date(tgl);
     if (isNaN(d.getTime())) return false;
     // Januari 2026 ke bawah = tidak kena pajak
     if (d.getFullYear() < 2026) return false;
@@ -345,7 +347,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     // base_harga adalah modal internal, tidak masuk total customer
     const total = ins + pengiriman;
     // Pajak 11% hanya berlaku mulai Feb 2026
-    const pajakApply = isPajakApply(f.tgl_order);
+    const pajakApply = isPajakApply(f.tgl_muat, f.tgl_order);
     const tax = pajakApply ? Math.round((pengiriman + ins) * 0.011) : 0;
     const totalPajak = total + tax;
     return { total_harga: total, total_harga_pajak: totalPajak, nilai_pajak: tax, nilai_asuransi: ins };
@@ -494,7 +496,17 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       if (posted && !finalOrderId) {
         finalOrderId = genSONo(so);
       }
-      const payload = { ...form, order_id: finalOrderId, is_posted: posted };
+      const { total_harga, total_harga_pajak, nilai_pajak, nilai_asuransi } = calcTotal(form);
+      const payload = { 
+        ...form, 
+        order_id: finalOrderId, 
+        is_posted: posted,
+        total_harga,
+        total_harga_pajak,
+        nilai_pajak,
+        nilai_asuransi,
+        harga_asuransi: nilai_asuransi
+      };
       const afterSnap = { order_id: finalOrderId, customer: payload.customer, tgl_muat: payload.tgl_muat, status_muatan: payload.status_muatan, total_harga: payload.total_harga };
       if (editItem) {
         await api.updateSO(editItem.id, payload);
@@ -1155,9 +1167,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest italic">Total Billable Amount</span>
                    <span className="text-2xl font-black text-white tabular-nums tracking-tighter">{fmt(form.total_harga_pajak || form.total_harga || 0)}</span>
                 </div>
-                <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
-                   <Icon name={isPajakApply(form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
-                   {isPajakApply(form.tgl_order) ? "Taxable (1,1%)" : "Non-Taxable"}
+                <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 relative z-10 shadow-sm ${isPajakApply(form.tgl_muat, form.tgl_order) ? "bg-accent text-white" : "bg-white/10 text-white/40"}`}>
+                   <Icon name={isPajakApply(form.tgl_muat, form.tgl_order) ? "ShieldCheck" : "ShieldAlert"} size={12} strokeWidth={3} />
+                   {isPajakApply(form.tgl_muat, form.tgl_order) ? "Taxable (1,1%)" : "Non-Taxable"}
                 </div>
               </div>
             </div>
