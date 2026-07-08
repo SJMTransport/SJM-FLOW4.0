@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 
-const fRp = (n: number) => 'Rp.' + Math.round(n).toLocaleString('id-ID') + ',00';
+const fRp = (n: number) => 'Rp' + Math.round(n).toLocaleString('id-ID') + '.00';
 
 function terbilang(n: number): string {
   const s = ['','Satu','Dua','Tiga','Empat','Lima','Enam','Tujuh','Delapan',
@@ -53,6 +53,7 @@ export interface QuotationData {
   harga: number;
   keterangan?: string;
   termOfPayment?: string;
+  includePpn: boolean;
   includePph: boolean;
   includeAsuransi: boolean;
 }
@@ -119,7 +120,7 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
     ['Tgl Quotation', data.tglQuotation],
     ['Penyewa',       data.customer],
     ['PIC',           data.pic || '-'],
-    ['No Tlp',        data.noTlp || '-'],
+    ['No Hp',         data.noTlp || '-'],
   ];
   info.forEach(([label, val]) => {
     doc.setFont('helvetica', 'normal');
@@ -133,24 +134,27 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
 
   // TABEL
   const contentW = pageW - mL - mR;
-  const col1W = contentW * 0.55;
-  const col2W = contentW * 0.225;
-  const col3W = contentW * 0.225;
+  const col1W = contentW * 0.50; // 50%
+  const col2W = contentW * 0.18; // 18%
+  const col3W = contentW * 0.16; // 16%
+  const col4W = contentW * 0.16; // 16%
 
   // Header tabel
   doc.setFillColor(...AMBER);
   doc.rect(mL, y, contentW, 10, 'F');
-  doc.setTextColor(...WHITE);
+  doc.setTextColor(...BLACK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.text('DESKRIPSI', mL + col1W/2, y + 7, { align: 'center' });
-  doc.text('Harga / Unit', mL + col1W + col2W/2, y + 7, { align: 'center' });
-  doc.text('Total', mL + col1W + col2W + col3W/2, y + 7, { align: 'center' });
+  doc.text('Harga/ Unit', mL + col1W + col2W/2, y + 7, { align: 'center' });
+  doc.text('Asuransi', mL + col1W + col2W + col3W/2, y + 7, { align: 'center' });
+  doc.text('Jumlah', mL + col1W + col2W + col3W + col4W/2, y + 7, { align: 'center' });
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(0.4);
   doc.rect(mL, y, contentW, 10, 'S');
   doc.line(mL + col1W, y, mL + col1W, y + 10);
   doc.line(mL + col1W + col2W, y, mL + col1W + col2W, y + 10);
+  doc.line(mL + col1W + col2W + col3W, y, mL + col1W + col2W + col3W, y + 10);
   y += 10;
 
   // Body tabel
@@ -158,7 +162,7 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
     { label: 'Mobilisasi :', value: `Jenis Kendaraan : ${data.jenisKendaraan || '-'}` },
     { label: 'Muatan :', value: data.muatan || '-' },
     { label: 'Lokasi Penjemputan :', value: data.lokasiMuat || '-' },
-    { label: 'Lokasi Tujuan :', value: data.lokasiTujuan || '-' },
+    { label: 'Tujuan :', value: data.lokasiTujuan || '-' },
   ];
 
   const lineH = 4.5;
@@ -171,6 +175,7 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   doc.rect(mL, y, contentW, rowH, 'S');
   doc.line(mL + col1W, y, mL + col1W, y + rowH);
   doc.line(mL + col1W + col2W, y, mL + col1W + col2W, y + rowH);
+  doc.line(mL + col1W + col2W + col3W, y, mL + col1W + col2W + col3W, y + rowH);
 
   let ty = y + 5;
   descParts.forEach(({ label, value }) => {
@@ -188,23 +193,29 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(fRp(data.harga), mL + col1W + col2W/2, midY, { align: 'center' });
-  doc.text(fRp(data.harga), mL + col1W + col2W + col3W/2, midY, { align: 'center' });
+  
+  // Asuransi column
+  doc.setFontSize(8);
+  doc.text(data.includeAsuransi ? 'Sudah Termasuk' : 'Belum Termasuk\nAsuransi', mL + col1W + col2W + col3W/2, midY - 1.5, { align: 'center' });
+  
+  doc.setFontSize(9);
+  doc.text(fRp(data.harga), mL + col1W + col2W + col3W + col4W/2, midY, { align: 'center' });
   y += rowH;
 
   // Footer tabel — Total
-  doc.setFillColor(250, 250, 250);
+  doc.setFillColor(255, 255, 255);
   doc.rect(mL, y, contentW, 10, 'F');
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(0.4);
   doc.rect(mL, y, contentW, 10, 'S');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text('Total', mL + col1W + col2W - 3, y + 7, { align: 'right' });
-  doc.text(fRp(data.harga), mL + col1W + col2W + col3W/2, y + 7, { align: 'center' });
+  doc.text('Total', mL + col1W + col2W + col3W - 3, y + 7, { align: 'right' });
+  doc.text(fRp(data.harga), mL + col1W + col2W + col3W + col4W/2, y + 7, { align: 'center' });
   y += 10;
 
   // Terbilang
-  doc.setFillColor(250, 250, 250);
+  doc.setFillColor(255, 255, 255);
   doc.rect(mL, y, contentW, 10, 'F');
   doc.setDrawColor(...BLACK);
   doc.rect(mL, y, contentW, 10, 'S');
@@ -215,26 +226,32 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
 
   // Keterangan / Term of Payment
   const notes: string[] = [];
-  if (data.termOfPayment) notes.push(`Term of Payment : ${data.termOfPayment}`);
-  if (!data.includePph) notes.push('Belum Termasuk PPh');
-  if (!data.includeAsuransi) notes.push('Belum Termasuk Asuransi');
+  notes.push('Term of Payment :');
+  if (data.termOfPayment) notes.push(data.termOfPayment);
+  notes.push(data.includePpn ? 'Sudah Termasuk PPN' : 'Belum Termasuk PPN');
+  notes.push(data.includePph ? 'Sudah Termasuk PPh' : 'Belum Termasuk PPh');
+  notes.push(data.includeAsuransi ? 'Sudah Termasuk Asuransi' : 'Belum Termasuk Asuransi');
   if (data.keterangan) notes.push(data.keterangan);
 
-  if (notes.length > 0) {
-    const notesH = notes.length * 6 + 8;
-    doc.setFillColor(250, 250, 250);
-    doc.rect(mL, y, contentW, notesH, 'F');
-    doc.setDrawColor(...BLACK);
-    doc.rect(mL, y, contentW, notesH, 'S');
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    let ny = y + 6;
-    notes.forEach(note => {
+  const notesH = notes.length * 6 + 4;
+  doc.setFillColor(255, 255, 255);
+  doc.rect(mL, y, contentW, notesH, 'F');
+  doc.setDrawColor(...BLACK);
+  doc.rect(mL, y, contentW, notesH, 'S');
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  let ny = y + 6;
+  notes.forEach((note, idx) => {
+    if (idx === 0) {
+      doc.setFont('helvetica', 'bold');
       doc.text(note, mL + 3, ny);
-      ny += 6;
-    });
-    y += notesH;
-  }
+      doc.setFont('helvetica', 'normal');
+    } else {
+      doc.text(note, mL + 3, ny);
+    }
+    ny += 6;
+  });
+  y += notesH;
 
   y += 10;
 

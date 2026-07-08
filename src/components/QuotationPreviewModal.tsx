@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { generateQuotationPDF } from '../utils/generateQuotationPDF';
 import type { QuotationData } from '../utils/generateQuotationPDF';
 import { showToast } from './SJMComponents';
@@ -13,7 +14,7 @@ interface QuotationPreviewModalProps {
 const GOLD = '#f9ac3d';
 
 const fRp = (n: number) =>
-  'Rp.' + Math.round(n || 0).toLocaleString('id-ID') + ',00';
+  'Rp' + Math.round(n || 0).toLocaleString('id-ID') + '.00';
 
 function terbilang(n: number): string {
   const s = ['','Satu','Dua','Tiga','Empat','Lima','Enam','Tujuh','Delapan','Sembilan','Sepuluh','Sebelas'];
@@ -58,18 +59,19 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
   };
 
   const notes: string[] = [];
-  if (data.termOfPayment) notes.push(`Term of Payment : ${data.termOfPayment}`);
-  if (!data.includePph) notes.push('Belum Termasuk PPh');
-  if (!data.includeAsuransi) notes.push('Belum Termasuk Asuransi');
+  if (data.termOfPayment) notes.push(data.termOfPayment);
+  notes.push(data.includePpn ? 'Sudah Termasuk PPN' : 'Belum Termasuk PPN');
+  notes.push(data.includePph ? 'Sudah Termasuk PPh' : 'Belum Termasuk PPh');
+  notes.push(data.includeAsuransi ? 'Sudah Termasuk Asuransi' : 'Belum Termasuk Asuransi');
   if (data.keterangan) notes.push(data.keterangan);
 
-  return (
+  const modalJSX = (
     <div style={{
       position: 'fixed', inset: 0,
       backgroundColor: 'rgba(0,0,0,0.72)',
       zIndex: 9999,
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      padding: '24px 16px', overflowY: 'auto',
+      padding: '40px 16px', overflowY: 'auto',
     }}>
       <div style={{ width: '100%', maxWidth: '860px' }}>
 
@@ -97,9 +99,9 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
 
         {/* ── Paper quotation ── */}
         <div style={{
-          backgroundColor: '#fff', borderRadius: '8px',
-          padding: '28px 24px', fontFamily: 'helvetica, Arial, sans-serif',
-          fontSize: '9pt', color: '#000',
+          backgroundColor: '#fff', borderRadius: '4px',
+          padding: '40px 32px', fontFamily: 'helvetica, Arial, sans-serif',
+          fontSize: '9.5pt', color: '#000', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
         }}>
 
           {/* ── HEADER ── */}
@@ -111,124 +113,121 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 color: '#fff', fontWeight: 'bold', fontSize: '14pt', flexShrink: 0,
               }}>SJM</div>
               <div>
-                <div style={{ color: GOLD, fontWeight: 'bold', fontSize: '13pt', lineHeight: 1.2 }}>
+                <div style={{ color: GOLD, fontWeight: 'bold', fontSize: '13.5pt', lineHeight: 1.2 }}>
                   SUGIARTO JAYA MANDIRI TRANSPORT
                 </div>
-                <div style={{ color: '#505050', fontSize: '8pt', marginTop: '4px', lineHeight: 1.7 }}>
+                <div style={{ color: '#000', fontSize: '8pt', marginTop: '4px', lineHeight: 1.7 }}>
                   Jl Raya Kemang Parung No.168A Kab.Bogor<br />
                   Phone  : 0811751027<br />
                   Email   : sugiartojayamandiri@gmail.com
                 </div>
               </div>
             </div>
-            <div style={{
-              background: GOLD, padding: '6px 20px', borderRadius: '2px',
-              color: '#fff', fontWeight: 'bold', fontSize: '14pt',
-            }}>
-              QUOTATION
-            </div>
           </div>
 
           {/* ── GARIS ── */}
           <div style={{ borderTop: '1.5px solid #000', marginBottom: '2px' }} />
-          <div style={{ borderTop: '2px solid ' + GOLD, width: '160px', marginLeft: 'auto', marginBottom: '10px' }} />
+          <div style={{ borderTop: '2.5px solid ' + GOLD, width: '160px', marginLeft: 'auto', marginBottom: '16px' }} />
 
           {/* ── INFO BLOCK ── */}
-          <table style={{ borderCollapse: 'collapse', marginBottom: '14px', fontSize: '9pt' }}>
+          <table style={{ borderCollapse: 'collapse', marginBottom: '18px', fontSize: '9.5pt' }}>
             <tbody>
               {[
                 ['No Quotation',  data.noQuotation, true],
                 ['Tgl Quotation', data.tglQuotation,   false],
                 ['Penyewa',     data.customer,      false],
                 ['PIC',         data.pic || '-',    false],
-                ['No Tlp',      data.noTlp || '-',  false],
+                ['No Hp',      data.noTlp || '-',  false],
               ].map(([label, val, bold]) => (
                 <tr key={label as string}>
-                  <td style={{ paddingRight: '6px', paddingBottom: '3px', color: '#505050', whiteSpace: 'nowrap' }}>{label}</td>
-                  <td style={{ paddingRight: '6px', paddingBottom: '3px', color: '#505050' }}>:</td>
-                  <td style={{ paddingBottom: '3px', fontWeight: bold ? 'bold' : 'normal', color: '#000' }}>{val}</td>
+                  <td style={{ paddingRight: '12px', paddingBottom: '4px', color: '#000', width: '110px', whiteSpace: 'nowrap' }}>{label}</td>
+                  <td style={{ paddingRight: '12px', paddingBottom: '4px', color: '#000' }}>:</td>
+                  <td style={{ paddingBottom: '4px', fontWeight: bold ? 'bold' : 'normal', color: '#000' }}>{val}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           {/* ── TABLE ── */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '14px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9pt', marginBottom: '18px' }}>
             <thead>
-              <tr style={{ background: GOLD, color: '#fff', border: '1px solid #000' }}>
-                <th style={{ padding: '6px 8px', borderRight: '1px solid #000', fontWeight: 'bold', textAlign: 'center', width: '55%' }}>DESKRIPSI</th>
-                <th style={{ padding: '6px 8px', borderRight: '1px solid #000', fontWeight: 'bold', textAlign: 'center', width: '22.5%' }}>Harga / Unit</th>
-                <th style={{ padding: '6px 8px', fontWeight: 'bold', textAlign: 'center', width: '22.5%' }}>Total</th>
+              <tr style={{ background: GOLD, color: '#000', border: '1px solid #000' }}>
+                <th style={{ padding: '8px 8px', borderRight: '1px solid #000', fontWeight: 'bold', textAlign: 'center', width: '50%' }}>DESKRIPSI</th>
+                <th style={{ padding: '8px 8px', borderRight: '1px solid #000', fontWeight: 'bold', textAlign: 'center', width: '18%' }}>Harga/ Unit</th>
+                <th style={{ padding: '8px 8px', borderRight: '1px solid #000', fontWeight: 'bold', textAlign: 'center', width: '16%' }}>Asuransi</th>
+                <th style={{ padding: '8px 8px', fontWeight: 'bold', textAlign: 'center', width: '16%' }}>Jumlah</th>
               </tr>
             </thead>
             <tbody>
               <tr style={{ border: '1px solid #000' }}>
-                <td style={{ padding: '10px 8px', borderRight: '1px solid #000', verticalAlign: 'top', lineHeight: 1.6 }}>
+                <td style={{ padding: '12px 10px', borderRight: '1px solid #000', verticalAlign: 'top', lineHeight: 1.7 }}>
                   <div style={{ fontWeight: 'bold' }}>Mobilisasi :</div>
-                  <div style={{ marginLeft: '4px', marginBottom: '6px', color: '#333' }}>Jenis Kendaraan : {data.jenisKendaraan || '-'}</div>
+                  <div style={{ marginLeft: '4px', marginBottom: '6px', color: '#000' }}>Jenis Kendaraan : {data.jenisKendaraan || '-'}</div>
                   
                   <div style={{ fontWeight: 'bold' }}>Muatan :</div>
-                  <div style={{ marginLeft: '4px', marginBottom: '6px', color: '#333' }}>{data.muatan || '-'}</div>
+                  <div style={{ marginLeft: '4px', marginBottom: '6px', color: '#000' }}>{data.muatan || '-'}</div>
                   
                   <div style={{ fontWeight: 'bold' }}>Lokasi Penjemputan :</div>
-                  <div style={{ marginLeft: '4px', marginBottom: '6px', color: '#333' }}>{data.lokasiMuat || '-'}</div>
+                  <div style={{ marginLeft: '4px', marginBottom: '6px', color: '#000' }}>{data.lokasiMuat || '-'}</div>
                   
-                  <div style={{ fontWeight: 'bold' }}>Lokasi Tujuan :</div>
-                  <div style={{ marginLeft: '4px', color: '#333' }}>{data.lokasiTujuan || '-'}</div>
+                  <div style={{ fontWeight: 'bold' }}>Tujuan :</div>
+                  <div style={{ marginLeft: '4px', color: '#000' }}>{data.lokasiTujuan || '-'}</div>
                 </td>
-                <td style={{ padding: '10px 8px', borderRight: '1px solid #000', verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold' }}>
+                <td style={{ padding: '12px 8px', borderRight: '1px solid #000', verticalAlign: 'top', textAlign: 'center', color: '#000' }}>
                   {fRp(data.harga)}
                 </td>
-                <td style={{ padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold' }}>
+                <td style={{ padding: '12px 8px', borderRight: '1px solid #000', verticalAlign: 'top', textAlign: 'center', color: '#000', whiteSpace: 'pre-line' }}>
+                  {data.includeAsuransi ? 'Sudah Termasuk' : 'Belum Termasuk\nAsuransi'}
+                </td>
+                <td style={{ padding: '12px 8px', verticalAlign: 'top', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
                   {fRp(data.harga)}
                 </td>
               </tr>
               
               {/* Total row */}
-              <tr style={{ border: '1px solid #000', background: '#fafafa' }}>
-                <td colSpan={2} style={{ padding: '6px 12px', borderRight: '1px solid #000', textAlign: 'right', fontWeight: 'bold' }}>
+              <tr style={{ border: '1px solid #000' }}>
+                <td colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #000', textAlign: 'right', fontWeight: 'bold', color: '#000' }}>
                   Total
                 </td>
-                <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>
+                <td style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
                   {fRp(data.harga)}
                 </td>
               </tr>
 
               {/* Terbilang row */}
-              <tr style={{ border: '1px solid #000', background: '#fafafa' }}>
-                <td colSpan={3} style={{ padding: '6px 8px', fontStyle: 'italic', color: '#333' }}>
+              <tr style={{ border: '1px solid #000' }}>
+                <td colSpan={4} style={{ padding: '8px 10px', color: '#000' }}>
                   <strong>Terbilang :</strong> {terbilang(data.harga)} Rupiah
                 </td>
               </tr>
 
-              {/* Notes row */}
-              {notes.length > 0 && (
-                <tr style={{ border: '1px solid #000', background: '#fafafa' }}>
-                  <td colSpan={3} style={{ padding: '8px 12px', lineHeight: 1.6, color: '#333' }}>
-                    {notes.map((note, idx) => (
-                      <div key={idx}>{note}</div>
-                    ))}
-                  </td>
-                </tr>
-              )}
+              {/* Notes / Term of Payment row */}
+              <tr style={{ border: '1px solid #000' }}>
+                <td colSpan={4} style={{ padding: '10px 12px', lineHeight: 1.7, color: '#000' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Term of Payment :</div>
+                  {notes.map((note, idx) => (
+                    <div key={idx} style={{ marginLeft: '4px' }}>{note}</div>
+                  ))}
+                </td>
+              </tr>
             </tbody>
           </table>
 
           {/* ── SIGNATURES ── */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingRight: '20px' }}>
-            <div style={{ textAlign: 'center', width: '220px' }}>
-              <div style={{ marginBottom: '55px' }}>Hormat Kami,</div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px', paddingRight: '10px' }}>
+            <div style={{ textAlign: 'center', width: '240px' }}>
+              <div style={{ marginBottom: '55px', fontSize: '9.5pt' }}>Hormat Kami,</div>
               <div style={{ borderTop: '0.8px solid #000', width: '100%', margin: '0 auto 4px auto' }} />
-              <div style={{ fontWeight: 'bold' }}>(Muhammad Naufal Sugiarto)</div>
+              <div style={{ fontWeight: 'bold', fontSize: '9.5pt' }}>(Muhammad Naufal Sugiarto)</div>
             </div>
           </div>
 
           {/* ── PAYMENT INFO ── */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '30px', alignItems: 'flex-start' }}>
-            <div style={{ width: '4px', height: '32px', background: GOLD, flexShrink: 0 }} />
+          <div style={{ display: 'flex', gap: '8px', marginTop: '28px', alignItems: 'flex-start' }}>
+            <div style={{ width: '4px', height: '36px', background: GOLD, flexShrink: 0 }} />
             <div>
-              <div style={{ fontWeight: 'bold', fontSize: '9pt' }}>Pembayaran:</div>
-              <div style={{ fontSize: '8.5pt', color: '#333', marginTop: '2px' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '9.5pt' }}>Pembayaran:</div>
+              <div style={{ fontSize: '9pt', color: '#000', marginTop: '2px' }}>
                 Mandiri 1330026272567 — a/n PT Sugiarto Jaya Mandiri
               </div>
             </div>
@@ -239,6 +238,8 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalJSX, document.body);
 };
 
 export default QuotationPreviewModal;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { generateInvoicePDF } from '../utils/generateInvoicePDF';
 import type { InvoiceData } from '../utils/generateInvoicePDF';
 import { showToast } from './SJMComponents';
@@ -56,7 +57,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
   const catatan = data.catatan || (data as any).keterangan || '';
 
-  return (
+  return createPortal(
     <div style={{
       position: 'fixed', inset: 0,
       backgroundColor: 'rgba(0,0,0,0.72)',
@@ -240,7 +241,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -36,6 +36,7 @@ const EMPTY_FORM = {
   term_of_payment: '',
   include_pph: false,
   include_asuransi: false,
+  include_ppn: false,
   status: 'Draft',
 };
 
@@ -170,6 +171,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       harga: Number(form.harga),
       keterangan: form.keterangan,
       termOfPayment: form.term_of_payment,
+      includePpn: form.include_ppn,
       includePph: form.include_pph,
       includeAsuransi: form.include_asuransi,
     };
@@ -181,11 +183,14 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
   const handleConfirmSave = async () => {
     setSaving(true);
     try {
+      const serializedTerm = form.term_of_payment + (form.include_ppn ? ' [PPN:true]' : ' [PPN:false]');
       const payload = {
         ...form,
+        term_of_payment: serializedTerm,
         harga: Number(form.harga),
         created_by: currentUser?.email || '',
       };
+      delete (payload as any).include_ppn;
       if (editItem) {
         await api.updateQuotation(editItem.id, payload);
         logAction(`Update Quotation: ${payload.no_quotation}`, buildMeta({
@@ -218,6 +223,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
   };
 
   const handleOpenPreview = (q: any) => {
+    const rawTerm = q.term_of_payment || '';
+    const ppnMatch = rawTerm.match(/\[PPN:(true|false)\]/);
+    const include_ppn = ppnMatch ? ppnMatch[1] === 'true' : false;
+    const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').trim();
+
     const dataForPreview = {
       noQuotation: q.no_quotation,
       tglQuotation: fmtDate(q.tgl_quotation),
@@ -230,7 +240,8 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       lokasiTujuan: q.lokasi_tujuan,
       harga: Number(q.harga),
       keterangan: q.keterangan,
-      termOfPayment: q.term_of_payment,
+      termOfPayment: cleanTerm,
+      includePpn: include_ppn,
       includePph: q.include_pph,
       includeAsuransi: q.include_asuransi,
     };
@@ -238,6 +249,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
   };
 
   const handleEdit = (q: any) => {
+    const rawTerm = q.term_of_payment || '';
+    const ppnMatch = rawTerm.match(/\[PPN:(true|false)\]/);
+    const include_ppn = ppnMatch ? ppnMatch[1] === 'true' : false;
+    const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').trim();
+
     setEditItem(q);
     setForm({
       no_quotation: q.no_quotation || '',
@@ -251,7 +267,8 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       lokasi_tujuan: q.lokasi_tujuan || '',
       harga: String(q.harga || ''),
       keterangan: q.keterangan || '',
-      term_of_payment: q.term_of_payment || '',
+      term_of_payment: cleanTerm,
+      include_ppn: include_ppn,
       include_pph: q.include_pph || false,
       include_asuransi: q.include_asuransi || false,
       status: q.status || 'Draft',
@@ -263,6 +280,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
 
   const handleDownload = async (q: any) => {
     try {
+      const rawTerm = q.term_of_payment || '';
+      const ppnMatch = rawTerm.match(/\[PPN:(true|false)\]/);
+      const include_ppn = ppnMatch ? ppnMatch[1] === 'true' : false;
+      const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').trim();
+
       const doc = await generateQuotationPDF({
         noQuotation: q.no_quotation,
         tglQuotation: fmtDate(q.tgl_quotation),
@@ -275,7 +297,8 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
         lokasiTujuan: q.lokasi_tujuan || '-',
         harga: Number(q.harga) || 0,
         keterangan: q.keterangan,
-        termOfPayment: q.term_of_payment,
+        termOfPayment: cleanTerm,
+        includePpn: include_ppn,
         includePph: q.include_pph,
         includeAsuransi: q.include_asuransi,
       });
@@ -652,7 +675,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                   <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Term of Payment</label>
                   <input value={form.term_of_payment} onChange={e => setF('term_of_payment', e.target.value)} placeholder="Contoh: 14 hari setelah invoice" className="input-field h-9 text-[11px] font-bold" />
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.include_ppn} onChange={e => setF('include_ppn', e.target.checked)} className="w-4 h-4 rounded text-accent focus:ring-accent" />
+                    <span className="text-[12px] text-text-main font-bold">Sudah Termasuk PPN</span>
+                  </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.include_pph} onChange={e => setF('include_pph', e.target.checked)} className="w-4 h-4 rounded text-accent focus:ring-accent" />
                     <span className="text-[12px] text-text-main font-bold">Sudah Termasuk PPh</span>
