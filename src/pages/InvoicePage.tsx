@@ -27,6 +27,19 @@ const calcNilaiPajak = (s: any): number => {
   return isPajak ? Math.round(base * 0.011) : 0;
 };
 
+function terbilang(n: number): string {
+  const s = ['','Satu','Dua','Tiga','Empat','Lima','Enam','Tujuh','Delapan','Sembilan','Sepuluh','Sebelas'];
+  if (n < 12)   return s[Math.round(n)];
+  if (n < 20)   return (terbilang(n - 10) + ' Belas').trim();
+  if (n < 100)  return (terbilang(Math.floor(n / 10)) + ' Puluh ' + terbilang(n % 10)).trim();
+  if (n < 200)  return ('Seratus ' + terbilang(n - 100)).trim();
+  if (n < 1000) return (terbilang(Math.floor(n / 100)) + ' Ratus ' + terbilang(n % 100)).trim();
+  if (n < 2000) return ('Seribu ' + terbilang(n - 1000)).trim();
+  if (n < 1e6)  return (terbilang(Math.floor(n / 1000)) + ' Ribu ' + terbilang(n % 1000)).trim();
+  if (n < 1e9)  return (terbilang(Math.floor(n / 1e6)) + ' Juta ' + terbilang(n % 1e6)).trim();
+  return '';
+}
+
 const STATUS_COLOR: Record<string, string> = {
   'Belum Bayar': '#ef4444',
   'Parsial': '#f59e0b',
@@ -902,10 +915,10 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         const soDetails = soOrderIds.map((soId: string) => so.find(x => x.order_id === soId) || { order_id: soId, _notFound: true });
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedPaymentInv(null)}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col mx-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-slate-100 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col mx-4 overflow-hidden animate-fade-up" onClick={e => e.stopPropagation()}>
 
               {/* Header Modal */}
-              <div className="flex items-start justify-between p-5 border-b border-border-main">
+              <div className="flex items-start justify-between p-5 border-b border-border-main bg-white">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[15px] font-black text-accent uppercase tracking-tight">{inv.no_invoice}</span>
@@ -913,7 +926,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <span className="badge text-[8px]" style={{ backgroundColor: sc + '20', color: sc }}>{ps?.status || inv.status_bayar || 'Belum Bayar'}</span>
                   </div>
                   <div className="text-[11px] text-text-med mt-1">{inv.customer} · {fmtDate(inv.tgl_invoice)}</div>
-                  {inv.keterangan_invoice && <div className="text-[10px] text-text-light italic opacity-60 mt-0.5">{inv.keterangan_invoice}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   <button className="btn-ghost h-8 px-3 text-[11px] flex items-center gap-1.5" onClick={() => { setSelectedPaymentInv(null); handleReprint(inv); }}>
@@ -925,73 +937,196 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 </div>
               </div>
 
-              {/* Summary Pembayaran */}
-              <div className="grid grid-cols-4 gap-0 border-b border-border-main">
-                {[
-                  { label: 'Total Invoice', value: fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0), color: 'text-text-main' },
-                  { label: 'Terbayar', value: fRp(ps?.total_paid || 0), color: 'text-green-600' },
-                  { label: 'Sisa Tagihan', value: fRp(ps?.total_remaining ?? inv.total_setelah_pajak ?? 0), color: 'text-red-500' },
-                  { label: 'DPP (Sub Total)', value: fRp(inv.total_sebelum_pajak || 0), color: 'text-text-med' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="p-4 border-r border-border-main last:border-r-0">
-                    <div className="text-[9px] font-bold text-text-light uppercase tracking-widest opacity-60 mb-1">{label}</div>
-                    <div className={`text-[13px] font-black tabular-nums ${color}`}>{value}</div>
-                  </div>
-                ))}
-              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+                {/* Left Column: Real Invoice Preview Paper */}
+                <div className="lg:col-span-7 overflow-y-auto p-6 bg-slate-100 border-r border-border-main/40 no-scrollbar">
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-border-main/30 text-left" style={{ fontFamily: 'helvetica, Arial, sans-serif', fontSize: '9pt', color: '#000' }}>
+                    {/* Header SJM */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex gap-3 items-start">
+                        <div className="w-14 h-14 rounded bg-[#f9ac3d] flex items-center justify-center text-white font-bold text-[18px] flex-shrink-0">SJM</div>
+                        <div>
+                          <div className="text-[#f9ac3d] font-bold text-[15px] leading-tight">SUGIARTO JAYA MANDIRI TRANSPORT</div>
+                          <div className="text-[#505050] text-[10px] mt-1 leading-relaxed">
+                            Jl Raya Kemang Parung No.168A Kab.Bogor<br />
+                            Phone : 0811751027<br />
+                            Email : sugiartojayamandiri@gmail.com
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-[#f9ac3d] px-5 py-1.5 rounded text-white font-bold text-[18px]">INVOICE</div>
+                    </div>
 
-              {/* Detail SO */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-60 mb-3">
-                  Detail Sales Order ({soOrderIds.length} SO)
-                </div>
-                <div className="table-container max-h-[none]">
-                  <table className="w-full border-collapse text-[11px]">
-                    <thead>
-                      <tr>
-                        <th>No SO</th>
-                        <th>Rute</th>
-                        <th>Tgl Muat</th>
-                        <th>Armada</th>
-                        <th>Status</th>
-                        <th className="text-right">Total Biaya</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border-main/20">
-                      {soDetails.length === 0 ? (
-                        <tr><td colSpan={6} className="py-4 text-center text-text-light italic text-[11px]">Tidak ada data SO</td></tr>
-                      ) : soDetails.map((s: any) => (
-                        <tr key={s.order_id} className="hover:bg-slate-50 transition-colors">
-                          <td>
-                            <button
-                              className="font-black text-accent uppercase tracking-tight hover:underline"
-                              onClick={() => { setSelectedPaymentInv(null); onSOClick && onSOClick(s.order_id); }}
-                            >
-                              {s.order_id}
-                            </button>
-                          </td>
-                          {s._notFound ? (
-                            <td colSpan={5} className="text-text-light italic opacity-50 text-[10px]">Data tidak tersedia</td>
-                          ) : (
-                            <>
-                              <td>
-                                <div className="font-bold text-text-main truncate max-w-[140px]" title={s.lokasi_muat}>{s.lokasi_muat || '-'}</div>
-                                <div className="text-[10px] text-text-light italic truncate" title={s.lokasi_bongkar}>→ {s.lokasi_bongkar || '-'}</div>
-                              </td>
-                              <td className="text-text-med italic">{fmtDate(s.tgl_muat) || '-'}</td>
-                              <td>
-                                <div className="font-bold text-text-main">{s.jenis_truk || '-'}</div>
-                                <div className="text-[10px] text-text-light">{s.no_polisi || '-'}</div>
-                              </td>
-                              <td>{statusBadge(s.status_muatan)}</td>
-                              <td className="text-right font-black tabular-nums">{fRp(s.total_harga_pajak || s.total_harga || 0)}</td>
-                            </>
-                          )}
+                    <div className="border-t-[1.5px] border-black mb-0.5" />
+                    <div className="border-t-[2px] border-[#f9ac3d] w-40 ml-auto mb-3" />
+
+                    {/* Metadata Table */}
+                    <table className="mb-4 text-[11px] text-left border-collapse">
+                      <tbody>
+                        {[
+                          ['No Invoice', inv.no_invoice, true],
+                          ['Tgl Invoice', fmtDate(inv.tgl_invoice), false],
+                          ['Penyewa', inv.customer, false],
+                          ['Telepon', inv.pic_cust || '-', false],
+                        ].map(([lbl, val, bold]) => (
+                          <tr key={lbl as string}>
+                            <td className="pr-2 pb-1 text-[#505050] whitespace-nowrap">{lbl}</td>
+                            <td className="pr-2 pb-1 text-[#505050]">:</td>
+                            <td className={`pb-1 ${bold ? 'font-bold text-black' : 'text-black'}`}>{val}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Table of items */}
+                    <table className="w-full border-collapse text-[10px] border border-black mb-4">
+                      <thead>
+                        <tr className="bg-[#f9ac3d] text-black">
+                          {['No.', 'Tanggal', 'No SO / Armada', 'Deskripsi', 'Biaya Pengiriman', 'Biaya Asuransi', 'Jumlah'].map(h => (
+                            <th key={h} className="border border-black p-1 text-center font-bold whitespace-nowrap">{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const previewItems = soDetails.map((s: any, idx: number) => {
+                            const subPrice = Number(s.harga_pengiriman) || Number(s.total_harga) || (inv.total_sebelum_pajak || 0) / (soOrderIds.length || 1);
+                            const insurance = Number(s.harga_asuransi) > 0 ? Number(s.harga_asuransi) : 0;
+                            const rowTotal = subPrice + insurance;
+                            return {
+                              no: idx + 1,
+                              tgl: fmtDate(s.tgl_muat) + (s.tgl_bongkar ? `\n—\n${fmtDate(s.tgl_bongkar)}` : ''),
+                              so_armada: s.order_id + '\n' + (s.jenis_truk || '-') + '\n' + (s.no_polisi ? `(${s.no_polisi})` : ''),
+                              desc: `Muatan: ${s.muatan || '-'}${s.sn ? `\nSN: ${s.sn}` : ''}\nLokasi Muat: ${s.lokasi_muat || '-'}\nLokasi Tujuan: ${s.lokasi_bongkar || '-'}`,
+                              shipCost: subPrice,
+                              insCost: insurance,
+                              total: rowTotal,
+                            };
+                          });
+
+                          return previewItems.map((item, i) => (
+                            <tr key={i} className="align-top border-b border-black">
+                              <td className="border border-black p-1.5 text-center">{item.no}</td>
+                              <td className="border border-black p-1.5 text-center whitespace-pre-line">{item.tgl}</td>
+                              <td className="border border-black p-1.5 font-bold whitespace-pre-line text-[#000]">{item.so_armada}</td>
+                              <td className="border border-black p-1.5 whitespace-pre-line text-[#333]">{item.desc}</td>
+                              <td className="border border-black p-1.5 text-right whitespace-nowrap">{fRp(item.shipCost)}</td>
+                              <td className="border border-black p-1.5 text-center text-[9px] whitespace-pre-line">
+                                {item.insCost > 0 ? fRp(item.insCost) : 'Tidak termasuk\nasuransi'}
+                              </td>
+                              <td className="border border-black p-1.5 text-right whitespace-nowrap font-bold">{fRp(item.total)}</td>
+                            </tr>
+                          ));
+                        })()}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-white">
+                          <td colSpan={5} rowSpan={3} className="border border-black p-2 text-left align-top max-w-[200px] text-[10px]">
+                            {inv.keterangan_invoice ? <><strong>Catatan:</strong><br />{inv.keterangan_invoice}</> : <strong>Catatan:</strong>}
+                          </td>
+                          <td className="border border-black p-1.5 text-right font-bold whitespace-nowrap">Sub Total</td>
+                          <td className="border border-black p-1.5 text-right font-bold whitespace-nowrap">{fRp(inv.total_sebelum_pajak || 0)}</td>
+                        </tr>
+                        <tr className="bg-white">
+                          <td className="border border-black p-1.5 text-right whitespace-nowrap">PPN (1,1%)</td>
+                          <td className="border border-black p-1.5 text-right whitespace-nowrap">{fRp(inv.ppn || 0)}</td>
+                        </tr>
+                        <tr className="bg-white">
+                          <td className="border border-black p-1.5 text-right font-bold whitespace-nowrap">Total</td>
+                          <td className="border border-black p-1.5 text-right font-bold whitespace-nowrap font-black">{fRp(inv.total_setelah_pajak || 0)}</td>
+                        </tr>
+                        <tr className="bg-[#fafafa]">
+                          <td colSpan={7} className="border border-black p-1.5 font-bold text-left">
+                            Terbilang: {terbilang(inv.total_setelah_pajak || 0)} Rupiah
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+
+                    <div className="flex justify-between items-end mt-5">
+                      <div className="flex gap-2 items-start text-left">
+                        <div className="w-1 h-10 bg-[#f9ac3d] rounded" />
+                        <div>
+                          <div className="font-bold text-[11px]">Pembayaran:</div>
+                          <div className="text-[10px] text-[#333] mt-1">
+                            Mandiri 1330026272567 — a/n PT Sugiarto Jaya Mandiri
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-center w-40">
+                        <div className="text-[10px] mb-8">Hormat Kami,</div>
+                        <div className="border-t border-black pt-1 text-[10px] font-bold">
+                          (Muhammad Naufal Sugiarto)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Right Column: Other Info & Operations */}
+                <div className="lg:col-span-5 overflow-y-auto p-5 bg-white flex flex-col gap-6 no-scrollbar text-left border-l border-border-main/30">
+                  {/* Summary Pembayaran */}
+                  <div>
+                    <div className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-60 mb-2">Summary Pembayaran</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Total Invoice', value: fRp(ps?.total_invoiced || inv.total_setelah_pajak || 0), color: 'text-text-main font-black' },
+                        { label: 'Terbayar', value: fRp(ps?.total_paid || 0), color: 'text-green-600 font-black' },
+                        { label: 'Sisa Tagihan', value: fRp(ps?.total_remaining ?? inv.total_setelah_pajak ?? 0), color: 'text-red-500 font-black' },
+                        { label: 'DPP (Sub Total)', value: fRp(inv.total_sebelum_pajak || 0), color: 'text-text-med font-black' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} className="p-3 rounded-xl border border-border-main/50 bg-slate-50/50">
+                          <div className="text-[8px] font-bold text-text-light uppercase tracking-widest mb-1">{label}</div>
+                          <div className={`text-[12px] tabular-nums ${color}`}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Detail SO Link List */}
+                  <div>
+                    <div className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-60 mb-2">
+                      Detail Sales Order ({soOrderIds.length} SO)
+                    </div>
+                    <div className="table-container max-h-[none]">
+                      <table className="w-full border-collapse text-[10px]">
+                        <thead>
+                          <tr>
+                            <th>No SO</th>
+                            <th>Rute</th>
+                            <th className="text-right">Biaya</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border-main/20">
+                          {soDetails.length === 0 ? (
+                            <tr><td colSpan={3} className="py-2 text-center text-text-light italic text-[10px]">Tidak ada data SO</td></tr>
+                          ) : soDetails.map((s: any) => (
+                            <tr key={s.order_id} className="hover:bg-slate-50 transition-colors">
+                              <td>
+                                <button
+                                  className="font-black text-accent uppercase tracking-tight hover:underline"
+                                  onClick={() => { setSelectedPaymentInv(null); onSOClick && onSOClick(s.order_id); }}
+                                >
+                                  {s.order_id}
+                                </button>
+                              </td>
+                              {s._notFound ? (
+                                <td colSpan={2} className="text-text-light italic opacity-50 text-[10px]">Data tidak tersedia</td>
+                              ) : (
+                                <>
+                                  <td>
+                                    <div className="font-bold text-text-main truncate max-w-[120px]" title={s.lokasi_muat}>{s.lokasi_muat || '-'}</div>
+                                    <div className="text-[10px] text-text-light italic truncate" title={s.lokasi_bongkar}>→ {s.lokasi_bongkar || '-'}</div>
+                                  </td>
+                                  <td className="text-right font-black tabular-nums">{fRp(s.total_harga_pajak || s.total_harga || 0)}</td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
 
                 {/* Riwayat Pembayaran */}
                 {(() => {
@@ -1210,9 +1345,9 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   )}
                 </div>
               </div>
-
             </div>
           </div>
+        </div>
         );
       })()}
 

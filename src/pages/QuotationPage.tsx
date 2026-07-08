@@ -5,6 +5,7 @@ import { api } from '@/src/api';
 import { generateQuotationNo } from '@/src/utils/quotationGenerator';
 import { generateQuotationPDF } from '@/src/utils/generateQuotationPDF';
 import { useToast, Card, Icon, PageShell, EmptyState, PageHeader, ActionBar, KPIGrid, StatCard } from '@/src/components/SJMComponents';
+import QuotationPreviewModal from '@/src/components/QuotationPreviewModal';
 
 const fRp = (n: number) => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
 const fmtDate = (d: string) => {
@@ -142,7 +143,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
     });
   }, [quotations, filterText, filterStatus]);
 
-  const handleSave = async () => {
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any | null>(null);
+  const [viewingQuotation, setViewingQuotation] = useState<any | null>(null);
+
+  const triggerSavePreview = () => {
     if (!form.customer.trim()) { showToast('Customer wajib diisi', 'error'); return; }
     if (!form.no_quotation.trim()) { showToast('No Quotation wajib diisi', 'error'); return; }
     if (!form.harga || Number(form.harga) <= 0) { showToast('Harga wajib diisi', 'error'); return; }
@@ -152,6 +157,28 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       if (dup) { showToast(`No Quotation ${form.no_quotation} sudah digunakan`, 'error'); return; }
     }
 
+    const dataForPreview = {
+      noQuotation: form.no_quotation,
+      tglQuotation: fmtDate(form.tgl_quotation),
+      customer: form.customer,
+      pic: form.pic,
+      noTlp: form.no_tlp,
+      jenisKendaraan: form.jenis_kendaraan,
+      muatan: form.muatan,
+      lokasiMuat: form.lokasi_muat,
+      lokasiTujuan: form.lokasi_tujuan,
+      harga: Number(form.harga),
+      keterangan: form.keterangan,
+      termOfPayment: form.term_of_payment,
+      includePph: form.include_pph,
+      includeAsuransi: form.include_asuransi,
+    };
+
+    setPreviewData(dataForPreview);
+    setShowPreview(true);
+  };
+
+  const handleConfirmSave = async () => {
     setSaving(true);
     try {
       const payload = {
@@ -185,7 +212,29 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       showToast('Gagal simpan: ' + err.message, 'error');
     } finally {
       setSaving(false);
+      setShowPreview(false);
+      setPreviewData(null);
     }
+  };
+
+  const handleOpenPreview = (q: any) => {
+    const dataForPreview = {
+      noQuotation: q.no_quotation,
+      tglQuotation: fmtDate(q.tgl_quotation),
+      customer: q.customer,
+      pic: q.pic,
+      noTlp: q.no_tlp,
+      jenisKendaraan: q.jenis_kendaraan,
+      muatan: q.muatan,
+      lokasiMuat: q.lokasi_muat,
+      lokasiTujuan: q.lokasi_tujuan,
+      harga: Number(q.harga),
+      keterangan: q.keterangan,
+      termOfPayment: q.term_of_payment,
+      includePph: q.include_pph,
+      includeAsuransi: q.include_asuransi,
+    };
+    setViewingQuotation({ raw: q, data: dataForPreview });
   };
 
   const handleEdit = (q: any) => {
@@ -378,7 +427,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                   ) : filtered.map(q => {
                     const sc = STATUS_COLOR[q.status] || '#666';
                     return (
-                      <tr key={q.id} className={`transition-colors group ${userCanEdit ? "hover:bg-amber-50/30 cursor-pointer" : ""}`} onClick={() => userCanEdit && handleEdit(q)}>
+                      <tr key={q.id} className="transition-colors group hover:bg-slate-50/50 cursor-pointer" onClick={() => handleOpenPreview(q)}>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="font-black text-accent italic text-[11px] uppercase tracking-tight">{q.no_quotation}</div>
                         </td>
@@ -401,9 +450,14 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                               <Icon name="Download" size={13} />
                             </button>
                             {userCanEdit && (
-                              <button className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" onClick={() => setConfirmDelete(q)} title="Hapus">
-                                <Icon name="Trash2" size={13} />
-                              </button>
+                              <>
+                                <button className="p-1.5 rounded-lg hover:bg-slate-100 text-amber-500 hover:text-amber-700 transition-colors" onClick={() => handleEdit(q)} title="Edit">
+                                  <Icon name="FilePen" size={13} />
+                                </button>
+                                <button className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" onClick={() => setConfirmDelete(q)} title="Hapus">
+                                  <Icon name="Trash2" size={13} />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -619,7 +673,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
 
           {/* Footer Buttons */}
           <div className="p-6 border-t border-border-main bg-slate-50/50 flex flex-col sm:flex-row gap-3">
-            <button onClick={handleSave} disabled={saving || !userCanEdit}
+            <button onClick={triggerSavePreview} disabled={saving || !userCanEdit}
               className="btn-primary flex-1 h-10 text-[10px] uppercase font-black tracking-widest gap-2 flex items-center justify-center order-2 sm:order-1 disabled:opacity-50">
               <Icon name="Save" size={14} />
               {saving ? 'Menyimpan...' : editItem ? 'Update Quotation' : 'Simpan Quotation'}
@@ -665,6 +719,24 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
             </div>
           </div>
         </div>
+      )}
+      {/* Save Preview Modal */}
+      {showPreview && previewData && (
+        <QuotationPreviewModal
+          data={previewData}
+          quotationNumber={form.no_quotation}
+          onClose={() => { setShowPreview(false); setPreviewData(null); }}
+          onConfirm={handleConfirmSave}
+        />
+      )}
+
+      {/* Row Click View Detail Preview Modal */}
+      {viewingQuotation && (
+        <QuotationPreviewModal
+          data={viewingQuotation.data}
+          quotationNumber={viewingQuotation.raw.no_quotation}
+          onClose={() => setViewingQuotation(null)}
+        />
       )}
     </PageShell>
   );
