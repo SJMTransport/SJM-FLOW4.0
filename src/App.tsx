@@ -420,8 +420,8 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
                 </div>
               </div>
 
-              {/* Armada + Sopir + Muatan */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Armada + Sopir + Ekspedisi + Muatan */}
+              <div className="grid grid-cols-4 gap-3">
                 <div>
                   <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Armada</div>
                   <button
@@ -436,13 +436,17 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
                   <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Sopir</div>
                   <div className="text-[12px] font-bold text-text-main">{data.nama_sopir || "—"}</div>
                 </div>
-                {data.muatan && (
+                <div>
+                  <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Expedisi</div>
+                  <div className="text-[12px] font-bold text-text-main">{data.nama_vendor || "Internal"}</div>
+                </div>
+                {data.muatan ? (
                   <div>
                     <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Muatan</div>
                     <div className="text-[12px] font-bold text-text-main">{data.muatan}</div>
                     {data.tonase && <div className="text-[9px] text-text-light">{data.tonase} ton</div>}
                   </div>
-                )}
+                ) : <div />}
               </div>
 
               {data.keterangan && (
