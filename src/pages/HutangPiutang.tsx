@@ -53,12 +53,29 @@ const RekapPiutangPanel = ({ rows, fmt, fmtShort }: any) => {
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
+    wb.Props = {
+      Title: "Sales Order Report",
+      Subject: "Logistics Management",
+      Author: "SJM Flow",
+      Company: "PT Sugiarto Jaya Mandiri",
+      Creator: "SJM Flow",
+      Keywords: "Logistics, Transportation, Heavy Equipment, SJM Flow"
+    } as any;
     XLSX.utils.book_append_sheet(wb, ws, "Rekapitulasi Piutang");
     XLSX.writeFile(wb, `Rekap_Piutang_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setProperties({
+      title: 'Sales Order Report',
+      author: 'SJM Flow',
+      company: 'PT Sugiarto Jaya Mandiri',
+      creator: 'SJM Flow',
+      producer: 'SJM Flow',
+      subject: 'Logistics Management',
+      keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+    } as any);
 
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');

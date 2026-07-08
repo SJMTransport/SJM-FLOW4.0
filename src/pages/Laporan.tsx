@@ -42,6 +42,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     const lastCol = String.fromCharCode(64 + ncols);
 
     const wb = new ExcelJS.Workbook();
+    (wb as any).properties = {
+      title: 'Sales Order Report',
+      creator: 'SJM Flow',
+      subject: 'Logistics Management',
+      keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow',
+      company: 'PT Sugiarto Jaya Mandiri',
+      author: 'SJM Flow',
+      lastModifiedBy: 'SJM Flow'
+    };
     const ws = wb.addWorksheet(title.substring(0, 31));
 
     const addMR = (text: string, opts: any = {}) => {
@@ -101,6 +110,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
     setExporting('pdf');
     try {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    doc.setProperties({
+      title: 'Sales Order Report',
+      author: 'SJM Flow',
+      company: 'PT Sugiarto Jaya Mandiri',
+      creator: 'SJM Flow',
+      producer: 'SJM Flow',
+      subject: 'Logistics Management',
+      keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+    } as any);
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const ML = 10, MR = 10;
@@ -476,6 +494,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         // ── PDF ───────────────────────────────────────────────────────────
         if (mode === 'pdf') {
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            doc.setProperties({
+              title: 'Sales Order Report',
+              author: 'SJM Flow',
+              company: 'PT Sugiarto Jaya Mandiri',
+              creator: 'SJM Flow',
+              producer: 'SJM Flow',
+              subject: 'Logistics Management',
+              keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+            } as any);
             const pageW = doc.internal.pageSize.getWidth();
             const pageH = doc.internal.pageSize.getHeight();
             const ML = 10, MR = 10;
@@ -573,6 +600,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
 
             const wb = new ExcelJS.Workbook();
+            (wb as any).properties = {
+              title: 'Sales Order Report',
+              creator: 'SJM Flow',
+              subject: 'Logistics Management',
+              keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow',
+              company: 'PT Sugiarto Jaya Mandiri',
+              author: 'SJM Flow',
+              lastModifiedBy: 'SJM Flow'
+            };
             const ws = wb.addWorksheet('Neraca Saldo');
 
             const addMR = (text: string, opts: any = {}) => {
@@ -838,6 +874,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
         // ── PDF ───────────────────────────────────────────────────────────
         if (mode === 'pdf') {
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            doc.setProperties({
+              title: 'Sales Order Report',
+              author: 'SJM Flow',
+              company: 'PT Sugiarto Jaya Mandiri',
+              creator: 'SJM Flow',
+              producer: 'SJM Flow',
+              subject: 'Logistics Management',
+              keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+            } as any);
             const pageW = doc.internal.pageSize.getWidth();
             const pageH = doc.internal.pageSize.getHeight();
             const ML = 10, MR = 10;
@@ -940,6 +985,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
             const footerTS = `Dicetak: ${dateStr} pukul ${timeStr}`;
 
             const wb = new ExcelJS.Workbook();
+            (wb as any).properties = {
+              title: 'Sales Order Report',
+              creator: 'SJM Flow',
+              subject: 'Logistics Management',
+              keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow',
+              company: 'PT Sugiarto Jaya Mandiri',
+              author: 'SJM Flow',
+              lastModifiedBy: 'SJM Flow'
+            };
             const ws = wb.addWorksheet('Laba Rugi');
 
             const addMR = (text: string, opts: any = {}) => {
@@ -1407,6 +1461,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       setExporting('pdf');
       try {
       const doc = new jsPDF('landscape', 'pt', 'a4');
+      doc.setProperties({
+        title: 'Sales Order Report',
+        author: 'SJM Flow',
+        company: 'PT Sugiarto Jaya Mandiri',
+        creator: 'SJM Flow',
+        producer: 'SJM Flow',
+        subject: 'Logistics Management',
+        keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+      } as any);
       const PW = doc.internal.pageSize.width;
       const PH = doc.internal.pageSize.height;
       const ML = 30, MR = 30;
@@ -1524,6 +1587,15 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
       const periodLabel = getPeriodText();
 
       const wb = new ExcelJS.Workbook();
+      (wb as any).properties = {
+        title: 'Sales Order Report',
+        creator: 'SJM Flow',
+        subject: 'Logistics Management',
+        keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow',
+        company: 'PT Sugiarto Jaya Mandiri',
+        author: 'SJM Flow',
+        lastModifiedBy: 'SJM Flow'
+      };
       const ws = wb.addWorksheet('Buku Besar');
 
       // Header rows

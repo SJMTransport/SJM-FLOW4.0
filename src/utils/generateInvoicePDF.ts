@@ -64,12 +64,14 @@ async function loadImageAsDataUrl(src: string): Promise<string> {
 export async function generateInvoicePDF(data: InvoiceData): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   doc.setProperties({
-    title: 'Invoice - PT Sugiarto Jaya Mandiri Transport',
-    subject: 'Invoice',
+    title: 'Sales Order Report',
     author: 'SJM Flow',
+    company: 'PT Sugiarto Jaya Mandiri',
     creator: 'SJM Flow',
-    keywords: 'invoice, sjm, transport',
-  });
+    producer: 'SJM Flow',
+    subject: 'Logistics Management',
+    keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+  } as any);
   const pageW = 210;
   const mL = 6;
   const mR = 6;

@@ -328,6 +328,15 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
       if (filtered.length === 0) { showToast("Tidak ada data untuk di-export", "info"); return; }
 
       const wb = new ExcelJS.Workbook();
+      (wb as any).properties = {
+        title: 'Sales Order Report',
+        creator: 'SJM Flow',
+        subject: 'Logistics Management',
+        keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow',
+        company: 'PT Sugiarto Jaya Mandiri',
+        author: 'SJM Flow',
+        lastModifiedBy: 'SJM Flow'
+      };
       const ws = wb.addWorksheet('Jurnal');
 
       const addMR = (text: string, opts: any = {}) => {
@@ -400,6 +409,15 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
   const exportPDF = () => {
     try {
       const doc = new jsPDF("p", "mm", "a4");
+      doc.setProperties({
+        title: 'Sales Order Report',
+        author: 'SJM Flow',
+        company: 'PT Sugiarto Jaya Mandiri',
+        creator: 'SJM Flow',
+        producer: 'SJM Flow',
+        subject: 'Logistics Management',
+        keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+      } as any);
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
       const ML = 10, MR = 10;

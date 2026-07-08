@@ -247,9 +247,10 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
 
           {/* ── SIGNATURES ── */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px', paddingRight: '10px' }}>
-            <div style={{ textAlign: 'center', width: '240px' }}>
-              <div style={{ marginBottom: '55px', fontSize: '9.5pt' }}>Hormat Kami,</div>
-              <div style={{ borderTop: '0.8px solid #000', width: '100%', margin: '0 auto 4px auto' }} />
+            <div style={{ textAlign: 'center', width: '240px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontSize: '9.5pt', marginBottom: '2px' }}>Hormat Kami,</div>
+              <img src="/signature-naufal.png" alt="Signature" style={{ height: '48px', objectFit: 'contain', margin: '2px 0' }} />
+              <div style={{ borderTop: '0.8px solid #000', width: '100%', marginBottom: '4px' }} />
               <div style={{ fontWeight: 'bold', fontSize: '9.5pt' }}>(Muhammad Naufal Sugiarto)</div>
             </div>
           </div>

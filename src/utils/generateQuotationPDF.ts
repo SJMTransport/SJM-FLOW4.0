@@ -61,12 +61,14 @@ export interface QuotationData {
 export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   doc.setProperties({
-    title: 'Quotation - PT Sugiarto Jaya Mandiri Transport',
-    subject: 'Quotation',
+    title: 'Sales Order Report',
     author: 'SJM Flow',
+    company: 'PT Sugiarto Jaya Mandiri',
     creator: 'SJM Flow',
-    keywords: 'quotation, sjm, transport',
-  });
+    producer: 'SJM Flow',
+    subject: 'Logistics Management',
+    keywords: 'Logistics, Transportation, Heavy Equipment, SJM Flow'
+  } as any);
   const pageW = 210;
   const mL = 20;
   const mR = 20;
@@ -292,6 +294,10 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Hormat Kami,', ttdCX, y, { align: 'center' });
+  try {
+    const sigDataUrl = await loadImageAsDataUrl('/signature-naufal.png');
+    doc.addImage(sigDataUrl, 'PNG', ttdCX - 15, y + 2, 30, 24);
+  } catch {}
   doc.setDrawColor(...BLACK);
   doc.setLineWidth(0.3);
   doc.line(ttdCX - 35, y + 30, ttdCX + 35, y + 30);
