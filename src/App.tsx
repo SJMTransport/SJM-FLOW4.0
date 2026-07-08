@@ -438,7 +438,7 @@ const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUser, hand
                 </div>
                 <div>
                   <div className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-1">Expedisi</div>
-                  <div className="text-[12px] font-bold text-text-main">{data.nama_vendor || "Internal"}</div>
+                  <div className="text-[12px] font-bold text-text-main">{data.nama_vendor || "—"}</div>
                 </div>
                 {data.muatan ? (
                   <div>
@@ -1740,7 +1740,7 @@ export default function App() {
               {activeModule === "operasional" && (
                 <>
                   {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
-                  {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} onRefresh={async () => { try { setSo(await api.getSO()); } catch {} }} />}
+                  {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} armada={armada} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} onRefresh={async () => { try { setSo(await api.getSO()); } catch {} }} />}
                   {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} invoices={invoices} setInvoices={setInvoices} onRefreshSO={async () => { try { setSo(await api.getSO()); } catch {} }} />}
                   {activeSub === "quotation" && <QuotationPage currentUser={currentUser} logAction={logAction} />}
                 </>

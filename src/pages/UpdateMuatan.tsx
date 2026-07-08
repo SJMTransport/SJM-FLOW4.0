@@ -379,7 +379,7 @@ const TerminalPanel = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, onRefresh }: any) => {
+export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logAction, onRefresh }: any) => {
   const { showToast, ToastUI } = useToast();
 
   // ── Filters
@@ -871,9 +871,11 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, o
                       <div className="text-[10px] text-text-light mt-0.5 truncate" title={s.jenis_truk || s.unit_muatan || "—"}>
                         {s.jenis_truk || s.unit_muatan || "—"}
                       </div>
-                      <div className="text-[9px] text-text-light font-bold opacity-75 truncate italic mt-0.5" title={s.nama_vendor || "Internal"}>
-                        {s.nama_vendor || "Internal"}
-                      </div>
+                      {s.nama_vendor && (
+                        <div className="text-[9px] text-text-light font-bold opacity-75 truncate italic mt-0.5" title={s.nama_vendor}>
+                          {s.nama_vendor}
+                        </div>
+                      )}
                     </td>
 
                     {/* Customer & Barang */}

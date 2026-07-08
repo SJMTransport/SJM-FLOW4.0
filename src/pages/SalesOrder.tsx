@@ -1024,9 +1024,11 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                              title={s.no_polisi}
                            >{s.no_polisi}</button>
                            <div className="text-[10px] text-text-light font-medium truncate" title={s.nama_sopir}>{s.nama_sopir}</div>
-                           <div className="text-[9px] text-text-light font-bold opacity-75 truncate italic mt-0.5" title={s.nama_vendor || 'Internal'}>
-                             {s.nama_vendor || 'Internal'}
-                           </div>
+                           {s.nama_vendor && (
+                             <div className="text-[9px] text-text-light font-bold opacity-75 truncate italic mt-0.5" title={s.nama_vendor}>
+                               {s.nama_vendor}
+                             </div>
+                           )}
                         </td>
                         <td>{statusBadge(s.status_muatan)}</td>
                         <td className="text-right tabular-nums">
