@@ -872,7 +872,7 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
                         {s.jenis_truk || s.unit_muatan || "—"}
                       </div>
                       {s.nama_vendor && (
-                        <div className="text-[9px] text-text-light font-bold opacity-75 truncate italic mt-0.5" title={s.nama_vendor}>
+                        <div className="text-[9px] font-black truncate mt-0.5" style={{ color: '#C4914A' }} title={`Expedisi: ${s.nama_vendor}`}>
                           {s.nama_vendor}
                         </div>
                       )}
