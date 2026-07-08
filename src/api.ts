@@ -414,7 +414,103 @@ export const api = {
 
     return results;
   },
-  updateSO: async (id: string, data: any) => {
+
+  // ─── Safe Bulk Upsert ─────────────────────────────────────────────────────
+  // - order_id ada & mapping terpasang → PATCH hanya field yg ada nilai di CSV
+  // - order_id baru → INSERT baru
+  // - field yg tidak ada di CSV / null / kosong → TIDAK disentuh (data lama aman)
+  upsertSOBulk: async (rows: any[], mappedKeys: string[]) => {
+    const NUMERIC = ["base_harga", "harga_asuransi", "nilai_pajak", "nilai_tanggungan",
+      "nilai_asuransi", "harga_pengiriman", "total_harga", "total_harga_pajak",
+      "tonase", "harga_per_ton", "pajak"];
+    const KNOWN_COLS = new Set(["order_id", "no_invoice", "kode_invoice", "laporan_keuangan",
+      "tgl_order", "tgl_muat", "jam_muat", "lokasi_muat", "sharelok_muat",
+      "lokasi_bongkar", "sharelok_bongkar", "customer", "pic_cust", "no_pic",
+      "nama_sopir", "nama_vendor", "jenis_truk", "no_polisi", "no_supir", "armada",
+      "unit_muatan", "base_harga", "harga_asuransi", "pajak", "nilai_pajak",
+      "harga_pengiriman", "total_harga", "muatan", "sn", "spk", "status_muatan",
+      "tgl_bongkar", "no_asuransi", "nilai_tanggungan", "nilai_asuransi",
+      "nilai_tanpa_asuransi", "total_harga_pajak", "keterangan", "update_ke_customer",
+      "posisi_log", "modal_legs", "dokumen", "no_so_lama", "is_posted", "bukti_muatan",
+      "surat_jalan", "tonase", "harga_per_ton", "foto_muat", "foto_bongkar",
+      "dokumen_asuransi", "scan_invoice", "potong_pajak", "invoice_vendor"]);
+
+    // Bangun daftar field yang benar-benar dimapping user (selain order_id)
+    const updateableKeys = mappedKeys.filter(k => k !== "order_id" && KNOWN_COLS.has(k));
+
+    // Proses setiap baris: bersihkan & konversi tipe
+    const processedRows = rows.map(data => {
+      const clean: any = { order_id: data.order_id };
+      updateableKeys.forEach(k => {
+        const v = data[k];
+        // Lewati field yang tidak ada nilainya → data lama tetap aman
+        if (v === undefined || v === null || v === "") return;
+        if (NUMERIC.includes(k)) {
+          const num = Number(String(v).replace(/[^0-9.-]/g, ""));
+          if (!isNaN(num)) clean[k] = num;
+        } else {
+          clean[k] = v;
+        }
+      });
+      return clean;
+    });
+
+    // Cek order_id mana yang sudah ada
+    const orderIds = processedRows.map(r => r.order_id).filter(Boolean);
+    const { data: existingRecords } = await supabase.from("sales_order")
+      .select("id, order_id").in("order_id", orderIds);
+    const existingMap = new Map((existingRecords || []).map((r: any) => [r.order_id, r.id]));
+
+    const toUpdate: any[] = [];
+    const toInsert: any[] = [];
+
+    for (const row of processedRows) {
+      if (existingMap.has(row.order_id)) {
+        toUpdate.push({ ...row, id: existingMap.get(row.order_id) });
+      } else {
+        // Untuk insert baru, set default yang dibutuhkan
+        const { id: _drop, ...rest } = row;
+        toInsert.push({
+          ...rest,
+          is_posted: rest.is_posted ?? false,
+          status_muatan: rest.status_muatan || "Order Confirmed",
+          posisi_log: [],
+          modal_legs: [],
+        });
+      }
+    }
+
+    const results: any[] = [];
+    const stats = { updated: 0, inserted: 0 };
+
+    // Update: PATCH hanya field yang ada → aman, tidak merusak data lain
+    for (const row of toUpdate) {
+      const { id, ...patch } = row;
+      // Hapus order_id dari patch agar tidak merusak primary key
+      delete patch.order_id;
+      if (Object.keys(patch).length === 0) continue; // tidak ada yang di-update
+      const { data: res, error } = await supabase.from("sales_order").update(patch).eq("id", id).select();
+      if (error) throw new Error(`Gagal update ${row.order_id}: ${error.message}`);
+      results.push(...(res || []));
+      stats.updated++;
+    }
+
+    // Insert: batch 100 per request
+    if (toInsert.length > 0) {
+      const batchSize = 100;
+      for (let i = 0; i < toInsert.length; i += batchSize) {
+        const batch = toInsert.slice(i, i + batchSize);
+        const { data: res, error } = await supabase.from("sales_order").insert(batch).select();
+        if (error) throw new Error(`Gagal insert batch: ${error.message}`);
+        results.push(...(res || []));
+        stats.inserted += batch.length;
+      }
+    }
+
+    return { results, stats };
+  },
+
+ updateSO: async (id: string, data: any) => {
     const NUMERIC = ["base_harga", "harga_asuransi", "nilai_pajak", "nilai_tanggungan", "nilai_asuransi", "harga_pengiriman", "total_harga", "total_harga_pajak"];
     const DATE_FIELDS = ["tgl_order", "tgl_muat", "tgl_bongkar"];
     NUMERIC.forEach((k: any) => {

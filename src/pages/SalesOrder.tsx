@@ -33,6 +33,7 @@ const SO_IMPORT_FIELDS = [
 
 const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
   const [step, setStep] = useState(1);
+  const [importMode, setImportMode] = useState<'insert' | 'upsert'>('upsert');
   const [file, setFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
@@ -127,12 +128,32 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
   const handleImport = async () => {
     setUploading(true);
     try {
-      await api.addSOBulk(previewData);
-      showToast(`${previewData.length} data SO berhasil diimport.`);
-      logAction(`Import Sales Order Masal: ${previewData.length} baris`, buildMeta({ module: 'so', action_type: 'IMPORT', after_data: { count: previewData.length } }));
+      if (importMode === 'upsert') {
+        // Mode: Update & Tambah — hanya patch field yang ada di CSV
+        const mappedKeys = SO_IMPORT_FIELDS
+          .filter(f => mapping[f.key])
+          .map(f => f.key);
+        const { stats } = await api.upsertSOBulk(previewData, mappedKeys);
+        showToast(
+          `Selesai! ${stats.updated} SO diperbarui, ${stats.inserted} SO baru ditambahkan.`,
+          'success'
+        );
+        logAction(
+          `Bulk Upsert SO: ${stats.updated} update, ${stats.inserted} insert`,
+          buildMeta({ module: 'so', action_type: 'IMPORT', after_data: stats })
+        );
+      } else {
+        // Mode: Tambah Baru Saja — insert only, skip existing order_ids
+        await api.addSOBulk(previewData);
+        showToast(`${previewData.length} data SO baru berhasil diimport.`, 'success');
+        logAction(
+          `Import SO Baru: ${previewData.length} baris`,
+          buildMeta({ module: 'so', action_type: 'IMPORT', after_data: { count: previewData.length } })
+        );
+      }
       onComplete();
     } catch (e: any) {
-      showToast("Gagal import: " + e.message, "error");
+      showToast('Gagal import: ' + e.message, 'error');
     }
     setUploading(false);
   };
@@ -146,16 +167,76 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
 
       <Card className="min-h-[400px] flex flex-col justify-center">
         {step === 1 && (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 rounded-[2.5rem] bg-slate-50 flex items-center justify-center mx-auto mb-6 shadow-inner text-text-light/40">
-               <Icon name="UploadCloud" size={40} />
+          <div className="py-10 px-6">
+            {/* Mode Selection */}
+            <div className="mb-8">
+              <div className="text-[11px] font-black text-text-light uppercase tracking-widest mb-3">Pilih Mode Import</div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setImportMode('upsert')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    importMode === 'upsert'
+                      ? 'border-accent bg-accent/5'
+                      : 'border-border-main bg-white hover:border-accent/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                      importMode === 'upsert' ? 'border-accent' : 'border-border-main'
+                    }`}>
+                      {importMode === 'upsert' && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                    </div>
+                    <span className="text-[12px] font-black text-text-main">Update & Tambah</span>
+                    <span className="ml-auto px-2 py-0.5 rounded-full text-[8px] font-black bg-accent text-white">RECOMMENDED</span>
+                  </div>
+                  <p className="text-[10px] text-text-light leading-relaxed pl-5">
+                    SO yang sudah ada → diperbarui (hanya field di CSV).<br/>
+                    SO baru → ditambahkan.<br/>
+                    <span className="text-green-600 font-bold">Data lama yang tidak ada di CSV tetap aman.</span>
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImportMode('insert')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    importMode === 'insert'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-border-main bg-white hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                      importMode === 'insert' ? 'border-blue-500' : 'border-border-main'
+                    }`}>
+                      {importMode === 'insert' && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                    </div>
+                    <span className="text-[12px] font-black text-text-main">Tambah Baru Saja</span>
+                  </div>
+                  <p className="text-[10px] text-text-light leading-relaxed pl-5">
+                    Hanya tambah SO yang belum ada.<br/>
+                    SO yang sudah ada di sistem → dilewati.<br/>
+                    <span className="text-blue-600 font-bold">Cocok untuk data historis baru.</span>
+                  </p>
+                </button>
+              </div>
             </div>
-            <div className="text-lg font-black text-text-main mb-2 tracking-tight">Upload Sales Order csv</div>
-            <div className="max-w-xs mx-auto text-[12px] font-medium text-text-med leading-relaxed mb-10 opacity-70">
-              Gunakan file CSV standar SJM FLOW.<br/>Mendukung hingga 1000 baris data per sesi.
+
+            {/* Upload File */}
+            <div className="text-center pt-6 border-t border-border-main/40">
+              <div className="w-16 h-16 rounded-[2rem] bg-slate-50 flex items-center justify-center mx-auto mb-4 shadow-inner text-text-light/40">
+                <Icon name="UploadCloud" size={32} />
+              </div>
+              <div className="text-base font-black text-text-main mb-1 tracking-tight">Upload File CSV</div>
+              <div className="text-[11px] font-medium text-text-med mb-6 opacity-70">
+                Format CSV standar SJM FLOW · Maks. 1000 baris
+              </div>
+              <input type="file" hidden ref={fileRef} accept=".csv" onChange={handleFileUpload} />
+              <button className="btn-primary h-12 px-10 shadow-xl shadow-accent/30" onClick={() => fileRef.current?.click()}>
+                <Icon name="Upload" size={15} className="inline mr-2" />Pilih File CSV
+              </button>
             </div>
-            <input type="file" hidden ref={fileRef} accept=".csv" onChange={handleFileUpload} />
-            <button className="btn-primary h-12 px-10 shadow-xl shadow-accent/30" onClick={() => fileRef.current?.click()}>Pilih File csv</button>
           </div>
         )}
 
@@ -202,8 +283,22 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
                </div>
                <div className="flex gap-3">
                   <button className="btn-ghost" onClick={() => setStep(2)}>Peta Ulang</button>
-                  <button className="btn-primary h-11 bg-green-brand hover:bg-green-brand/90 shadow-green-brand/20" onClick={handleImport} disabled={uploading}>
-                    {uploading ? <Loader2 className="animate-spin" size={18} /> : `Eksekusi Import`}
+                  <button
+                    className={`btn-primary h-11 shadow-lg ${
+                      importMode === 'upsert'
+                        ? 'bg-accent hover:bg-accent/90 shadow-accent/20'
+                        : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                    }`}
+                    onClick={handleImport}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <><Loader2 className="animate-spin inline mr-2" size={16} />Memproses...</>
+                    ) : importMode === 'upsert' ? (
+                      <><Icon name="RefreshCw" size={14} className="inline mr-2" />Update & Tambah</>
+                    ) : (
+                      <><Icon name="Plus" size={14} className="inline mr-2" />Tambah Baru Saja</>
+                    )}
                   </button>
                </div>
             </div>
