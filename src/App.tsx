@@ -1715,10 +1715,10 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div 
               key={`${activeModule}-${activeSub}`}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
               className="max-w-[1800px] mx-auto min-h-full"
             >
               {activeModule === "dashboard" && <Dashboard
@@ -1736,7 +1736,7 @@ export default function App() {
               {activeModule === "operasional" && (
                 <>
                   {activeSub === "so" && <SalesOrderPage so={so} setSo={setSo} jurnal={jurnal} customer={customer} armada={armada} sopir={sopir} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} pendingEditSO={pendingEditSO} setPendingEditSO={setPendingEditSO} onGoToHP={handleGoToHP} />}
-                  {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} />}
+                  {activeSub === "updatemuatan" && <UpdateMuatan so={so} setSo={setSo} onSOClick={handleSOClick} onArmadaClick={handleArmadaClick} logAction={logAction} onRefresh={async () => { try { setSo(await api.getSO()); } catch {} }} />}
                   {activeSub === "invoice" && <InvoicePage so={so} currentUser={currentUser} logAction={logAction} onSOClick={handleSOClick} invoices={invoices} setInvoices={setInvoices} onRefreshSO={async () => { try { setSo(await api.getSO()); } catch {} }} />}
                   {activeSub === "quotation" && <QuotationPage currentUser={currentUser} logAction={logAction} />}
                 </>

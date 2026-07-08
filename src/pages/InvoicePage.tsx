@@ -562,45 +562,56 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           </div>
 
           {/* Filter Bar */}
-          <div className="bg-white border border-border-main rounded-xl px-4 py-3 flex items-center gap-2 flex-wrap mb-4 shadow-xs">
-            <input
-              placeholder="Cari customer..."
-              value={filterInvCustomer}
-              onChange={e => setFilterInvCustomer(e.target.value)}
-              className="input h-9 text-[12px] w-48"
-            />
-            <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input h-9 text-[12px] w-36" />
-            <span className="text-text-light text-[11px]">–</span>
-            <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input h-9 text-[12px] w-36" />
-            <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input h-9 text-[12px] w-36">
-              <option value="all">Semua Status</option>
-              <option value="Belum Bayar">Belum Bayar</option>
-              <option value="Parsial">Parsial</option>
-              <option value="Lunas">Lunas</option>
-              <option value="Lebih Bayar">Lebih Bayar</option>
-              <option value="Perlu Verifikasi">Perlu Verifikasi</option>
-            </select>
-            <div className="ml-auto flex items-center gap-2">
-              {loadingStatus && (
-                <span className="text-[11px] text-text-light italic flex items-center gap-1">
-                  <Icon name="Loader2" size={11} className="animate-spin" /> Cek status...
-                </span>
-              )}
-              <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
-              {activeKpi !== 'all' && (
-                <button
-                  onClick={() => setActiveKpi('all')}
-                  className="flex items-center gap-1 h-9 px-3 bg-accent/10 text-accent rounded-lg text-[11px] font-bold hover:bg-accent/20 transition-colors"
-                >
-                  <Icon name="X" size={11} /> Reset KPI
+          <ActionBar
+            left={
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                <div className="relative min-w-[200px]">
+                  <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-60" />
+                  <input
+                    placeholder="Cari customer..."
+                    value={filterInvCustomer}
+                    onChange={e => setFilterInvCustomer(e.target.value)}
+                    className="input-field pl-9 h-9 text-[12px] w-full"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input-field h-9 text-[12px] w-32 px-2 tabular-nums" />
+                  <span className="text-text-light text-[11px]">—</span>
+                  <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input-field h-9 text-[12px] w-32 px-2 tabular-nums" />
+                </div>
+                <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input-field h-9 text-[12px] w-36 px-2">
+                  <option value="all">Semua Status</option>
+                  <option value="Belum Bayar">Belum Bayar</option>
+                  <option value="Parsial">Parsial</option>
+                  <option value="Lunas">Lunas</option>
+                  <option value="Lebih Bayar">Lebih Bayar</option>
+                  <option value="Perlu Verifikasi">Perlu Verifikasi</option>
+                </select>
+              </div>
+            }
+            right={
+              <div className="flex items-center gap-2">
+                {loadingStatus && (
+                  <span className="text-[11px] text-text-light italic flex items-center gap-1">
+                    <Icon name="Loader2" size={11} className="animate-spin" /> Cek status...
+                  </span>
+                )}
+                <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
+                {activeKpi !== 'all' && (
+                  <button
+                    onClick={() => setActiveKpi('all')}
+                    className="flex items-center gap-1 h-9 px-3 bg-accent/10 text-accent rounded-lg text-[11px] font-bold hover:bg-accent/20 transition-colors"
+                  >
+                    <Icon name="X" size={11} /> Reset KPI
+                  </button>
+                )}
+                <button onClick={loadInvoices} disabled={loadingInvoices}
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                  <Icon name="RefreshCw" size={13} className={loadingInvoices ? "animate-spin" : ""} /> Refresh
                 </button>
-              )}
-              <button onClick={loadInvoices} disabled={loadingInvoices}
-                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
-                <Icon name="RefreshCw" size={13} /> Refresh
-              </button>
-            </div>
-          </div>
+              </div>
+            }
+          />
 
           {/* Tabel */}
           {loadingInvoices ? (
@@ -610,13 +621,13 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               <table className="w-full border-collapse table-fixed">
                 <thead>
                   <tr>
-                    <th className="w-[160px]">No Invoice</th>
-                    <th className="w-[100px]">Tgl Invoice</th>
-                    <th className="w-[180px]">Customer</th>
-                    <th className="w-[150px]">Sales Order</th>
-                    <th className="w-[80px] text-center">Tipe</th>
-                    <th className="w-[120px] text-right">Total</th>
-                    <th className="w-[110px] text-center">Status Bayar</th>
+                    <th className="w-[170px]">No Invoice</th>
+                    <th className="w-[115px]">Tgl Invoice</th>
+                    <th className="w-[190px]">Customer</th>
+                    <th className="w-[180px]">Sales Order</th>
+                    <th className="w-[90px] text-center">Tipe</th>
+                    <th className="w-[130px] text-right">Total</th>
+                    <th className="w-[125px] text-center">Status Bayar</th>
                     <th className="w-[80px] text-center">Aksi</th>
                   </tr>
                 </thead>

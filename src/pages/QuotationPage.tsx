@@ -411,17 +411,17 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
           {/* Filter Bar */}
           <ActionBar
             left={
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative flex-1 min-w-[220px]">
-                  <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                <div className="relative min-w-[200px]">
+                  <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-60" />
                   <input
                     placeholder="Cari customer atau no quotation..."
                     value={filterText}
                     onChange={e => setFilterText(e.target.value)}
-                    className="input-field h-9 w-full pl-9 text-[12px]"
+                    className="input-field pl-9 h-9 text-[12px] w-full"
                   />
                 </div>
-                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input-field h-9 text-[12px]">
+                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input-field h-9 text-[12px] w-36 px-2">
                   <option value="all">Semua Status</option>
                   <option value="Draft">Draft</option>
                   <option value="Terkirim">Terkirim</option>

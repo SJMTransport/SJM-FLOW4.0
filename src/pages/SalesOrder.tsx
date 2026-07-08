@@ -727,7 +727,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </th>
                     )}
                     <th
-                      className={`w-[110px] cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-slate-100 !text-accent' : ''}`}
+                      className={`w-[125px] cursor-pointer select-none transition-colors ${sortKey === 'order_id' ? '!bg-slate-100 !text-accent' : ''}`}
                       onClick={() => toggleSort('order_id')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -738,7 +738,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                       </span>
                     </th>
                     <th
-                      className={`w-[90px] cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-slate-100 !text-accent' : ''}`}
+                      className={`w-[115px] cursor-pointer select-none transition-colors ${sortKey === 'tgl_muat' ? '!bg-slate-100 !text-accent' : ''}`}
                       onClick={() => toggleSort('tgl_muat')}
                     >
                       <span className="flex items-center gap-1 pointer-events-none">
@@ -786,7 +786,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                              {s.order_id || "(Draft)"}
                            </button>
                         </td>
-                        <td className="tabular-nums text-[11px] font-bold text-text-med italic">
+                        <td className="tabular-nums text-[11px] font-bold text-text-med italic whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             {jurnal.some((j: any) => j.no_so?.includes(s.order_id)) && (
                               <div className="w-1.5 h-1.5 rounded-full bg-green-brand animate-pulse" title="Terhubung Jurnal" />

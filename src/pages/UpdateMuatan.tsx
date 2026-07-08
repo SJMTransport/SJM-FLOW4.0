@@ -377,7 +377,7 @@ const TerminalPanel = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }: any) => {
+export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, onRefresh }: any) => {
   const { showToast, ToastUI } = useToast();
 
   // ── Filters
@@ -609,14 +609,28 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
             </div>
           </div>
         }
-        right={(search || selectedStatuses.size > 0) ? (
-          <button
-            onClick={() => { setSearch(""); setSelectedStatuses(new Set()); }}
-            className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
-          >
-            <Icon name="X" size={13} /> Reset
-          </button>
-        ) : undefined}
+        right={
+          <div className="flex items-center gap-2">
+            {(search || selectedStatuses.size > 0) && (
+              <button
+                onClick={() => { setSearch(""); setSelectedStatuses(new Set()); }}
+                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
+              >
+                <Icon name="X" size={13} /> Reset
+              </button>
+            )}
+            <button
+              onClick={async () => {
+                if (onRefresh) {
+                  try { await onRefresh(); } catch {}
+                }
+              }}
+              className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
+            >
+              <Icon name="RefreshCw" size={13} /> Refresh
+            </button>
+          </div>
+        }
       />
 
       {/* ── Table ── */}
@@ -625,7 +639,7 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
           <thead>
             <tr className="bg-slate-50 border-b-2 border-border-main">
               <th
-                className={`w-[110px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                className={`w-[185px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
                 onClick={() => toggleSort('order_id')}
               >
                 <span className="flex items-center gap-1">
@@ -670,18 +684,20 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction }:
                   }`}>
 
                     {/* No. SO */}
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => onSOClick(s.order_id)}
-                        className="text-[11px] font-black italic text-accent hover:underline tracking-tight"
-                      >
-                        {s.order_id}
-                      </button>
-                      {s.tgl_muat && (
-                        <div className="text-[10px] text-text-light mt-0.5 tabular-nums">
-                          {s.tgl_muat}
-                        </div>
-                      )}
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => onSOClick(s.order_id)}
+                          className="text-[11px] font-black italic text-accent hover:underline tracking-tight"
+                        >
+                          {s.order_id}
+                        </button>
+                        {s.tgl_muat && (
+                          <span className="text-[10px] text-text-light tabular-nums font-bold">
+                            ({s.tgl_muat})
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Sopir */}
