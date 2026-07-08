@@ -4,6 +4,8 @@ import {
   Icon, useToast, EmptyState, PageShell, KPIGrid, StatCard, PageHeader, ActionBar
 } from "@/src/components/SJMComponents";
 import { api } from "@/src/api";
+import * as XLSX from "xlsx";
+import { filterByPeriod, today, fmt } from "@/src/utils";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -384,6 +386,10 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, o
   const [search, setSearch]                       = useState("");
   const [selectedStatuses, setSelectedStatuses]   = useState<Set<string>>(new Set());
   const [sortKey, setSortKey]                     = useState<'order_id' | 'tgl_muat'>('order_id');
+  const [openDropdown, setOpenDropdown] = useState<'status_muatan' | 'date_range' | null>(null);
+  const [period, setPeriod] = useState({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
+  const [tempRangeFrom, setTempRangeFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [tempRangeTo, setTempRangeTo] = useState(new Date().toISOString().slice(0, 10));
   const [sortDir, setSortDir]                     = useState<'asc' | 'desc'>('desc');
 
   // ── Panel state
@@ -427,10 +433,54 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, o
     });
   };
 
+  const formatRangeLabel = (p: any) => {
+    if (p.mode === 'all') return 'Semua Periode';
+    if (p.mode === 'day') return p.day || '';
+    if (p.mode === 'month') return `Bulan ${p.month + 1} - ${p.year}`;
+    if (p.mode === 'year') return `Tahun ${p.year}`;
+    if (p.mode === 'range') {
+      const fDate = (dStr: string) => {
+        if (!dStr) return '';
+        const d = new Date(dStr);
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      };
+      return `${fDate(p.rangeFrom)} - ${fDate(p.rangeTo)}`;
+    }
+    return 'Pilih Periode';
+  };
+
+  const handleExportExcel = () => {
+    const dataToExport = filtered.map((s: any, idx: number) => ({
+      'No.': idx + 1,
+      'Order ID': s.order_id || '(Draft)',
+      'Tgl Muat': s.tgl_muat || '',
+      'Sopir': s.nama_sopir || '',
+      'No. Polisi': s.no_polisi || '',
+      'Customer': s.customer || '',
+      'Rute': `${s.lokasi_muat || ''} -> ${s.lokasi_bongkar || ''}`,
+      'Posisi Terakhir': s.posisi_log?.[0]?.info || 'Belum ada update',
+      'Status': s.status_muatan || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    wb.Props = {
+      Title: "Sales Order Report",
+      Subject: "Logistics Management",
+      Author: "SJM Flow",
+      Company: "PT Sugiarto Jaya Mandiri",
+      Creator: "SJM Flow",
+      Keywords: "Logistics, Transportation, Heavy Equipment, SJM Flow"
+    } as any;
+    XLSX.utils.book_append_sheet(wb, ws, "Update Muatan");
+    XLSX.writeFile(wb, `Update_Muatan_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("Berhasil mengunduh Excel Update Muatan", "success");
+  };
+
   // ── Filtered list
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    const base = allSO.filter((s: any) => {
+    const withPeriod = filterByPeriod(allSO, period, "tgl_muat");
+    const base = withPeriod.filter((s: any) => {
       const matchSearch = !search ||
         s.order_id?.toLowerCase().includes(q) ||
         s.customer?.toLowerCase().includes(q) ||
@@ -445,7 +495,7 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, o
       const cmp = aVal.localeCompare(bVal);
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [allSO, search, selectedStatuses, sortKey, sortDir]);
+  }, [allSO, search, selectedStatuses, sortKey, sortDir, period]);
 
   // ── Open / close terminal panel
   const openPanel = (s: any) => {
@@ -570,51 +620,144 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, o
       <ActionBar
         left={
           <div className="flex items-center gap-2 flex-wrap flex-1">
+            {/* Search */}
             <div className="relative min-w-[200px]">
-              <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light" />
+              <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-60" />
               <input
-                className="input-field h-9 w-full pl-9 text-[12px]"
+                className="input-field pl-9 h-9 text-[12px] w-full"
                 placeholder="Cari SO, Customer, Sopir, Plat..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            {/* Multi-select status pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {(["Order Confirmed", "Loading", "On Going", "Completed", "Cancelled"] as const).map(st => {
-                const count = allSO.filter((s: any) => s.status_muatan === st).length;
-                const hex   = getStatusHex(st);
-                const active = selectedStatuses.has(st);
-                return (
-                  <button
-                    key={st}
-                    onClick={() => toggleStatus(st)}
-                    className="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[10px] font-bold border transition-all"
-                    style={active ? {
-                      background: hex + '18',
-                      borderColor: hex,
-                      color: hex,
-                    } : {
-                      background: 'white',
-                      borderColor: 'var(--color-border-main)',
-                      color: 'var(--color-text-light)',
-                    }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: hex }} />
-                    {getStatusLabel(st)}
-                    <span className="font-black opacity-70">{count}</span>
-                  </button>
-                );
-              })}
+
+            {/* Status Muatan Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'status_muatan' ? null : 'status_muatan')}
+                className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+              >
+                <Icon name="Truck" size={12} className="text-text-light opacity-80" />
+                <span>
+                  {selectedStatuses.size === 0 
+                    ? "Status Muatan" 
+                    : `${selectedStatuses.size} Status Terpilih`}
+                </span>
+                <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+              </button>
+              {openDropdown === 'status_muatan' && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                  <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg py-1.5 min-w-[170px] text-[11px] font-bold text-text-main">
+                    <button
+                      onClick={() => { setSelectedStatuses(new Set()); setOpenDropdown(null); }}
+                      className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                    >
+                      <span>Semua Status</span>
+                      {selectedStatuses.size === 0 && <Icon name="Check" size={11} className="text-accent" />}
+                    </button>
+                    {([
+                      { key: 'Order Confirmed', color: '#64748b' },
+                      { key: 'Loading', color: '#f97316' },
+                      { key: 'On Going', color: '#3b82f6' },
+                      { key: 'Completed', color: '#10b981' },
+                      { key: 'Cancelled', color: '#ef4444' }
+                    ] as const).map(({ key, color }) => {
+                      const active = selectedStatuses.has(key);
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => toggleStatus(key)}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                            {getStatusLabel(key)}
+                          </span>
+                          {active && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Period / Date Range Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  if (period.mode === 'range') {
+                    setTempRangeFrom(period.rangeFrom || today());
+                    setTempRangeTo(period.rangeTo || today());
+                  }
+                  setOpenDropdown(openDropdown === 'date_range' ? null : 'date_range');
+                }}
+                className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+              >
+                <Icon name="Calendar" size={12} className="text-text-light opacity-80" />
+                <span>{formatRangeLabel(period)}</span>
+                <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+              </button>
+              {openDropdown === 'date_range' && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                  <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg p-3 min-w-[280px] text-[11px] font-bold text-text-main flex flex-col gap-2.5">
+                    <div className="text-[10px] uppercase tracking-widest text-text-light">Pilih Rentang Tanggal</div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] text-text-light font-medium">Dari Tanggal</label>
+                      <input
+                        type="date"
+                        className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                        value={tempRangeFrom}
+                        onChange={e => setTempRangeFrom(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] text-text-light font-medium">Sampai Tanggal</label>
+                      <input
+                        type="date"
+                        className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                        value={tempRangeTo}
+                        onChange={e => setTempRangeTo(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end mt-1">
+                      <button
+                        onClick={() => {
+                          setPeriod({ mode: 'all', month: new Date().getMonth(), year: new Date().getFullYear() });
+                          setOpenDropdown(null);
+                        }}
+                        className="btn-ghost h-8 px-3 text-[10px]"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPeriod({ mode: 'range', rangeFrom: tempRangeFrom, rangeTo: tempRangeTo } as any);
+                          setOpenDropdown(null);
+                        }}
+                        className="btn-primary h-8 px-3 text-[10px]"
+                      >
+                        Terapkan
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         }
         right={
           <div className="flex items-center gap-2">
-            {(search || selectedStatuses.size > 0) && (
+            {(search || selectedStatuses.size > 0 || period.mode !== 'all') && (
               <button
-                onClick={() => { setSearch(""); setSelectedStatuses(new Set()); }}
-                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
+                onClick={() => {
+                  setSearch("");
+                  setSelectedStatuses(new Set());
+                  setPeriod({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
+                }}
+                className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 text-red-500 hover:bg-red-50 border-red-200"
               >
                 <Icon name="X" size={13} /> Reset
               </button>
@@ -625,9 +768,15 @@ export const UpdateMuatan = ({ so, setSo, onSOClick, onArmadaClick, logAction, o
                   try { await onRefresh(); } catch {}
                 }
               }}
-              className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5"
+              className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main"
             >
               <Icon name="RefreshCw" size={13} /> Refresh
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main"
+            >
+              <Icon name="Download" size={13} /> Export
             </button>
           </div>
         }

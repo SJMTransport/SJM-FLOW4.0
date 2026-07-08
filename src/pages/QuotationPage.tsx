@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { canEdit as checkCanEdit } from "@/src/permissions";
 import { buildMeta } from '@/src/lib/activityLogger';
 import { api } from '@/src/api';
+import * as XLSX from 'xlsx';
+import { filterByPeriod, today } from '@/src/utils';
 import { generateQuotationNo } from '@/src/utils/quotationGenerator';
 import { generateQuotationPDF } from '@/src/utils/generateQuotationPDF';
 import { useToast, Card, Icon, PageShell, EmptyState, PageHeader, ActionBar, KPIGrid, StatCard } from '@/src/components/SJMComponents';
@@ -58,6 +60,10 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
   const [filterText, setFilterText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [openDropdown, setOpenDropdown] = useState<'status_quotation' | 'date_range' | null>(null);
+  const [period, setPeriod] = useState({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
+  const [tempRangeFrom, setTempRangeFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [tempRangeTo, setTempRangeTo] = useState(new Date().toISOString().slice(0, 10));
   const [loadingNo, setLoadingNo] = useState(false);
   const [customerList, setCustomerList] = useState<any[]>([]);
   const [customerQuery, setCustomerQuery] = useState('');
@@ -131,8 +137,50 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
     suggest();
   }, [activeTab, form.tgl_quotation]);
 
+  const formatRangeLabel = (p: any) => {
+    if (p.mode === 'all') return 'Semua Periode';
+    if (p.mode === 'day') return p.day || '';
+    if (p.mode === 'month') return `Bulan ${p.month + 1} - ${p.year}`;
+    if (p.mode === 'year') return `Tahun ${p.year}`;
+    if (p.mode === 'range') {
+      const fDate = (dStr: string) => {
+        if (!dStr) return '';
+        const d = new Date(dStr);
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      };
+      return `${fDate(p.rangeFrom)} - ${fDate(p.rangeTo)}`;
+    }
+    return 'Pilih Periode';
+  };
+
+  const handleExportExcel = () => {
+    const dataToExport = filtered.map((q: any, idx: number) => ({
+      'No.': idx + 1,
+      'No. Quotation': q.no_quotation || '',
+      'Tgl Quotation': q.tgl_quotation || '',
+      'Customer': q.customer || '',
+      'Rute': `${q.lokasi_muat || ''} -> ${q.lokasi_tujuan || ''}`,
+      'Harga': q.harga || 0,
+      'Status': q.status || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    wb.Props = {
+      Title: "Sales Order Report",
+      Subject: "Logistics Management",
+      Author: "SJM Flow",
+      Company: "PT Sugiarto Jaya Mandiri",
+      Creator: "SJM Flow",
+      Keywords: "Logistics, Transportation, Heavy Equipment, SJM Flow"
+    } as any;
+    XLSX.utils.book_append_sheet(wb, ws, "Quotations");
+    XLSX.writeFile(wb, `Quotations_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("Berhasil mengunduh Excel Quotation", "success");
+  };
+
   const filtered = useMemo(() => {
-    return quotations.filter(q => {
+    const withPeriod = filterByPeriod(quotations, period, "tgl_quotation");
+    return withPeriod.filter(q => {
       const matchText = !filterText ||
         q.customer?.toLowerCase().includes(filterText.toLowerCase()) ||
         q.no_quotation?.toLowerCase().includes(filterText.toLowerCase());
@@ -143,7 +191,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       const nb = parseInt((b.no_quotation || '').split('/')[0]) || 0;
       return nb - na;
     });
-  }, [quotations, filterText, filterStatus]);
+  }, [quotations, filterText, filterStatus, period]);
 
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<any | null>(null);
@@ -412,6 +460,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
           <ActionBar
             left={
               <div className="flex items-center gap-2 flex-wrap flex-1">
+                {/* Search */}
                 <div className="relative min-w-[200px]">
                   <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-60" />
                   <input
@@ -421,21 +470,140 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                     className="input-field pl-9 h-9 text-[12px] w-full"
                   />
                 </div>
-                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input-field h-9 text-[12px] w-36 px-2">
-                  <option value="all">Semua Status</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Terkirim">Terkirim</option>
-                  <option value="Diterima">Diterima</option>
-                  <option value="Ditolak">Ditolak</option>
-                </select>
+
+                {/* Status Quotation Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'status_quotation' ? null : 'status_quotation')}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="FileText" size={12} className="text-text-light opacity-80" />
+                    <span>{filterStatus === 'all' ? 'Status Quotation' : filterStatus}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'status_quotation' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg py-1.5 min-w-[170px] text-[11px] font-bold text-text-main">
+                        <button
+                          onClick={() => { setFilterStatus('all'); setOpenDropdown(null); }}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span>Semua Status</span>
+                          {filterStatus === 'all' && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                        {([
+                          { key: 'Draft', color: '#6b7280' },
+                          { key: 'Terkirim', color: '#3b82f6' },
+                          { key: 'Diterima', color: '#22c55e' },
+                          { key: 'Ditolak', color: '#ef4444' }
+                        ] as const).map(({ key, color }) => (
+                          <button
+                            key={key}
+                            onClick={() => { setFilterStatus(key); setOpenDropdown(null); }}
+                            className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                              {key}
+                            </span>
+                            {filterStatus === key && <Icon name="Check" size={11} className="text-accent" />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Period / Date Range Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (period.mode === 'range') {
+                        setTempRangeFrom(period.rangeFrom || today());
+                        setTempRangeTo(period.rangeTo || today());
+                      }
+                      setOpenDropdown(openDropdown === 'date_range' ? null : 'date_range');
+                    }}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="Calendar" size={12} className="text-text-light opacity-80" />
+                    <span>{formatRangeLabel(period)}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'date_range' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg p-3 min-w-[280px] text-[11px] font-bold text-text-main flex flex-col gap-2.5">
+                        <div className="text-[10px] uppercase tracking-widest text-text-light">Pilih Rentang Tanggal</div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-text-light font-medium">Dari Tanggal</label>
+                          <input
+                            type="date"
+                            className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                            value={tempRangeFrom}
+                            onChange={e => setTempRangeFrom(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-text-light font-medium">Sampai Tanggal</label>
+                          <input
+                            type="date"
+                            className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                            value={tempRangeTo}
+                            onChange={e => setTempRangeTo(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end mt-1">
+                          <button
+                            onClick={() => {
+                              setPeriod({ mode: 'all', month: new Date().getMonth(), year: new Date().getFullYear() });
+                              setOpenDropdown(null);
+                            }}
+                            className="btn-ghost h-8 px-3 text-[10px]"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPeriod({ mode: 'range', rangeFrom: tempRangeFrom, rangeTo: tempRangeTo } as any);
+                              setOpenDropdown(null);
+                            }}
+                            className="btn-primary h-8 px-3 text-[10px]"
+                          >
+                            Terapkan
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             }
             right={
               <div className="flex items-center gap-2">
+                {(filterText || filterStatus !== 'all' || period.mode !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setFilterText("");
+                      setFilterStatus("all");
+                      setPeriod({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
+                    }}
+                    className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 text-red-500 hover:bg-red-50 border-red-200"
+                  >
+                    <Icon name="X" size={13} /> Reset
+                  </button>
+                )}
                 <span className="text-[11px] text-text-light">{filtered.length} quotation</span>
                 <button onClick={loadQuotations} disabled={loading}
-                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main">
                   <Icon name="RefreshCw" size={13} /> Refresh
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main"
+                >
+                  <Icon name="Download" size={13} /> Export
                 </button>
               </div>
             }

@@ -7,6 +7,7 @@ import { CurrencyInput } from "@/src/components/SJMModals";
 import { api } from "@/src/api";
 import { Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { buildMeta } from "@/src/lib/activityLogger";
+import * as XLSX from "xlsx";
 
 const SO_IMPORT_FIELDS = [
   { key: "order_id", label: "Order ID", required: true },
@@ -285,6 +286,10 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const [picQuery, setPicQuery] = useState("");
   const [vendorOpen, setVendorOpen] = useState(false);
   const [vendorQuery, setVendorQuery] = useState("");
+  
+  const [openDropdown, setOpenDropdown] = useState<'status_muatan' | 'status_invoice' | 'date_range' | null>(null);
+  const [tempRangeFrom, setTempRangeFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [tempRangeTo, setTempRangeTo] = useState(new Date().toISOString().slice(0, 10));
   
   const emptyForm = {
     order_id: "", no_invoice: "", kode_invoice: "", laporan_keuangan: "",
@@ -567,7 +572,50 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     }
     await doSave(posted);
   };
+  const formatRangeLabel = (p: any) => {
+    if (p.mode === 'all') return 'Semua Periode';
+    if (p.mode === 'day') return p.day || '';
+    if (p.mode === 'month') return `Bulan ${p.month + 1} - ${p.year}`;
+    if (p.mode === 'year') return `Tahun ${p.year}`;
+    if (p.mode === 'range') {
+      const fDate = (dStr: string) => {
+        if (!dStr) return '';
+        const d = new Date(dStr);
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      };
+      return `${fDate(p.rangeFrom)} - ${fDate(p.rangeTo)}`;
+    }
+    return 'Pilih Periode';
+  };
 
+  const handleExportExcel = () => {
+    const dataToExport = filtered.map((s: any, idx: number) => ({
+      'No.': idx + 1,
+      'Order ID': s.order_id || '(Draft)',
+      'Tgl Muat': s.tgl_muat || '',
+      'Rute Dari': s.lokasi_muat || '',
+      'Rute Ke': s.lokasi_bongkar || '',
+      'Customer': s.customer || '',
+      'Status': s.status_muatan || '',
+      'No. Polisi': s.no_polisi || '',
+      'Sopir': s.nama_sopir || '',
+      'Biaya': s.total_harga || 0,
+      'Invoice': s.no_invoice || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    wb.Props = {
+      Title: "Sales Order Report",
+      Subject: "Logistics Management",
+      Author: "SJM Flow",
+      Company: "PT Sugiarto Jaya Mandiri",
+      Creator: "SJM Flow",
+      Keywords: "Logistics, Transportation, Heavy Equipment, SJM Flow"
+    } as any;
+    XLSX.utils.book_append_sheet(wb, ws, "Sales Orders");
+    XLSX.writeFile(wb, `Sales_Orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("Berhasil mengunduh Excel Sales Order", "success");
+  };
   const filtered = useMemo(() => {
     const base = filterByPeriod(so, period, "tgl_muat")
       .filter((s: any) => {
@@ -666,50 +714,215 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </KPIGrid>
 
           <ActionBar
-            left={<PeriodFilter period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} />}
-            right={canEdit && selected.length > 0 && (
-              <div className="flex items-center gap-2 px-3 h-10 bg-slate-50 border border-border-main rounded-xl">
-                <span className="text-[10px] font-bold text-text-med italic">{selected.length} Selected</span>
-                <button className="btn-ghost !px-3 border-red-brand/20 text-red-brand hover:bg-red-brand-light" onClick={deleteBulk} disabled={processing}>
-                  <Icon name="Trash2" size={12} /> Hapus
-                </button>
-                <button className="btn-primary !px-3" onClick={approveBulk} disabled={processing}>
-                  <Icon name="Send" size={12} /> Posting
+            left={
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                {/* Search */}
+                <div className="relative min-w-[200px]">
+                  <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-60" />
+                  <input
+                    placeholder="Cari Sales Order..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="input-field pl-9 h-9 text-[12px] w-full"
+                  />
+                </div>
+
+                {/* Status Muatan Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'status_muatan' ? null : 'status_muatan')}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="Truck" size={12} className="text-text-light opacity-80" />
+                    <span>{statusFilter === 'all' ? 'Status Muatan' : statusFilter}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'status_muatan' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg py-1.5 min-w-[170px] text-[11px] font-bold text-text-main">
+                        <button
+                          onClick={() => { setStatusFilter('all'); setOpenDropdown(null); }}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span>Semua Status</span>
+                          {statusFilter === 'all' && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                        {([
+                          { key: 'On Going', color: '#3b82f6' },
+                          { key: 'Loading', color: '#f97316' },
+                          { key: 'Arrived', color: '#a855f7' },
+                          { key: 'Completed', color: '#10b981' },
+                          { key: 'Cancelled', color: '#ef4444' }
+                        ] as const).map(({ key, color }) => (
+                          <button
+                            key={key}
+                            onClick={() => { setStatusFilter(key); setInvoiceFilter('all'); setOpenDropdown(null); }}
+                            className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                              {key}
+                            </span>
+                            {statusFilter === key && <Icon name="Check" size={11} className="text-accent" />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Status Invoice Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'status_invoice' ? null : 'status_invoice')}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="FileText" size={12} className="text-text-light opacity-80" />
+                    <span>{invoiceFilter === 'all' ? 'Status Invoice' : invoiceFilter === 'uninvoiced' ? 'Belum Invoice' : 'Sudah Invoice'}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'status_invoice' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg py-1.5 min-w-[170px] text-[11px] font-bold text-text-main">
+                        <button
+                          onClick={() => { setInvoiceFilter('all'); setOpenDropdown(null); }}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span>Semua Invoice</span>
+                          {invoiceFilter === 'all' && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                        <button
+                          onClick={() => { setInvoiceFilter('uninvoiced'); setStatusFilter('all'); setOpenDropdown(null); }}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-yellow-500" />
+                            Belum Invoice
+                          </span>
+                          {invoiceFilter === 'uninvoiced' && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                        <button
+                          onClick={() => { setInvoiceFilter('invoiced'); setOpenDropdown(null); }}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-500" />
+                            Sudah Invoice
+                          </span>
+                          {invoiceFilter === 'invoiced' && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Period / Date Range Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (period.mode === 'range') {
+                        setTempRangeFrom(period.rangeFrom || today());
+                        setTempRangeTo(period.rangeTo || today());
+                      }
+                      setOpenDropdown(openDropdown === 'date_range' ? null : 'date_range');
+                    }}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="Calendar" size={12} className="text-text-light opacity-80" />
+                    <span>{formatRangeLabel(period)}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'date_range' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg p-3 min-w-[280px] text-[11px] font-bold text-text-main flex flex-col gap-2.5">
+                        <div className="text-[10px] uppercase tracking-widest text-text-light">Pilih Rentang Tanggal</div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-text-light font-medium">Dari Tanggal</label>
+                          <input
+                            type="date"
+                            className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                            value={tempRangeFrom}
+                            onChange={e => setTempRangeFrom(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-text-light font-medium">Sampai Tanggal</label>
+                          <input
+                            type="date"
+                            className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                            value={tempRangeTo}
+                            onChange={e => setTempRangeTo(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end mt-1">
+                          <button
+                            onClick={() => {
+                              setPeriod({ mode: 'all', month: new Date().getMonth(), year: new Date().getFullYear() });
+                              setOpenDropdown(null);
+                            }}
+                            className="btn-ghost h-8 px-3 text-[10px]"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPeriod({ mode: 'range', rangeFrom: tempRangeFrom, rangeTo: tempRangeTo } as any);
+                              setOpenDropdown(null);
+                            }}
+                            className="btn-primary h-8 px-3 text-[10px]"
+                          >
+                            Terapkan
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            }
+            right={
+              <div className="flex items-center gap-2">
+                {/* Reset button if any filter is active */}
+                {(search || statusFilter !== 'all' || invoiceFilter !== 'all' || period.mode !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearch("");
+                      setStatusFilter("all");
+                      setInvoiceFilter("all");
+                      setPeriod({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
+                    }}
+                    className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 text-red-500 hover:bg-red-50 border-red-200"
+                  >
+                    <Icon name="X" size={13} /> Reset
+                  </button>
+                )}
+
+                {/* Bulk Actions */}
+                {canEdit && selected.length > 0 && (
+                  <div className="flex items-center gap-1.5 px-2.5 h-9 bg-slate-50 border border-border-main rounded-xl shrink-0">
+                    <span className="text-[9px] font-bold text-text-med italic">{selected.length} Selected</span>
+                    <button className="btn-ghost !h-7 !px-2 border-red-brand/20 text-red-brand hover:bg-red-brand-light !text-[10px]" onClick={deleteBulk} disabled={processing}>
+                      Hapus
+                    </button>
+                    <button className="btn-primary !h-7 !px-2.5 !text-[10px]" onClick={approveBulk} disabled={processing}>
+                      Posting
+                    </button>
+                  </div>
+                )}
+
+                {/* Export Button */}
+                <button
+                  onClick={handleExportExcel}
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main"
+                >
+                  <Icon name="Download" size={13} /> Export
                 </button>
               </div>
-            )}
+            }
           />
-
-          {/* Invoice filter pills + reset */}
-          <div className="flex items-center gap-2 px-1 pb-2 flex-wrap">
-            {([
-              { key: 'all',        label: 'Semua SO',       count: periodBase.length },
-              { key: 'uninvoiced', label: 'Belum Invoice',  count: kpiBelumInvoice },
-              { key: 'invoiced',   label: 'Sudah Invoice',  count: periodBase.filter((s: any) => !!s.no_invoice).length },
-            ] as const).map(({ key, label, count }) => (
-              <button
-                key={key}
-                onClick={() => { setInvoiceFilter(key); if (key !== 'all') setStatusFilter('all'); }}
-                className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold border transition-colors ${
-                  invoiceFilter === key
-                    ? key === 'uninvoiced' ? 'bg-emerald-600 text-white border-emerald-600' : key === 'invoiced' ? 'bg-blue-600 text-white border-blue-600' : 'bg-accent text-white border-accent'
-                    : 'bg-white text-text-med border-border-main hover:border-accent'
-                }`}
-              >
-                {label}
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${invoiceFilter === key ? 'bg-white/20' : 'bg-slate-100'}`}>{count}</span>
-              </button>
-            ))}
-            {(statusFilter !== 'all' || invoiceFilter !== 'all') && (
-              <button
-                onClick={() => { setStatusFilter('all'); setInvoiceFilter('all'); }}
-                className="flex items-center gap-1 h-7 px-3 rounded-full text-[10px] font-bold border border-dashed border-red-300 text-red-500 hover:bg-red-50 transition-colors ml-auto"
-              >
-                <Icon name="X" size={10} /> Reset Filter
-              </button>
-            )}
-            <span className="text-[10px] text-text-light ml-1">{filtered.length} dari {periodBase.length} SO</span>
-          </div>
 
           {reloading && <div className="text-center py-2 text-[11px] text-text-light animate-pulse">🔄 Memperbarui data...</div>}
           <div className="table-container max-h-[calc(100vh-380px)]">

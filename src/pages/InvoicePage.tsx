@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '@/src/api';
+import * as XLSX from 'xlsx';
+import { filterByPeriod, today } from '@/src/utils';
 import { generateInvoiceNo } from '@/src/utils/invoiceGenerator';
 import InvoicePreviewModal from '@/src/components/InvoicePreviewModal';
 import type { InvoiceData } from '@/src/utils/generateInvoicePDF';
@@ -83,8 +85,10 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [filterInvCustomer, setFilterInvCustomer] = useState('');
   const [filterInvStatus, setFilterInvStatus] = useState('all');
   const [activeKpi, setActiveKpi] = useState<string>('all');
-  const [filterPeriodStart, setFilterPeriodStart] = useState('');
-  const [filterPeriodEnd, setFilterPeriodEnd] = useState('');
+  const [openDropdown, setOpenDropdown] = useState<'status_bayar' | 'date_range' | null>(null);
+  const [period, setPeriod] = useState<any>({ mode: 'all', month: new Date().getMonth(), year: new Date().getFullYear() });
+  const [tempRangeFrom, setTempRangeFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [tempRangeTo, setTempRangeTo] = useState(new Date().toISOString().slice(0, 10));
   const [reprintData, setReprintData] = useState<InvoiceData | null>(null);
   const [reprintNo, setReprintNo] = useState('');
   const [showReprint, setShowReprint] = useState(false);
@@ -421,19 +425,60 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     return ps?.total_remaining ?? (inv.total_setelah_pajak || 0);
   };
 
+  const formatRangeLabel = (p: any) => {
+    if (p.mode === 'all') return 'Semua Periode';
+    if (p.mode === 'day') return p.day || '';
+    if (p.mode === 'month') return `Bulan ${p.month + 1} - ${p.year}`;
+    if (p.mode === 'year') return `Tahun ${p.year}`;
+    if (p.mode === 'range') {
+      const fDate = (dStr: string) => {
+        if (!dStr) return '';
+        const d = new Date(dStr);
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      };
+      return `${fDate(p.rangeFrom)} - ${fDate(p.rangeTo)}`;
+    }
+    return 'Pilih Periode';
+  };
+
+  const handleExportExcel = () => {
+    const dataToExport = filteredInvoices.map((inv: any, idx: number) => ({
+      'No.': idx + 1,
+      'No. Invoice': inv.no_invoice || '',
+      'Tgl Invoice': inv.tgl_invoice || '',
+      'Customer': inv.customer || '',
+      'Total Tagihan': inv.total_setelah_pajak || 0,
+      'Total Bayar': getInvTotalPaid(inv),
+      'Sisa Tagihan': getInvRemaining(inv),
+      'Status': getInvStatus(inv),
+    }));
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    wb.Props = {
+      Title: "Sales Order Report",
+      Subject: "Logistics Management",
+      Author: "SJM Flow",
+      Company: "PT Sugiarto Jaya Mandiri",
+      Creator: "SJM Flow",
+      Keywords: "Logistics, Transportation, Heavy Equipment, SJM Flow"
+    } as any;
+    XLSX.utils.book_append_sheet(wb, ws, "Invoices");
+    XLSX.writeFile(wb, `Invoices_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("Berhasil mengunduh Excel Invoice", "success");
+  };
+
   const filteredInvoices = useMemo(() => {
-    return invoices.filter(inv => {
-      const matchCustomer = !filterInvCustomer || inv.customer?.toLowerCase().includes(filterInvCustomer.toLowerCase());
+    const withPeriod = filterByPeriod(invoices, period, "tgl_invoice");
+    return withPeriod.filter(inv => {
+      const matchCustomer = !filterInvCustomer || inv.customer?.toLowerCase().includes(filterInvCustomer.toLowerCase()) || inv.no_invoice?.toLowerCase().includes(filterInvCustomer.toLowerCase());
       const matchStatus = filterInvStatus === 'all' || getInvStatus(inv) === filterInvStatus;
-      const matchStart = !filterPeriodStart || inv.tgl_invoice >= filterPeriodStart;
-      const matchEnd = !filterPeriodEnd || inv.tgl_invoice <= filterPeriodEnd;
       const matchKpi = activeKpi === 'all' || getInvStatus(inv) === activeKpi;
-      return matchCustomer && matchStatus && matchStart && matchEnd && matchKpi;
+      return matchCustomer && matchStatus && matchKpi;
     }).sort((a, b) => {
       const extractNum = (s: string) => { const m = (s || '').match(/^(\d+)\//); return m ? parseInt(m[1], 10) : 0; };
       return extractNum(b.no_invoice) - extractNum(a.no_invoice);
     });
-  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvStatus, filterPeriodStart, filterPeriodEnd, activeKpi]);
+  }, [invoices, paymentStatusMap, filterInvCustomer, filterInvStatus, period, activeKpi]);
 
   const kpiData = useMemo(() => {
     const soBelumiInvoice = so.filter(s =>
@@ -565,28 +610,125 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           <ActionBar
             left={
               <div className="flex items-center gap-2 flex-wrap flex-1">
+                {/* Search */}
                 <div className="relative min-w-[200px]">
                   <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light opacity-60" />
                   <input
-                    placeholder="Cari customer..."
+                    placeholder="Cari customer atau no invoice..."
                     value={filterInvCustomer}
                     onChange={e => setFilterInvCustomer(e.target.value)}
                     className="input-field pl-9 h-9 text-[12px] w-full"
                   />
                 </div>
-                <div className="flex items-center gap-1">
-                  <input type="date" value={filterPeriodStart} onChange={e => setFilterPeriodStart(e.target.value)} className="input-field h-9 text-[12px] w-32 px-2 tabular-nums" />
-                  <span className="text-text-light text-[11px]">—</span>
-                  <input type="date" value={filterPeriodEnd} onChange={e => setFilterPeriodEnd(e.target.value)} className="input-field h-9 text-[12px] w-32 px-2 tabular-nums" />
+
+                {/* Status Bayar Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'status_bayar' ? null : 'status_bayar')}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="DollarSign" size={12} className="text-text-light opacity-80" />
+                    <span>{filterInvStatus === 'all' ? 'Status Bayar' : filterInvStatus}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'status_bayar' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg py-1.5 min-w-[170px] text-[11px] font-bold text-text-main">
+                        <button
+                          onClick={() => { setFilterInvStatus('all'); setOpenDropdown(null); }}
+                          className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                        >
+                          <span>Semua Status</span>
+                          {filterInvStatus === 'all' && <Icon name="Check" size={11} className="text-accent" />}
+                        </button>
+                        {([
+                          { key: 'Belum Bayar', color: '#ef4444' },
+                          { key: 'Parsial', color: '#f59e0b' },
+                          { key: 'Lunas', color: '#10b981' },
+                          { key: 'Lebih Bayar', color: '#a855f7' },
+                          { key: 'Perlu Verifikasi', color: '#3b82f6' }
+                        ] as const).map(({ key, color }) => (
+                          <button
+                            key={key}
+                            onClick={() => { setFilterInvStatus(key); setOpenDropdown(null); }}
+                            className="flex items-center justify-between w-full px-4 py-2 hover:bg-slate-50 text-left"
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                              {key}
+                            </span>
+                            {filterInvStatus === key && <Icon name="Check" size={11} className="text-accent" />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <select value={filterInvStatus} onChange={e => setFilterInvStatus(e.target.value)} className="input-field h-9 text-[12px] w-36 px-2">
-                  <option value="all">Semua Status</option>
-                  <option value="Belum Bayar">Belum Bayar</option>
-                  <option value="Parsial">Parsial</option>
-                  <option value="Lunas">Lunas</option>
-                  <option value="Lebih Bayar">Lebih Bayar</option>
-                  <option value="Perlu Verifikasi">Perlu Verifikasi</option>
-                </select>
+
+                {/* Period / Date Range Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (period.mode === 'range') {
+                        setTempRangeFrom(period.rangeFrom || today());
+                        setTempRangeTo(period.rangeTo || today());
+                      }
+                      setOpenDropdown(openDropdown === 'date_range' ? null : 'date_range');
+                    }}
+                    className="input-field h-9 px-3 text-[11px] font-bold flex items-center gap-2 bg-white border border-border-main rounded-xl shadow-xs"
+                  >
+                    <Icon name="Calendar" size={12} className="text-text-light opacity-80" />
+                    <span>{formatRangeLabel(period)}</span>
+                    <Icon name="ChevronDown" size={10} className="text-text-light ml-1" />
+                  </button>
+                  {openDropdown === 'date_range' && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)} />
+                      <div className="absolute top-10 left-0 z-30 bg-white border border-border-main rounded-xl shadow-lg p-3 min-w-[280px] text-[11px] font-bold text-text-main flex flex-col gap-2.5">
+                        <div className="text-[10px] uppercase tracking-widest text-text-light">Pilih Rentang Tanggal</div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-text-light font-medium">Dari Tanggal</label>
+                          <input
+                            type="date"
+                            className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                            value={tempRangeFrom}
+                            onChange={e => setTempRangeFrom(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-text-light font-medium">Sampai Tanggal</label>
+                          <input
+                            type="date"
+                            className="input-field h-9 px-2 text-[11px] tabular-nums w-full"
+                            value={tempRangeTo}
+                            onChange={e => setTempRangeTo(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end mt-1">
+                          <button
+                            onClick={() => {
+                              setPeriod({ mode: 'all', month: new Date().getMonth(), year: new Date().getFullYear() });
+                              setOpenDropdown(null);
+                            }}
+                            className="btn-ghost h-8 px-3 text-[10px]"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPeriod({ mode: 'range', rangeFrom: tempRangeFrom, rangeTo: tempRangeTo } as any);
+                              setOpenDropdown(null);
+                            }}
+                            className="btn-primary h-8 px-3 text-[10px]"
+                          >
+                            Terapkan
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             }
             right={
@@ -596,18 +738,29 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <Icon name="Loader2" size={11} className="animate-spin" /> Cek status...
                   </span>
                 )}
-                <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
-                {activeKpi !== 'all' && (
+                {(filterInvCustomer || filterInvStatus !== 'all' || period.mode !== 'all' || activeKpi !== 'all') && (
                   <button
-                    onClick={() => setActiveKpi('all')}
-                    className="flex items-center gap-1 h-9 px-3 bg-accent/10 text-accent rounded-lg text-[11px] font-bold hover:bg-accent/20 transition-colors"
+                    onClick={() => {
+                      setFilterInvCustomer("");
+                      setFilterInvStatus("all");
+                      setPeriod({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
+                      setActiveKpi("all");
+                    }}
+                    className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 text-red-500 hover:bg-red-50 border-red-200"
                   >
-                    <Icon name="X" size={11} /> Reset KPI
+                    <Icon name="X" size={13} /> Reset
                   </button>
                 )}
+                <span className="text-[11px] text-text-light">{filteredInvoices.length} invoice</span>
                 <button onClick={loadInvoices} disabled={loadingInvoices}
-                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5">
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main">
                   <Icon name="RefreshCw" size={13} className={loadingInvoices ? "animate-spin" : ""} /> Refresh
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 border border-border-main"
+                >
+                  <Icon name="Download" size={13} /> Export
                 </button>
               </div>
             }
