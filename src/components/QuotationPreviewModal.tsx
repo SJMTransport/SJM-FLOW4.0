@@ -58,11 +58,14 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
     }
   };
 
+  const hasAsuransi = (data.nilaiAsuransi || 0) > 0;
+  const grandTotal = data.harga + (data.nilaiAsuransi || 0);
+
   const notes: string[] = [];
   if (data.termOfPayment) notes.push(data.termOfPayment);
   notes.push(data.includePpn ? 'Sudah Termasuk PPN' : 'Belum Termasuk PPN');
   notes.push(data.includePph ? 'Sudah Termasuk PPh' : 'Belum Termasuk PPh');
-  notes.push(data.includeAsuransi ? 'Sudah Termasuk Asuransi' : 'Belum Termasuk Asuransi');
+  notes.push(hasAsuransi ? 'Sudah Termasuk Asuransi' : 'Belum Termasuk Asuransi');
   if (data.keterangan) notes.push(data.keterangan);
 
   const modalJSX = (
@@ -177,27 +180,56 @@ const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                   {fRp(data.harga)}
                 </td>
                 <td style={{ padding: '12px 8px', borderRight: '1px solid #000', verticalAlign: 'top', textAlign: 'center', color: '#000', whiteSpace: 'pre-line' }}>
-                  {data.includeAsuransi ? 'Sudah Termasuk' : 'Belum Termasuk\nAsuransi'}
+                  {hasAsuransi ? fRp(data.nilaiAsuransi) : 'Belum Termasuk\nAsuransi'}
                 </td>
                 <td style={{ padding: '12px 8px', verticalAlign: 'top', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
-                  {fRp(data.harga)}
+                  {fRp(grandTotal)}
                 </td>
               </tr>
               
-              {/* Total row */}
-              <tr style={{ border: '1px solid #000' }}>
-                <td colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #000', textAlign: 'right', fontWeight: 'bold', color: '#000' }}>
-                  Total
-                </td>
-                <td style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
-                  {fRp(data.harga)}
-                </td>
-              </tr>
+              {/* Summary Breakdown Rows */}
+              {hasAsuransi ? (
+                <>
+                  <tr style={{ border: '1px solid #000' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', borderRight: '1px solid #000', textAlign: 'right', color: '#000' }}>
+                      Harga Unit
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'center', color: '#000' }}>
+                      {fRp(data.harga)}
+                    </td>
+                  </tr>
+                  <tr style={{ border: '1px solid #000' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', borderRight: '1px solid #000', textAlign: 'right', color: '#000' }}>
+                      Asuransi
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'center', color: '#000' }}>
+                      {fRp(data.nilaiAsuransi)}
+                    </td>
+                  </tr>
+                  <tr style={{ border: '1px solid #000' }}>
+                    <td colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #000', textAlign: 'right', fontWeight: 'bold', color: '#000' }}>
+                      Total
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
+                      {fRp(grandTotal)}
+                    </td>
+                  </tr>
+                </>
+              ) : (
+                <tr style={{ border: '1px solid #000' }}>
+                  <td colSpan={3} style={{ padding: '8px 12px', borderRight: '1px solid #000', textAlign: 'right', fontWeight: 'bold', color: '#000' }}>
+                    Total
+                  </td>
+                  <td style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
+                    {fRp(data.harga)}
+                  </td>
+                </tr>
+              )}
 
               {/* Terbilang row */}
               <tr style={{ border: '1px solid #000' }}>
                 <td colSpan={4} style={{ padding: '8px 10px', color: '#000' }}>
-                  <strong>Terbilang :</strong> {terbilang(data.harga)} Rupiah
+                  <strong>Terbilang :</strong> {terbilang(grandTotal)} Rupiah
                 </td>
               </tr>
 

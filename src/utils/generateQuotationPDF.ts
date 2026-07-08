@@ -51,11 +51,11 @@ export interface QuotationData {
   lokasiMuat: string;
   lokasiTujuan: string;
   harga: number;
+  nilaiAsuransi: number; // Replaced includeAsuransi with nilaiAsuransi
   keterangan?: string;
   termOfPayment?: string;
   includePpn: boolean;
   includePph: boolean;
-  includeAsuransi: boolean;
 }
 
 export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> {
@@ -190,29 +190,61 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   });
 
   const midY = y + rowH / 2;
+  const hasAsuransi = (data.nilaiAsuransi || 0) > 0;
+  const grandTotal = data.harga + (data.nilaiAsuransi || 0);
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(fRp(data.harga), mL + col1W + col2W/2, midY, { align: 'center' });
   
   // Asuransi column
-  doc.setFontSize(8);
-  doc.text(data.includeAsuransi ? 'Sudah Termasuk' : 'Belum Termasuk\nAsuransi', mL + col1W + col2W + col3W/2, midY - 1.5, { align: 'center' });
+  doc.setFontSize(hasAsuransi ? 9 : 8);
+  doc.text(hasAsuransi ? fRp(data.nilaiAsuransi) : 'Belum Termasuk\nAsuransi', mL + col1W + col2W + col3W/2, hasAsuransi ? midY : midY - 1.5, { align: 'center' });
   
   doc.setFontSize(9);
-  doc.text(fRp(data.harga), mL + col1W + col2W + col3W + col4W/2, midY, { align: 'center' });
+  doc.text(fRp(grandTotal), mL + col1W + col2W + col3W + col4W/2, midY, { align: 'center' });
   y += rowH;
 
-  // Footer tabel — Total
-  doc.setFillColor(255, 255, 255);
-  doc.rect(mL, y, contentW, 10, 'F');
-  doc.setDrawColor(...BLACK);
-  doc.setLineWidth(0.4);
-  doc.rect(mL, y, contentW, 10, 'S');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('Total', mL + col1W + col2W + col3W - 3, y + 7, { align: 'right' });
-  doc.text(fRp(data.harga), mL + col1W + col2W + col3W + col4W/2, y + 7, { align: 'center' });
-  y += 10;
+  // Footer tabel — Summary Rows
+  if (hasAsuransi) {
+    // 1. Harga Unit
+    doc.setFillColor(255, 255, 255);
+    doc.rect(mL, y, contentW, 8, 'F');
+    doc.setDrawColor(...BLACK);
+    doc.rect(mL, y, contentW, 8, 'S');
+    doc.setFont('helvetica', 'normal');
+    doc.text('Harga Unit', mL + col1W + col2W + col3W - 3, y + 5.5, { align: 'right' });
+    doc.text(fRp(data.harga), mL + col1W + col2W + col3W + col4W/2, y + 5.5, { align: 'center' });
+    y += 8;
+
+    // 2. Asuransi
+    doc.setFillColor(255, 255, 255);
+    doc.rect(mL, y, contentW, 8, 'F');
+    doc.rect(mL, y, contentW, 8, 'S');
+    doc.text('Asuransi', mL + col1W + col2W + col3W - 3, y + 5.5, { align: 'right' });
+    doc.text(fRp(data.nilaiAsuransi), mL + col1W + col2W + col3W + col4W/2, y + 5.5, { align: 'center' });
+    y += 8;
+
+    // 3. Grand Total
+    doc.setFillColor(255, 255, 255);
+    doc.rect(mL, y, contentW, 10, 'F');
+    doc.rect(mL, y, contentW, 10, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total', mL + col1W + col2W + col3W - 3, y + 6.5, { align: 'right' });
+    doc.text(fRp(grandTotal), mL + col1W + col2W + col3W + col4W/2, y + 6.5, { align: 'center' });
+    y += 10;
+  } else {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(mL, y, contentW, 10, 'F');
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.4);
+    doc.rect(mL, y, contentW, 10, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('Total', mL + col1W + col2W + col3W - 3, y + 7, { align: 'right' });
+    doc.text(fRp(data.harga), mL + col1W + col2W + col3W + col4W/2, y + 7, { align: 'center' });
+    y += 10;
+  }
 
   // Terbilang
   doc.setFillColor(255, 255, 255);
@@ -221,7 +253,7 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   doc.rect(mL, y, contentW, 10, 'S');
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text(`Terbilang : ${terbilang(data.harga)} Rupiah`, mL + 3, y + 7);
+  doc.text(`Terbilang : ${terbilang(grandTotal)} Rupiah`, mL + 3, y + 7);
   y += 10;
 
   // Keterangan / Term of Payment
@@ -230,7 +262,7 @@ export async function generateQuotationPDF(data: QuotationData): Promise<jsPDF> 
   if (data.termOfPayment) notes.push(data.termOfPayment);
   notes.push(data.includePpn ? 'Sudah Termasuk PPN' : 'Belum Termasuk PPN');
   notes.push(data.includePph ? 'Sudah Termasuk PPh' : 'Belum Termasuk PPh');
-  notes.push(data.includeAsuransi ? 'Sudah Termasuk Asuransi' : 'Belum Termasuk Asuransi');
+  notes.push(hasAsuransi ? 'Sudah Termasuk Asuransi' : 'Belum Termasuk Asuransi');
   if (data.keterangan) notes.push(data.keterangan);
 
   const notesH = notes.length * 6 + 4;

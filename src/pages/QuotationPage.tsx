@@ -37,6 +37,7 @@ const EMPTY_FORM = {
   include_pph: false,
   include_asuransi: false,
   include_ppn: false,
+  nilai_asuransi: '',
   status: 'Draft',
 };
 
@@ -169,11 +170,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       lokasiMuat: form.lokasi_muat,
       lokasiTujuan: form.lokasi_tujuan,
       harga: Number(form.harga),
+      nilaiAsuransi: Number(form.nilai_asuransi) || 0,
       keterangan: form.keterangan,
       termOfPayment: form.term_of_payment,
       includePpn: form.include_ppn,
       includePph: form.include_pph,
-      includeAsuransi: form.include_asuransi,
     };
 
     setPreviewData(dataForPreview);
@@ -183,13 +184,18 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
   const handleConfirmSave = async () => {
     setSaving(true);
     try {
-      const serializedTerm = form.term_of_payment + (form.include_ppn ? ' [PPN:true]' : ' [PPN:false]');
+      const isAsuransi = (Number(form.nilai_asuransi) || 0) > 0;
+      const serializedTerm = form.term_of_payment + 
+        (form.include_ppn ? ' [PPN:true]' : ' [PPN:false]') +
+        ' [ASURANSI:' + (Number(form.nilai_asuransi) || 0) + ']';
       const payload = {
         ...form,
+        include_asuransi: isAsuransi,
         term_of_payment: serializedTerm,
         harga: Number(form.harga),
         created_by: currentUser?.email || '',
       };
+      delete (payload as any).nilai_asuransi;
       delete (payload as any).include_ppn;
       if (editItem) {
         await api.updateQuotation(editItem.id, payload);
@@ -226,7 +232,9 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
     const rawTerm = q.term_of_payment || '';
     const ppnMatch = rawTerm.match(/\[PPN:(true|false)\]/);
     const include_ppn = ppnMatch ? ppnMatch[1] === 'true' : false;
-    const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').trim();
+    const asuransiMatch = rawTerm.match(/\[ASURANSI:(\d+)\]/);
+    const nilai_asuransi = asuransiMatch ? Number(asuransiMatch[1]) : 0;
+    const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').replace(/\[ASURANSI:\d+\]/, '').trim();
 
     const dataForPreview = {
       noQuotation: q.no_quotation,
@@ -239,11 +247,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       lokasiMuat: q.lokasi_muat,
       lokasiTujuan: q.lokasi_tujuan,
       harga: Number(q.harga),
+      nilaiAsuransi: nilai_asuransi,
       keterangan: q.keterangan,
       termOfPayment: cleanTerm,
       includePpn: include_ppn,
       includePph: q.include_pph,
-      includeAsuransi: q.include_asuransi,
     };
     setViewingQuotation({ raw: q, data: dataForPreview });
   };
@@ -252,7 +260,9 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
     const rawTerm = q.term_of_payment || '';
     const ppnMatch = rawTerm.match(/\[PPN:(true|false)\]/);
     const include_ppn = ppnMatch ? ppnMatch[1] === 'true' : false;
-    const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').trim();
+    const asuransiMatch = rawTerm.match(/\[ASURANSI:(\d+)\]/);
+    const nilai_asuransi = asuransiMatch ? Number(asuransiMatch[1]) : 0;
+    const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').replace(/\[ASURANSI:\d+\]/, '').trim();
 
     setEditItem(q);
     setForm({
@@ -271,6 +281,7 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       include_ppn: include_ppn,
       include_pph: q.include_pph || false,
       include_asuransi: q.include_asuransi || false,
+      nilai_asuransi: nilai_asuransi > 0 ? String(nilai_asuransi) : '',
       status: q.status || 'Draft',
     });
     setCustomerQuery(q.customer || '');
@@ -283,7 +294,9 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
       const rawTerm = q.term_of_payment || '';
       const ppnMatch = rawTerm.match(/\[PPN:(true|false)\]/);
       const include_ppn = ppnMatch ? ppnMatch[1] === 'true' : false;
-      const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').trim();
+      const asuransiMatch = rawTerm.match(/\[ASURANSI:(\d+)\]/);
+      const nilai_asuransi = asuransiMatch ? Number(asuransiMatch[1]) : 0;
+      const cleanTerm = rawTerm.replace(/\[PPN:(true|false)\]/, '').replace(/\[ASURANSI:\d+\]/, '').trim();
 
       const doc = await generateQuotationPDF({
         noQuotation: q.no_quotation,
@@ -296,11 +309,11 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
         lokasiMuat: q.lokasi_muat || '-',
         lokasiTujuan: q.lokasi_tujuan || '-',
         harga: Number(q.harga) || 0,
+        nilaiAsuransi: nilai_asuransi,
         keterangan: q.keterangan,
         termOfPayment: cleanTerm,
         includePpn: include_ppn,
         includePph: q.include_pph,
-        includeAsuransi: q.include_asuransi,
       });
       doc.save(`Quotation_${q.no_quotation.replace(/\//g, '_')}.pdf`);
     } catch (err: any) {
@@ -664,12 +677,21 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                  <Icon name="Receipt" size={12} className="text-accent" /> Harga &amp; Ketentuan
               </div>
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Harga (Rp) *</label>
-                  <input type="number" value={form.harga} onChange={e => setF('harga', e.target.value)} placeholder="15000000" className="input-field h-9 text-[11px] font-bold" />
-                  {form.harga && Number(form.harga) > 0 && (
-                    <div className="text-[10px] text-text-light mt-1 px-1 font-bold">= {fRp(Number(form.harga))}</div>
-                  )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Harga (Rp) *</label>
+                    <input type="number" value={form.harga} onChange={e => setF('harga', e.target.value)} placeholder="15000000" className="input-field h-9 text-[11px] font-bold" />
+                    {form.harga && Number(form.harga) > 0 && (
+                      <div className="text-[10px] text-text-light mt-1 px-1 font-bold">= {fRp(Number(form.harga))}</div>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Nominal Asuransi (Rp)</label>
+                    <input type="number" value={form.nilai_asuransi} onChange={e => setF('nilai_asuransi', e.target.value)} placeholder="0" className="input-field h-9 text-[11px] font-bold" />
+                    {form.nilai_asuransi && Number(form.nilai_asuransi) > 0 && (
+                      <div className="text-[10px] text-text-light mt-1 px-1 font-bold">= {fRp(Number(form.nilai_asuransi))}</div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-text-main uppercase tracking-widest px-1 block">Term of Payment</label>
@@ -683,10 +705,6 @@ export const QuotationPage: React.FC<QuotationPageProps> = ({ currentUser, logAc
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.include_pph} onChange={e => setF('include_pph', e.target.checked)} className="w-4 h-4 rounded text-accent focus:ring-accent" />
                     <span className="text-[12px] text-text-main font-bold">Sudah Termasuk PPh</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.include_asuransi} onChange={e => setF('include_asuransi', e.target.checked)} className="w-4 h-4 rounded text-accent focus:ring-accent" />
-                    <span className="text-[12px] text-text-main font-bold">Sudah Termasuk Asuransi</span>
                   </label>
                 </div>
                 <div className="space-y-1.5">
