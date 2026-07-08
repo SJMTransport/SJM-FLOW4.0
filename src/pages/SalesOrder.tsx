@@ -1013,9 +1013,6 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         </td>
                         <td className="max-w-[180px]">
                           <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors truncate" title={s.customer}>{s.customer}</div>
-                          {s.is_posted && (
-                            <div className="badge text-[8px] mt-1 bg-green-brand-light text-green-brand">Posted</div>
-                          )}
                         </td>
                         <td className="max-w-[120px]">
                            <button

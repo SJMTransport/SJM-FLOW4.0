@@ -786,9 +786,10 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
       <div className="table-container max-h-[calc(100vh-360px)]">
         <table className="w-full border-collapse table-fixed">
           <thead>
-            <tr className="bg-slate-50 border-b-2 border-border-main">
+            <tr>
+              {/* No SO - sortable */}
               <th
-                className={`w-[185px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                className={`w-[140px] cursor-pointer select-none transition-colors hover:bg-slate-100 whitespace-nowrap ${sortKey === 'order_id' ? 'text-accent bg-slate-100' : ''}`}
                 onClick={() => toggleSort('order_id')}
               >
                 <span className="flex items-center gap-1">
@@ -798,23 +799,24 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
                   {sortKey === 'order_id' && sortDir === 'desc' && <Icon name="ArrowDown" size={9} className="text-accent" />}
                 </span>
               </th>
-              <th className="w-[120px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Sopir</th>
-              <th className="w-[130px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Plat &amp; Armada</th>
-              <th className="w-[180px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Customer &amp; Barang</th>
+              {/* Tgl Muat - sortable */}
               <th
-                className={`w-[150px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortKey === 'tgl_muat' ? 'text-accent bg-slate-100' : 'text-text-light opacity-70'}`}
+                className={`w-[110px] cursor-pointer select-none transition-colors hover:bg-slate-100 whitespace-nowrap ${sortKey === 'tgl_muat' ? 'text-accent bg-slate-100' : ''}`}
                 onClick={() => toggleSort('tgl_muat')}
               >
                 <span className="flex items-center gap-1">
-                  Rute
+                  Tgl Muat
                   {sortKey !== 'tgl_muat' && <Icon name="ArrowUpDown" size={9} className="opacity-40" />}
                   {sortKey === 'tgl_muat' && sortDir === 'asc' && <Icon name="ArrowUp" size={9} className="text-accent" />}
                   {sortKey === 'tgl_muat' && sortDir === 'desc' && <Icon name="ArrowDown" size={9} className="text-accent" />}
                 </span>
               </th>
-              <th className="w-[160px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Posisi Terakhir</th>
-              <th className="w-[100px] text-left py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Status</th>
-              <th className="w-[80px] text-right py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest text-text-light opacity-70">Aksi</th>
+              <th className="w-[160px]">Rute</th>
+              <th className="w-[180px]">Customer</th>
+              <th className="w-[140px]">Armada</th>
+              <th className="w-[110px]">Status</th>
+              <th className="w-[170px]">Posisi Terakhir</th>
+              <th className="w-[90px] text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-main/20">
@@ -833,44 +835,42 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
                   }`}>
 
                     {/* No. SO */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => onSOClick(s.order_id)}
-                          className="text-[11px] font-black italic text-accent hover:underline tracking-tight"
-                        >
-                          {s.order_id}
-                        </button>
-                        {s.tgl_muat && (
-                          <span className="text-[10px] text-text-light tabular-nums font-bold">
-                            ({s.tgl_muat})
-                          </span>
-                        )}
-                      </div>
+                    <td className="whitespace-nowrap">
+                      <button
+                        onClick={() => onSOClick(s.order_id)}
+                        className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight"
+                      >
+                        {s.order_id}
+                      </button>
                     </td>
 
-                    {/* Sopir */}
-                    <td className="py-3 px-4 max-w-[120px]">
-                      <div className="text-[12px] font-medium text-text-main truncate" title={s.nama_sopir || "—"}>
-                        {s.nama_sopir || "—"}
-                      </div>
+                    {/* Tgl Muat */}
+                    <td className="tabular-nums text-[11px] font-bold text-text-med italic whitespace-nowrap">
+                      {s.tgl_muat || "—"}
                     </td>
 
-                    {/* Plat & Armada */}
-                    <td className="py-3 px-4 max-w-[130px]">
+                    {/* Rute */}
+                    <td className="max-w-[160px]">
+                      <div className="text-[12px] font-bold text-text-main truncate" title={`Dari ${s.lokasi_muat} ke ${s.lokasi_bongkar}`}>{s.lokasi_muat || "—"}</div>
+                      <div className="text-[10px] font-medium text-text-light opacity-70 italic truncate">ke {s.lokasi_bongkar || "—"}</div>
+                    </td>
+
+                    {/* Customer */}
+                    <td className="max-w-[180px]">
+                      <div className="text-[12px] font-bold text-text-main truncate" title={s.customer}>{s.customer || "—"}</div>
+                      {s.muatan && <div className="text-[10px] text-text-light truncate" title={s.muatan}>{s.muatan}</div>}
+                    </td>
+
+                    {/* Armada: plat + sopir + vendor */}
+                    <td className="max-w-[140px]">
                       {s.no_polisi ? (
                         <button
                           onClick={() => onArmadaClick && onArmadaClick(s.no_polisi)}
-                          className="text-[11px] font-black font-mono px-2 py-0.5 rounded text-white tracking-wider hover:bg-accent transition-colors truncate max-w-full"
-                          style={{ background: "#252422" }}
+                          className="text-[12px] font-black text-accent hover:underline tabular-nums tracking-tight truncate w-full text-left"
                           title={s.no_polisi}
-                        >
-                          {s.no_polisi}
-                        </button>
+                        >{s.no_polisi}</button>
                       ) : <span className="text-text-light text-[11px]">—</span>}
-                      <div className="text-[10px] text-text-light mt-0.5 truncate" title={s.jenis_truk || s.unit_muatan || "—"}>
-                        {s.jenis_truk || s.unit_muatan || "—"}
-                      </div>
+                      <div className="text-[10px] text-text-light font-medium truncate" title={s.nama_sopir}>{s.nama_sopir || "—"}</div>
                       {s.nama_vendor && (
                         <div className="text-[9px] font-black truncate mt-0.5" style={{ color: '#C4914A' }} title={`Expedisi: ${s.nama_vendor}`}>
                           {s.nama_vendor}
@@ -878,27 +878,18 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
                       )}
                     </td>
 
-                    {/* Customer & Barang */}
-                    <td className="py-3 px-4 max-w-[180px]">
-                      <div className="text-[12px] font-medium text-text-main truncate" title={s.customer || "—"}>
-                        {s.customer || "—"}
-                      </div>
-                      <div className="text-[10px] text-text-light truncate" title={s.muatan || s.unit_muatan || "—"}>
-                        {s.muatan || s.unit_muatan || "—"}
-                      </div>
-                    </td>
-
-                    {/* Rute */}
-                    <td className="py-3 px-4 max-w-[150px]">
-                      <div className="flex items-center gap-1.5 text-[11px] text-text-med w-full" title={`Dari ${s.lokasi_muat || "—"} ke ${s.lokasi_bongkar || "—"}`}>
-                        <span className="truncate max-w-[80px]">{s.lokasi_muat || "—"}</span>
-                        <Icon name="ArrowRight" size={10} className="text-text-light shrink-0" />
-                        <span className="truncate max-w-[80px]">{s.lokasi_bongkar || "—"}</span>
-                      </div>
+                    {/* Status */}
+                    <td>
+                      <span
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide whitespace-nowrap"
+                        style={{ backgroundColor: statusColor + "18", color: statusColor }}
+                      >
+                        {getStatusLabel(s.status_muatan)}
+                      </span>
                     </td>
 
                     {/* Posisi Terakhir */}
-                    <td className="py-3 px-4 max-w-[160px]">
+                    <td className="max-w-[170px]">
                       {lastLog ? (
                         <>
                           <div className="text-[11px] text-text-main truncate" title={lastLog.location || "—"}>
@@ -909,30 +900,15 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
                           </div>
                         </>
                       ) : (
-                        <span className="text-[11px] text-text-light italic">
-                          Belum ada update
-                        </span>
+                        <span className="text-[11px] text-text-light italic">Belum ada update</span>
                       )}
                     </td>
 
-                    {/* Status */}
-                    <td className="py-3 px-4">
-                      <span
-                        className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide whitespace-nowrap"
-                        style={{
-                          backgroundColor: statusColor + "18",
-                          color: statusColor,
-                        }}
-                      >
-                        {getStatusLabel(s.status_muatan)}
-                      </span>
-                    </td>
-
                     {/* Aksi */}
-                    <td className="py-3 px-4 text-right">
+                    <td className="text-center">
                       <button
                         onClick={() => openPanel(s)}
-                        className="btn-primary h-8 px-3 text-[11px] flex items-center gap-1.5 ml-auto"
+                        className="btn-primary h-8 px-3 text-[11px] flex items-center gap-1.5 mx-auto"
                       >
                         <Icon name={isExpanded ? "ChevronUp" : "Pencil"} size={12} />
                         {isExpanded ? "Tutup" : "Update"}
@@ -975,3 +951,4 @@ export const UpdateMuatan = ({ so, setSo, armada, onSOClick, onArmadaClick, logA
     </PageShell>
   );
 };
+
