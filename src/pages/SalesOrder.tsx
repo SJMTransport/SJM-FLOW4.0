@@ -1013,9 +1013,9 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         </td>
                         <td className="max-w-[180px]">
                           <div className="text-[12px] font-bold text-text-main group-hover:text-blue-brand transition-colors truncate" title={s.customer}>{s.customer}</div>
-                          <div className={`badge text-[8px] mt-1 ${s.is_posted ? "bg-green-brand-light text-green-brand" : "bg-slate-100 text-slate-500"}`}>
-                            {s.is_posted ? "Posted" : "Draft"}
-                          </div>
+                          {s.is_posted && (
+                            <div className="badge text-[8px] mt-1 bg-green-brand-light text-green-brand">Posted</div>
+                          )}
                         </td>
                         <td className="max-w-[120px]">
                            <button
@@ -1025,7 +1025,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                            >{s.no_polisi}</button>
                            <div className="text-[10px] text-text-light font-medium truncate" title={s.nama_sopir}>{s.nama_sopir}</div>
                            {s.nama_vendor && (
-                             <div className="text-[9px] text-text-light font-bold opacity-75 truncate italic mt-0.5" title={s.nama_vendor}>
+                             <div className="text-[9px] font-black truncate mt-0.5" style={{ color: '#C4914A' }} title={`Expedisi: ${s.nama_vendor}`}>
                                {s.nama_vendor}
                              </div>
                            )}
