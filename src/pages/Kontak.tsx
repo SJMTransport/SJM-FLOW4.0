@@ -56,14 +56,6 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
     setSyncing(true);
     let successCount = 0;
     try {
-      const SJM_STAFF_PHONES = new Set([
-        '082123761101', '087899898779', '081119176307', '082111719487', '081314254847',
-        '085287776889', '081289913078', '081170007078', '0811288091', '083826287695',
-        '08113203003', '081513775662', '085711154305', '085777648419', '085810139260',
-        '085715827220', '08126876996', '085777084977', '082131052372', '082132738707',
-        '085265906207'
-      ]);
-
       // Find the current highest code number in items
       let maxNum = 0;
       items.forEach(c => {
@@ -78,14 +70,10 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
       let nextNum = maxNum + 1;
 
       for (const name of missingList) {
-        // Find most recent SO to extract phone and PIC (excluding SJM staff)
+        // Find most recent SO to extract phone and PIC
         const recent = [...(so || [])]
           .sort((a: any, b: any) => (b.tgl_order || "").localeCompare(a.tgl_order || ""))
-          .find((s: any) => {
-            if ((isCustomer ? s.customer : s.nama_vendor) !== name) return false;
-            const phone = (s.no_pic || "").replace(/[^0-9]/g, "");
-            return !SJM_STAFF_PHONES.has(phone);
-          });
+          .find((s: any) => (isCustomer ? s.customer : s.nama_vendor) === name);
 
         const formattedNum = String(nextNum).padStart(2, '0');
         const generatedCode = isCustomer ? `C-${formattedNum}` : `V-${formattedNum}`;
@@ -93,8 +81,8 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
         const payload = {
           kode: generatedCode,
           nama: name,
-          no_hp: isCustomer && recent ? (recent.no_pic || "") : "",
-          pic: isCustomer && recent ? (recent.pic_cust || "") : "",
+          no_hp: isCustomer ? (recent?.no_pic || "") : "",
+          pic: isCustomer ? (recent?.pic_cust || "") : "",
           company_id: currentUser?.company_id || "a9742c2c-e13e-4606-a2d5-149042377f88",
           status: "Aktif"
         };
