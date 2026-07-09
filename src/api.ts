@@ -879,7 +879,7 @@ export const authActions = {
     const email = username.toLowerCase().trim() + "@sjm.internal";
     const { data: existing } = await supabaseManual.from("user_profiles").select("id").eq("email", email).single();
     if (existing) throw new Error(`Username "${username}" sudah dipakai`);
-    const newUser = { nama, email, role, status: "Aktif", password: password || "SJM2026!" };
+    const newUser = { nama, email, role, status: "Aktif", password_hash: password || "SJM2026!" };
     const { data, error } = await supabaseManual.from("user_profiles").insert([newUser]).select();
     if (error) throw new Error(error.message || "Gagal buat user");
     return data ? data[0] : null;
