@@ -1154,8 +1154,22 @@ const SopirDetailModal = ({ data, onClose, so, handleSOClick }: any) => {
 };
 
 export default function App() {
-  const [session, setSession] = useState<any>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [session, setSession] = useState<any>(() => {
+    try {
+      const s = localStorage.getItem("sjm_session");
+      return s ? JSON.parse(s) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    try {
+      const u = localStorage.getItem("sjm_user");
+      return u ? JSON.parse(u) : null;
+    } catch {
+      return null;
+    }
+  });
   const [activeModule, setActiveModule] = useState("dashboard");
   const [activeSub, setActiveSub] = useState("default");
   const [loading, setLoading] = useState(false);
@@ -1231,6 +1245,12 @@ export default function App() {
 
   const handleLogin = ({ session, profile }: any) => {
     setSession(session); setCurrentUser(profile);
+    try {
+      localStorage.setItem("sjm_session", JSON.stringify(session));
+      localStorage.setItem("sjm_user", JSON.stringify(profile));
+    } catch (e) {
+      console.error("Failed to save session to localStorage", e);
+    }
     api.addLog({
       timestamp: new Date().toISOString(),
       user_name: profile.nama,
@@ -1253,6 +1273,12 @@ export default function App() {
           action: "User Logout",
           metadata: JSON.stringify(buildMeta({ module: 'auth', action_type: 'LOGOUT', record_id: currentUser.email })),
         });
+        try {
+          localStorage.removeItem("sjm_session");
+          localStorage.removeItem("sjm_user");
+        } catch (e) {
+          console.error("Failed to clear session from localStorage", e);
+        }
         setSession(null);
         setCurrentUser(null);
         setActiveModule("dashboard");
