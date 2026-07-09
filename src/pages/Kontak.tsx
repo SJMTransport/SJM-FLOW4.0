@@ -12,8 +12,40 @@ export const KontakPage = ({ so, connected }: any) => {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   
   const isCustomer = tab === "customer";
+
+  const missingList = React.useMemo(() => {
+    if (loading || !so) return [];
+    if (isCustomer) {
+      const soCustomers = Array.from(new Set(so.map((s: any) => s.customer).filter(Boolean) as string[]));
+      const existing = new Set(items.map(x => (x.nama || "").toLowerCase().trim()));
+      return soCustomers.filter(name => !existing.has(name.toLowerCase().trim()));
+    } else {
+      const soVendors = Array.from(new Set(so.map((s: any) => s.nama_vendor).filter(Boolean) as string[]));
+      const existing = new Set(items.map(x => (x.nama || "").toLowerCase().trim()));
+      return soVendors.filter(name => !existing.has(name.toLowerCase().trim()));
+    }
+  }, [so, items, isCustomer, loading]);
+
+  const handleSync = async () => {
+    if (missingList.length === 0) return;
+    setSyncing(true);
+    try {
+      for (const name of missingList) {
+        if (isCustomer) {
+          await api.addCustomer({ nama: name, telepon: "", email: "" });
+        } else {
+          await api.addVendor({ nama: name, telepon: "", email: "" });
+        }
+      }
+      loadData();
+    } catch (e) {
+      console.error("Gagal sinkronisasi kontak:", e);
+    }
+    setSyncing(false);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -83,6 +115,33 @@ export const KontakPage = ({ so, connected }: any) => {
           </button>
         ))}
       </div>
+
+      {missingList.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 animate-fade-down">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+              <Icon name="AlertTriangle" size={16} />
+            </div>
+            <div>
+              <div className="text-[12px] font-black text-text-main leading-none">Audit & Sinkronisasi Kontak</div>
+              <p className="text-[10px] text-text-med mt-1 font-medium leading-normal">
+                Ada <span className="font-bold text-amber-700">{missingList.length} nama {isCustomer ? "customer" : "vendor"}</span> dari data Sales Order yang belum terdaftar di direktori Kontak.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="btn-primary h-9 px-4 text-[10px] font-black uppercase tracking-wider bg-amber-600 hover:bg-amber-700 shadow-amber-600/10 shrink-0 flex items-center gap-1.5"
+          >
+            {syncing ? (
+              <><Icon name="Loader2" className="animate-spin" size={12} /> Sinkronisasi...</>
+            ) : (
+              <><Icon name="RefreshCw" size={12} /> Daftarkan Semua ({missingList.length})</>
+            )}
+          </button>
+        </div>
+      )}
 
       <ActionBar left={
         <div className="relative">
