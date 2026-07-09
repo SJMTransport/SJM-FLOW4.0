@@ -410,6 +410,15 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     if (!cust) return [];
     const seen = new Set<string>();
     const result: { pic: string; no: string }[] = [];
+
+    // 1. Add current PIC from master customer database first
+    const cDb = (customer || []).find((c: any) => c.nama === cust);
+    if (cDb && cDb.pic) {
+      seen.add(cDb.pic.toLowerCase().trim());
+      result.push({ pic: cDb.pic, no: cDb.no_hp || "" });
+    }
+
+    // 2. Add historical PICs from SOs
     [...(so || [])].sort((a: any, b: any) => (b.tgl_order || '').localeCompare(a.tgl_order || ''))
       .forEach((s: any) => {
         if (s.customer === cust && s.pic_cust) {
@@ -418,7 +427,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
         }
       });
     return result;
-  }, [so, form.customer]);
+  }, [so, form.customer, customer]);
 
   // Unique ekspedisi (vendor) values from SO history
   const vendorOptions = useMemo(() => {
@@ -1262,9 +1271,15 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                     const pickCustomer = (name: string) => {
                       setCustomerQuery(name);
                       setCustomerOpen(false);
-                      const recent = [...(so || [])].sort((a: any, b: any) => (b.tgl_order || '').localeCompare(a.tgl_order || '')).find((s: any) => s.customer === name && s.pic_cust);
-                      setForm((f: any) => ({ ...f, customer: name, pic_cust: recent?.pic_cust || f.pic_cust, no_pic: recent?.no_pic || f.no_pic }));
-                      if (recent?.pic_cust) { setPicQuery(recent.pic_cust); }
+                      const cDb = (customer || []).find((c: any) => c.nama === name);
+                      if (cDb) {
+                        setForm((f: any) => ({ ...f, customer: name, pic_cust: cDb.pic || "", no_pic: cDb.no_hp || "" }));
+                        setPicQuery(cDb.pic || "");
+                      } else {
+                        const recent = [...(so || [])].sort((a: any, b: any) => (b.tgl_order || '').localeCompare(a.tgl_order || '')).find((s: any) => s.customer === name && s.pic_cust);
+                        setForm((f: any) => ({ ...f, customer: name, pic_cust: recent?.pic_cust || f.pic_cust, no_pic: recent?.no_pic || f.no_pic }));
+                        if (recent?.pic_cust) { setPicQuery(recent.pic_cust); }
+                      }
                     };
                     const confirmNew = () => {
                       const name = customerQuery.trim();

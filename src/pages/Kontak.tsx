@@ -169,20 +169,24 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
   // Detail Modal data calculations
   const detailData = useMemo(() => {
     if (!selectedDetailItem) return null;
-    const name = selectedDetailItem.nama;
+    const name = selectedDetailItem.nama.toLowerCase().trim();
 
     // 1. Sales Orders
-    const matchingSos = (so || []).filter((s: any) => (isCustomer ? s.customer : s.nama_vendor) === name);
+    const matchingSos = (so || []).filter((s: any) => 
+      (isCustomer ? (s.customer || "") : (s.nama_vendor || "")).toLowerCase().trim() === name
+    );
 
     // 2. Invoices
-    const matchingInvoices = (invoices || []).filter((inv: any) => inv.customer === name);
+    const matchingInvoices = (invoices || []).filter((inv: any) => 
+      (inv.customer || "").toLowerCase().trim() === name
+    );
 
     // 3. Jurnals
     const orderIds = matchingSos.map((s: any) => s.order_id);
     const matchingJurnals = (jurnal || []).filter((j: any) => {
       const relatedSOIds = j.no_so ? j.no_so.split(",").map((s: string) => s.trim()) : [];
       const matchesSO = relatedSOIds.some((id: string) => orderIds.includes(id));
-      const matchesName = (j.keterangan || "").toLowerCase().includes(name.toLowerCase());
+      const matchesName = (j.keterangan || "").toLowerCase().includes(name);
       return matchesSO || matchesName;
     });
 
