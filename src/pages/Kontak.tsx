@@ -56,13 +56,30 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
     setSyncing(true);
     let successCount = 0;
     try {
+      // Find the current highest code number in items
+      let maxNum = 0;
+      items.forEach(c => {
+        if (c.kode && c.kode.startsWith(isCustomer ? 'C-' : 'V-')) {
+          const num = parseInt(c.kode.replace(isCustomer ? 'C-' : 'V-', ''), 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      });
+
+      let nextNum = maxNum + 1;
+
       for (const name of missingList) {
         // Find most recent SO to extract phone and PIC
         const recent = [...(so || [])]
           .sort((a: any, b: any) => (b.tgl_order || "").localeCompare(a.tgl_order || ""))
           .find((s: any) => (isCustomer ? s.customer : s.nama_vendor) === name);
 
+        const formattedNum = String(nextNum).padStart(2, '0');
+        const generatedCode = isCustomer ? `C-${formattedNum}` : `V-${formattedNum}`;
+
         const payload = {
+          kode: generatedCode,
           nama: name,
           no_hp: isCustomer ? (recent?.no_pic || "") : "",
           pic: isCustomer ? (recent?.pic_cust || "") : "",
@@ -76,6 +93,7 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
           await api.addVendor(payload);
         }
         successCount++;
+        nextNum++;
       }
       showToast(`Berhasil mendaftarkan ${successCount} kontak baru dari histori SO.`, "success");
       loadData();
@@ -92,7 +110,24 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
     if (!form.nama) return;
     setSaving(true);
     try {
+      let generatedCode = editItem?.kode;
+      if (!editItem) {
+        // Find the current highest code number in items
+        let maxNum = 0;
+        items.forEach(c => {
+          if (c.kode && c.kode.startsWith(isCustomer ? 'C-' : 'V-')) {
+            const num = parseInt(c.kode.replace(isCustomer ? 'C-' : 'V-', ''), 10);
+            if (!isNaN(num) && num > maxNum) {
+              maxNum = num;
+            }
+          }
+        });
+        const formattedNum = String(maxNum + 1).padStart(2, '0');
+        generatedCode = isCustomer ? `C-${formattedNum}` : `V-${formattedNum}`;
+      }
+
       const payload = {
+        kode: generatedCode,
         nama: form.nama,
         no_hp: form.telepon,
         pic: form.email,
@@ -170,7 +205,7 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
     <PageShell>
       <ConfirmKontakModal />
       <SectionHeader 
-        title="Direktori Kontak" 
+        title={`Direktori Kontak (${items.length} ${isCustomer ? "Customer" : "Vendor"})`} 
         sub={`Kelola data ${tab} strategis PT SJM`} 
         action={
           <button 
