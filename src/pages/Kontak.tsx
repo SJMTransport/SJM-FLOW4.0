@@ -487,7 +487,7 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
                   <div>
                     <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Armada Pelaksana Terakhir</div>
                     <div className="text-[12px] font-bold text-text-main mt-1.5 leading-snug">
-                      {detailData.sos[0]?.nopol ? `${detailData.sos[0].nopol} — ${detailData.sos[0].sopir}` : "Tidak ada riwayat armada pelaksana"}
+                      {detailData.sos[0]?.no_polisi ? `${detailData.sos[0].no_polisi} — ${detailData.sos[0].nama_sopir}` : "Tidak ada riwayat armada pelaksana"}
                     </div>
                   </div>
                 </div>
@@ -547,7 +547,7 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
                     {detailData.sos.length > 0 ? (
                       <div className="text-[11px] text-text-med leading-relaxed">
                         Customer ini terdaftar aktif dengan total <span className="font-bold text-accent">{detailData.sos.length} Sales Order</span> di database. 
-                        Order terakhir kali tercatat pada tanggal <span className="font-bold text-text-main">{fmtDate(detailData.sos[0]?.tgl_order)}</span> dengan rute <span className="font-bold text-text-main">{detailData.sos[0]?.asal} → {detailData.sos[0]?.tujuan}</span> menggunakan armada <span className="font-bold text-text-main">{detailData.sos[0]?.nopol || "—"}</span>.
+                        Order terakhir kali tercatat pada tanggal <span className="font-bold text-text-main">{fmtDate(detailData.sos[0]?.tgl_order)}</span> dengan rute <span className="font-bold text-text-main">{detailData.sos[0]?.lokasi_muat || "—"} → {detailData.sos[0]?.lokasi_bongkar || "—"}</span> menggunakan armada <span className="font-bold text-text-main">{detailData.sos[0]?.no_polisi || "—"}</span>.
                       </div>
                     ) : (
                       <div className="text-[11px] text-text-light italic">Belum ada riwayat aktivitas Sales Order operasional yang terekam untuk kontak ini.</div>
@@ -581,10 +581,10 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
                             <tr key={s.id} className="text-[11px] hover:bg-slate-50/50">
                               <td className="font-black text-accent">{s.order_id}</td>
                               <td className="tabular-nums font-medium">{fmtDate(s.tgl_muat || s.tgl_order)}</td>
-                              <td className="font-bold text-text-main max-w-[150px] truncate">{s.asal} → {s.tujuan}</td>
+                              <td className="font-bold text-text-main max-w-[150px] truncate">{s.lokasi_muat || "—"} → {s.lokasi_bongkar || "—"}</td>
                               <td className="font-medium text-text-med">
-                                <div>{s.nopol || "—"}</div>
-                                <div className="text-[9px] text-text-light mt-0.5">{s.sopir || "—"}</div>
+                                <div>{s.no_polisi || "—"}</div>
+                                <div className="text-[9px] text-text-light mt-0.5">{s.nama_sopir || "—"}</div>
                               </td>
                               <td className="text-right font-black text-text-main tabular-nums">
                                 Rp {fmt(s.total_harga_pajak || s.total_harga || 0)}
