@@ -366,6 +366,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const { showToast, ToastUI } = useToast();
   const canEdit = ["Admin", "Operasional"].includes(currentUser?.role);
   const [tab, setTab] = useState("list");
+  const [inputMode, setInputMode] = useState<'manual' | 'bulk'>('manual');
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState({ mode: "all", month: new Date().getMonth(), year: new Date().getFullYear() });
   const [saving, setSaving] = useState(false);
@@ -538,6 +539,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
   const openNew = () => {
     setForm(emptyForm);
     setEditItem(null); setErr(""); setTab("form");
+    setInputMode("manual");
     resetCustomerCombo(); resetPicCombo(); resetVendorCombo();
   };
 
@@ -545,6 +547,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     const { id: _id, order_id: _oid, created_at: _ca, is_posted: _ip, ...rest } = s;
     setForm({ ...rest, order_id: "", is_posted: false, tgl_order: today(), tgl_muat: today() });
     setEditItem(null); setErr(""); setTab("form");
+    setInputMode("manual");
     resetCustomerCombo(s.customer || "");
     resetPicCombo(s.pic_cust || ""); resetVendorCombo(s.nama_vendor || "");
     showToast("Data disalin (Order ID dikosongkan untuk pendaftaran baru)", "info");
@@ -555,6 +558,7 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
       setForm(s);
       setErr("");
       setTab("form");
+      setInputMode("manual");
       resetCustomerCombo(s.customer || "");
       resetPicCombo(s.pic_cust || ""); resetVendorCombo(s.nama_vendor || "");
   };
@@ -768,6 +772,33 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
           </button>
         ))}
       </div>
+
+      {tab === "form" && !editItem && (
+        <div className="flex bg-[#F5F4F1] p-1.5 rounded-xl gap-1.5 mb-4 max-w-xs border border-border-main/30">
+          <button
+            type="button"
+            onClick={() => setInputMode("manual")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+              inputMode === "manual"
+                ? "bg-white text-accent shadow-sm border border-border-main/60"
+                : "text-text-light hover:bg-white/50"
+            }`}
+          >
+            <Icon name="FilePlus2" size={12} /> Input Manual
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode("bulk")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+              inputMode === "bulk"
+                ? "bg-white text-accent shadow-sm border border-border-main/60"
+                : "text-text-light hover:bg-white/50"
+            }`}
+          >
+            <Icon name="UploadCloud" size={12} /> Import CSV
+          </button>
+        </div>
+      )}
 
       {tab === "list" ? (
         <div>
@@ -1167,6 +1198,24 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
               </table>
             </div>
         </div>
+      ) : inputMode === "bulk" && !editItem ? (
+        <BulkImportSO
+          onComplete={async () => {
+            try {
+              setReloading(true);
+              const data = await api.getSO();
+              setSo(data);
+              setTab("list");
+            } catch (e) {
+              console.error(e);
+            } finally {
+              setReloading(false);
+            }
+          }}
+          onCancel={() => setTab("list")}
+          showToast={showToast}
+          logAction={logAction}
+        />
       ) : (
         <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm animate-fade-left bg-white">
         <div className="p-4 border-b border-border-main flex justify-between items-center bg-white sticky top-0 z-20">
