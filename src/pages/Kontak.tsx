@@ -205,6 +205,311 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
     };
   }, [selectedDetailItem, so, invoices, jurnal, isCustomer]);
 
+  if (selectedDetailItem && detailData) {
+    return (
+      <PageShell>
+        <div className="space-y-6 animate-fade-in pb-8">
+          {/* Back button and title */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button 
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-text-light hover:text-text-main transition-colors shadow-xs shrink-0"
+                onClick={() => setSelectedDetailItem(null)}
+              >
+                <Icon name="ArrowLeft" size={14} />
+              </button>
+              <div>
+                <div className="text-[9px] font-black text-accent uppercase tracking-widest leading-none mb-0.5">Detail Kontak</div>
+                <h2 className="text-lg font-black text-text-main tracking-tight flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-black uppercase tracking-wider">{selectedDetailItem.kode || "KONTAK"}</span>
+                  {selectedDetailItem.nama}
+                </h2>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => { setEditItem(selectedDetailItem); setForm({nama:selectedDetailItem.nama, telepon:selectedDetailItem.no_hp || "", email:selectedDetailItem.pic || ""}); setShowForm(true); }}
+              className="btn-secondary h-8 px-3 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs"
+            >
+              <Icon name="UserCog" size={12} /> Edit Profil
+            </button>
+          </div>
+
+          {/* Profil Banner / Ringkasan Card */}
+          <div className="card p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none">Nama Perusahaan</div>
+              <div className="text-sm font-black text-text-main leading-tight">{selectedDetailItem.nama}</div>
+              <div className="pt-2">
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase inline-block ${selectedDetailItem.status === 'Aktif' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                  {selectedDetailItem.status || "Aktif"}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-1.5 md:border-l md:border-slate-100 md:pl-6">
+              <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none">Nama PIC</div>
+              <div className="text-sm font-bold text-text-main flex items-center gap-1.5 mt-1">
+                <Icon name="User" size={13} className="text-text-light opacity-50 shrink-0" />
+                {selectedDetailItem.pic || "—"}
+              </div>
+            </div>
+            <div className="space-y-1.5 md:border-l md:border-slate-100 md:pl-6">
+              <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none">Nomor Handphone PIC</div>
+              <div className="text-sm font-bold text-text-main flex items-center gap-1.5 mt-1">
+                <Icon name="Phone" size={13} className="text-text-light opacity-50 shrink-0" />
+                {selectedDetailItem.no_hp || "—"}
+              </div>
+            </div>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/30">
+                <Icon name="TrendingUp" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Transaksi SO</div>
+                <div className="text-xl font-black text-text-main mt-1.5 tracking-tight">{detailData.sos.length} Order</div>
+              </div>
+            </div>
+            {isCustomer ? (
+              <>
+                <div className="card p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/30">
+                    <Icon name="FileText" size={20} />
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Nilai Tagihan</div>
+                    <div className="text-xl font-black text-text-main mt-1.5 tracking-tight">Rp {fmt(detailData.totalInvoiced)}</div>
+                  </div>
+                </div>
+                <div className="card p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/30">
+                    <Icon name="Clock" size={20} />
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Sisa Piutang Aktif</div>
+                    <div className="text-xl font-black text-amber-600 mt-1.5 tracking-tight">Rp {fmt(detailData.outstandingPiutang)}</div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="card p-5 flex items-center gap-4 col-span-2">
+                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/30">
+                  <Icon name="Truck" size={20} />
+                </div>
+                <div>
+                  <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Armada Pelaksana Terakhir</div>
+                  <div className="text-sm font-bold text-text-main mt-1.5">
+                    {detailData.sos[0]?.no_polisi ? `${detailData.sos[0].no_polisi} — ${detailData.sos[0].nama_sopir}` : "Tidak ada riwayat armada pelaksana"}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-6 border-b border-slate-200">
+            {([
+              { id: "ringkasan", label: "Ringkasan", hide: false },
+              { id: "so", label: "Sales Order", hide: false },
+              { id: "invoice", label: "Invoice & Piutang", hide: !isCustomer },
+              { id: "jurnal", label: "Buku Jurnal", hide: false }
+            ]).filter(t => !t.hide).map(t => (
+              <button
+                key={t.id}
+                onClick={() => setDetailTab(t.id)}
+                className={`py-3 px-1 border-b-2 text-[10px] font-black uppercase tracking-wider transition-all -mb-px ${detailTab === t.id ? "border-accent text-accent" : "border-transparent text-text-light hover:text-text-main"}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab contents */}
+          <div className="space-y-6">
+            {detailTab === "ringkasan" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="card p-6 space-y-4">
+                  <h4 className="text-[11px] font-black text-text-main uppercase tracking-wider pb-2 border-b border-slate-100">Informasi Administratif</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[11px] font-bold text-text-med">
+                    <div>
+                      <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1.5">Nama Perusahaan</div>
+                      <div className="text-text-main font-black">{selectedDetailItem.nama}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1.5">Kode Direktori</div>
+                      <div className="text-text-main font-black">{selectedDetailItem.kode || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1.5">Nama PIC</div>
+                      <div className="text-text-main font-black">{selectedDetailItem.pic || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1.5">Nomor Handphone PIC</div>
+                      <div className="text-text-main font-black">{selectedDetailItem.no_hp || "—"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card p-6 space-y-3.5">
+                  <h4 className="text-[11px] font-black text-text-main uppercase tracking-wider pb-2 border-b border-slate-100">Ikhtisar Operasional</h4>
+                  {detailData.sos.length > 0 ? (
+                    <div className="text-[11px] text-text-med leading-relaxed">
+                      Customer ini terdaftar aktif dengan total <span className="font-bold text-accent">{detailData.sos.length} Sales Order</span> di database. 
+                      Order terakhir kali tercatat pada tanggal <span className="font-bold text-text-main">{fmtDate(detailData.sos[0]?.tgl_order)}</span> dengan rute <span className="font-bold text-text-main">{detailData.sos[0]?.lokasi_muat || "—"} → {detailData.sos[0]?.lokasi_bongkar || "—"}</span> menggunakan armada <span className="font-bold text-text-main">{detailData.sos[0]?.no_polisi || "—"}</span>.
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-text-light italic">Belum ada riwayat aktivitas Sales Order operasional yang terekam untuk kontak ini.</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {detailTab === "so" && (
+              <div className="card overflow-hidden">
+                <div className="table-container">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr>
+                        <th>No. SO</th>
+                        <th>Tanggal Muat</th>
+                        <th>Rute (Asal → Tujuan)</th>
+                        <th>Armada / Sopir</th>
+                        <th className="text-right">Total Harga</th>
+                        <th className="text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailData.sos.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center p-8 text-[11px] text-text-light italic">Tidak ada transaksi SO</td>
+                        </tr>
+                      ) : (
+                        detailData.sos.map((s: any) => (
+                          <tr key={s.id} className="hover:bg-slate-50/50">
+                            <td className="font-black text-accent">{s.order_id}</td>
+                            <td className="tabular-nums font-medium">{fmtDate(s.tgl_muat || s.tgl_order)}</td>
+                            <td className="font-bold text-text-main">{s.lokasi_muat || "—"} → {s.lokasi_bongkar || "—"}</td>
+                            <td className="font-medium text-text-med">
+                              <div>{s.no_polisi || "—"}</div>
+                              <div className="text-[9px] text-text-light mt-0.5">{s.nama_sopir || "—"}</div>
+                            </td>
+                            <td className="text-right font-black text-text-main tabular-nums">
+                              Rp {fmt(s.total_harga_pajak || s.total_harga || 0)}
+                            </td>
+                            <td className="text-center">
+                              <span className="badge-primary" style={{
+                                backgroundColor: s.status_muatan === 'Completed' ? 'var(--color-success-bg)' : s.status_muatan === 'Cancelled' ? 'var(--color-error-bg)' : 'var(--color-warning-bg)',
+                                color: s.status_muatan === 'Completed' ? 'var(--color-success)' : s.status_muatan === 'Cancelled' ? 'var(--color-error)' : 'var(--color-warning)',
+                                border: `1px solid ${s.status_muatan === 'Completed' ? 'var(--color-success-border)' : s.status_muatan === 'Cancelled' ? 'var(--color-error-border)' : 'var(--color-warning-border)'}`
+                              }}>{s.status_muatan}</span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {detailTab === "invoice" && (
+              <div className="card overflow-hidden">
+                <div className="table-container">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr>
+                        <th>No. Invoice</th>
+                        <th>Tanggal</th>
+                        <th className="text-right">Subtotal</th>
+                        <th className="text-right">PPN</th>
+                        <th className="text-right">Total Invoice</th>
+                        <th className="text-center">Status Bayar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailData.invoices.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center p-8 text-[11px] text-text-light italic">Tidak ada tagihan invoice</td>
+                        </tr>
+                      ) : (
+                        detailData.invoices.map((inv: any) => (
+                          <tr key={inv.id} className="hover:bg-slate-50/50">
+                            <td className="font-black text-accent">{inv.no_invoice}</td>
+                            <td className="tabular-nums font-medium">{fmtDate(inv.tgl_invoice)}</td>
+                            <td className="text-right font-bold text-text-med tabular-nums">Rp {fmt(inv.total_sebelum_pajak || 0)}</td>
+                            <td className="text-right font-bold text-text-med tabular-nums">Rp {fmt(inv.ppn || 0)}</td>
+                            <td className="text-right font-black text-text-main tabular-nums">Rp {fmt(inv.total_setelah_pajak || 0)}</td>
+                            <td className="text-center">
+                              <span className="badge-primary" style={{
+                                backgroundColor: inv.status_bayar === 'Lunas' ? 'var(--color-success-bg)' : inv.status_bayar === 'Belum Bayar' ? 'var(--color-error-bg)' : 'var(--color-warning-bg)',
+                                color: inv.status_bayar === 'Lunas' ? 'var(--color-success)' : inv.status_bayar === 'Belum Bayar' ? 'var(--color-error)' : 'var(--color-warning)',
+                                border: `1px solid ${inv.status_bayar === 'Lunas' ? 'var(--color-success-border)' : inv.status_bayar === 'Belum Bayar' ? 'var(--color-error-border)' : 'var(--color-warning-border)'}`
+                              }}>{inv.status_bayar}</span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {detailTab === "jurnal" && (
+              <div className="card overflow-hidden">
+                <div className="table-container">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr>
+                        <th>No. Jurnal</th>
+                        <th>Tanggal</th>
+                        <th>Keterangan</th>
+                        <th className="text-right">Debet</th>
+                        <th className="text-right">Kredit</th>
+                        <th className="text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailData.jurnals.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center p-8 text-[11px] text-text-light italic">Tidak ada entri buku jurnal terkait</td>
+                        </tr>
+                      ) : (
+                        detailData.jurnals.map((j: any) => {
+                          const debetSum = (j.jurnal_detail || []).reduce((acc: number, d: any) => acc + (Number(d.debit) || 0), 0);
+                          const kreditSum = (j.jurnal_detail || []).reduce((acc: number, d: any) => acc + (Number(d.kredit) || 0), 0);
+                          return (
+                            <tr key={j.id} className="hover:bg-slate-50/50">
+                              <td className="font-black text-accent">{j.no_jurnal}</td>
+                              <td className="tabular-nums font-medium">{fmtDate(j.tanggal)}</td>
+                              <td className="font-bold text-text-main max-w-[250px] truncate" title={j.keterangan}>{j.keterangan}</td>
+                              <td className="text-right font-bold text-text-main tabular-nums">Rp {fmt(debetSum)}</td>
+                              <td className="text-right font-bold text-text-main tabular-nums">Rp {fmt(kreditSum)}</td>
+                              <td className="text-center">
+                                <span className="badge-primary" style={{
+                                  backgroundColor: j.status === 'Posted' ? 'var(--color-success-bg)' : 'var(--color-border-main)',
+                                  color: j.status === 'Posted' ? 'var(--color-success)' : 'var(--color-text-light)',
+                                  border: `1px solid ${j.status === 'Posted' ? 'var(--color-success-border)' : 'var(--color-border-dark)'}`
+                                }}>{j.status || "Draft"}</span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <ConfirmKontakModal />
@@ -322,51 +627,54 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
         </div>
       )}
 
-      <Card className="p-0 overflow-hidden border-border-main/40 shadow-sm">
-        <div className="overflow-auto max-h-[calc(100vh-360px)]">
-          <table className="w-full border-collapse">
+      <Card className="overflow-hidden">
+        <div className="table-container">
+          <table className="w-full text-left">
             <thead>
               <tr>
                 <th>Kode ID</th>
                 <th>Nama / Entitas</th>
                 <th>Kontak Telepon</th>
                 <th>Nama PIC</th>
-                <th className="text-right">Aksi</th>
+                <th className="w-10">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-main/20">
-              {loading ? (
+            <tbody>
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <Icon name="Loader2" className="animate-spin text-accent opacity-30" size={32} />
-                      <span className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60">Memuat database...</span>
-                    </div>
+                  <td colSpan={5} className="text-center p-8 text-[11px] text-text-light italic">
+                    {loading ? "Memuat data..." : `Tidak ada data ${tab} yang ditemukan`}
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? <EmptyState colSpan={5} msg={`Tidak ada ${tab} yang ditemukan`} /> :
-                filtered.map(x => (
+              ) : (
+                filtered.map((x: any) => (
                   <tr 
                     key={x.id} 
-                    className="group transition-colors hover:bg-amber-50/20 cursor-pointer"
+                    className="hover:bg-slate-50/50 cursor-pointer group transition-colors"
                     onClick={() => { setSelectedDetailItem(x); setDetailTab("ringkasan"); }}
                   >
-                    <td className="whitespace-nowrap font-black text-text-light tracking-wider text-[11px]">
-                      <span className="bg-slate-100 text-text-med px-2.5 py-1 rounded-md text-[10px] font-bold border border-slate-200/50">
-                        {x.kode || "—"}
-                      </span>
+                    <td className="w-24">
+                      {x.kode ? (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider border border-slate-200/40">
+                          {x.kode}
+                        </span>
+                      ) : <span className="text-[11px] font-black text-text-light opacity-20 tracking-widest uppercase">—</span>}
                     </td>
-                    <td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-border-main/20 text-accent font-bold text-[10px] shadow-sm italic shrink-0">
-                          {x.nama?.[0] || "?"}
+                    <td className="font-bold text-text-main">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/20 text-[9px] font-black text-accent uppercase">
+                          {x.kode || x.nama?.charAt(0)}
                         </div>
-                        <div className="font-bold text-text-main group-hover:text-accent transition-colors leading-tight tracking-tight text-[12px]">{x.nama}</div>
+                        {x.nama}
                       </div>
                     </td>
                     <td>
                       {x.no_hp ? (
-                        <a href={`tel:${x.no_hp}`} className="text-[11px] font-bold text-text-med hover:text-accent transition-colors flex items-center gap-2 tabular-nums" onClick={e => e.stopPropagation()}>
+                        <a 
+                          href={`tel:${x.no_hp}`} 
+                          onClick={e => e.stopPropagation()} 
+                          className="text-[11px] font-bold text-text-med hover:text-accent transition-colors flex items-center gap-2"
+                        >
                           <Icon name="Phone" size={12} className="opacity-30" /> {x.no_hp}
                         </a>
                       ) : <span className="text-[11px] font-black text-text-light opacity-20 tracking-widest uppercase">—</span>}
@@ -389,331 +697,11 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
                     </td>
                   </tr>
                 ))
-              }
+              )}
             </tbody>
           </table>
         </div>
       </Card>
-
-      {/* Slide-over Detail Customer/Vendor Panel */}
-      {selectedDetailItem && detailData && (
-        <div className="fixed inset-0 z-[1200] flex justify-end">
-          {/* Overlay backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/35 backdrop-blur-xs transition-opacity duration-300"
-            onClick={() => setSelectedDetailItem(null)}
-          />
-
-          {/* Side Drawer */}
-          <div className="relative w-full max-w-4xl bg-white h-full shadow-2xl flex flex-col z-10 animate-fade-left border-l border-slate-100">
-            {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-3">
-                <span className="bg-accent text-white px-3 py-1 rounded-lg text-[10px] font-black tracking-widest border border-accent">
-                  {selectedDetailItem.kode || "KONTAK"}
-                </span>
-                <div>
-                  <h3 className="text-base font-black text-text-main tracking-tight">{selectedDetailItem.nama}</h3>
-                  <p className="text-[10px] text-text-light font-bold uppercase mt-0.5 tracking-wider">
-                    Detail Profil & Informasi Transaksi Keuangan
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setSelectedDetailItem(null)}
-                className="w-8 h-8 rounded-lg hover:bg-slate-200/60 flex items-center justify-center text-text-light hover:text-text-main transition-colors border border-slate-200/40 bg-white"
-              >
-                <Icon name="X" size={16} />
-              </button>
-            </div>
-
-            {/* Profile Bar */}
-            <div className="px-6 py-4 bg-white border-b border-slate-100 flex flex-wrap items-center gap-6 text-[11px] font-bold text-text-med">
-              <div className="flex items-center gap-2">
-                <Icon name="User" size={14} className="text-text-light opacity-50" />
-                <span>PIC: <span className="text-text-main font-black">{selectedDetailItem.pic || "—"}</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Icon name="Phone" size={14} className="text-text-light opacity-50" />
-                <span>No. Telp: <span className="text-text-main font-black">{selectedDetailItem.no_hp || "—"}</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Icon name="Activity" size={14} className="text-text-light opacity-50" />
-                <span>Status: 
-                  <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${selectedDetailItem.status === 'Aktif' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
-                    {selectedDetailItem.status || "Aktif"}
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            {/* Stat Summary Cards */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/50">
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                  <Icon name="TrendingUp" size={18} />
-                </div>
-                <div>
-                  <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Transaksi SO</div>
-                  <div className="text-lg font-black text-text-main mt-1 tracking-tight">{detailData.sos.length} Order</div>
-                </div>
-              </div>
-              {isCustomer ? (
-                <>
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                      <Icon name="FileText" size={18} />
-                    </div>
-                    <div>
-                      <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Nilai Tagihan</div>
-                      <div className="text-lg font-black text-text-main mt-1 tracking-tight">Rp {fmt(detailData.totalInvoiced)}</div>
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                      <Icon name="Clock" size={18} />
-                    </div>
-                    <div>
-                      <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Sisa Piutang Aktif</div>
-                      <div className="text-lg font-black text-amber-600 mt-1 tracking-tight">Rp {fmt(detailData.outstandingPiutang)}</div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex items-center gap-3.5 col-span-2">
-                  <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <Icon name="Truck" size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Armada Pelaksana Terakhir</div>
-                    <div className="text-[12px] font-bold text-text-main mt-1.5 leading-snug">
-                      {detailData.sos[0]?.no_polisi ? `${detailData.sos[0].no_polisi} — ${detailData.sos[0].nama_sopir}` : "Tidak ada riwayat armada pelaksana"}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Navigation Tabs for Detail */}
-            <div className="px-6 border-b border-slate-100 flex gap-4 bg-white">
-              {([
-                { id: "ringkasan", label: "Ringkasan", hide: false },
-                { id: "so", label: "Sales Order", hide: false },
-                { id: "invoice", label: "Invoice & Piutang", hide: !isCustomer },
-                { id: "jurnal", label: "Buku Jurnal", hide: false }
-              ]).filter(t => !t.hide).map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setDetailTab(t.id)}
-                  className={`py-3.5 px-1.5 border-b-2 text-[11px] font-black uppercase tracking-wider transition-all ${detailTab === t.id ? "border-accent text-accent" : "border-transparent text-text-light hover:text-text-main"}`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Details Content Container */}
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/20">
-              
-              {/* TAB: Ringkasan */}
-              {detailTab === "ringkasan" && (
-                <div className="space-y-6">
-                  {/* General Profile Description */}
-                  <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-xs space-y-4">
-                    <h4 className="text-[11px] font-black text-text-main uppercase tracking-wider pb-2 border-b border-slate-100">Informasi Administratif</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] font-bold text-text-med">
-                      <div>
-                        <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1">Nama Perusahaan</div>
-                        <div className="text-text-main font-black">{selectedDetailItem.nama}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1">Kode Direktori</div>
-                        <div className="text-text-main font-black">{selectedDetailItem.kode || "—"}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1">Nama PIC</div>
-                        <div className="text-text-main font-black">{selectedDetailItem.pic || "—"}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-text-light uppercase font-bold tracking-widest leading-none mb-1">Nomor Handphone PIC</div>
-                        <div className="text-text-main font-black">{selectedDetailItem.no_hp || "—"}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Operational Summary */}
-                  <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-xs space-y-3.5">
-                    <h4 className="text-[11px] font-black text-text-main uppercase tracking-wider pb-2 border-b border-slate-100">Ikhtisar Operasional</h4>
-                    {detailData.sos.length > 0 ? (
-                      <div className="text-[11px] text-text-med leading-relaxed">
-                        Customer ini terdaftar aktif dengan total <span className="font-bold text-accent">{detailData.sos.length} Sales Order</span> di database. 
-                        Order terakhir kali tercatat pada tanggal <span className="font-bold text-text-main">{fmtDate(detailData.sos[0]?.tgl_order)}</span> dengan rute <span className="font-bold text-text-main">{detailData.sos[0]?.lokasi_muat || "—"} → {detailData.sos[0]?.lokasi_bongkar || "—"}</span> menggunakan armada <span className="font-bold text-text-main">{detailData.sos[0]?.no_polisi || "—"}</span>.
-                      </div>
-                    ) : (
-                      <div className="text-[11px] text-text-light italic">Belum ada riwayat aktivitas Sales Order operasional yang terekam untuk kontak ini.</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB: Sales Order */}
-              {detailTab === "so" && (
-                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left">
-                      <thead>
-                        <tr>
-                          <th>No. SO</th>
-                          <th>Tanggal Muat</th>
-                          <th>Rute (Asal → Tujuan)</th>
-                          <th>Armada / Sopir</th>
-                          <th className="text-right">Total Harga</th>
-                          <th className="text-center">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {detailData.sos.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="text-center p-8 text-[11px] text-text-light italic">Tidak ada transaksi SO</td>
-                          </tr>
-                        ) : (
-                          detailData.sos.map((s: any) => (
-                            <tr key={s.id} className="text-[11px] hover:bg-slate-50/50">
-                              <td className="font-black text-accent">{s.order_id}</td>
-                              <td className="tabular-nums font-medium">{fmtDate(s.tgl_muat || s.tgl_order)}</td>
-                              <td className="font-bold text-text-main max-w-[150px] truncate">{s.lokasi_muat || "—"} → {s.lokasi_bongkar || "—"}</td>
-                              <td className="font-medium text-text-med">
-                                <div>{s.no_polisi || "—"}</div>
-                                <div className="text-[9px] text-text-light mt-0.5">{s.nama_sopir || "—"}</div>
-                              </td>
-                              <td className="text-right font-black text-text-main tabular-nums">
-                                Rp {fmt(s.total_harga_pajak || s.total_harga || 0)}
-                              </td>
-                              <td className="text-center">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase inline-block`} 
-                                  style={{
-                                    backgroundColor: s.status_muatan === 'Completed' ? 'var(--color-success-bg)' : s.status_muatan === 'Cancelled' ? 'var(--color-error-bg)' : 'var(--color-warning-bg)',
-                                    color: s.status_muatan === 'Completed' ? 'var(--color-success)' : s.status_muatan === 'Cancelled' ? 'var(--color-error)' : 'var(--color-warning)',
-                                    border: `1px solid ${s.status_muatan === 'Completed' ? 'var(--color-success-border)' : s.status_muatan === 'Cancelled' ? 'var(--color-error-border)' : 'var(--color-warning-border)'}`
-                                  }}
-                                >
-                                  {s.status_muatan}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB: Invoice */}
-              {detailTab === "invoice" && (
-                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left">
-                      <thead>
-                        <tr>
-                          <th>No. Invoice</th>
-                          <th>Tanggal</th>
-                          <th className="text-right">Subtotal</th>
-                          <th className="text-right">PPN</th>
-                          <th className="text-right">Total Invoice</th>
-                          <th className="text-center">Status Bayar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {detailData.invoices.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="text-center p-8 text-[11px] text-text-light italic">Tidak ada tagihan invoice</td>
-                          </tr>
-                        ) : (
-                          detailData.invoices.map((inv: any) => (
-                            <tr key={inv.id} className="text-[11px] hover:bg-slate-50/50">
-                              <td className="font-black text-accent">{inv.no_invoice}</td>
-                              <td className="tabular-nums font-medium">{fmtDate(inv.tgl_invoice)}</td>
-                              <td className="text-right font-bold text-text-med tabular-nums">Rp {fmt(inv.total_sebelum_pajak || 0)}</td>
-                              <td className="text-right font-bold text-text-med tabular-nums">Rp {fmt(inv.ppn || 0)}</td>
-                              <td className="text-right font-black text-text-main tabular-nums">Rp {fmt(inv.total_setelah_pajak || 0)}</td>
-                              <td className="text-center">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase inline-block`}
-                                  style={{
-                                    backgroundColor: inv.status_bayar === 'Lunas' ? 'var(--color-success-bg)' : inv.status_bayar === 'Belum Bayar' ? 'var(--color-error-bg)' : 'var(--color-warning-bg)',
-                                    color: inv.status_bayar === 'Lunas' ? 'var(--color-success)' : inv.status_bayar === 'Belum Bayar' ? 'var(--color-error)' : 'var(--color-warning)',
-                                    border: `1px solid ${inv.status_bayar === 'Lunas' ? 'var(--color-success-border)' : inv.status_bayar === 'Belum Bayar' ? 'var(--color-error-border)' : 'var(--color-warning-border)'}`
-                                  }}
-                                >
-                                  {inv.status_bayar}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB: Jurnal */}
-              {detailTab === "jurnal" && (
-                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left">
-                      <thead>
-                        <tr>
-                          <th>No. Jurnal</th>
-                          <th>Tanggal</th>
-                          <th>Keterangan</th>
-                          <th className="text-right">Debet</th>
-                          <th className="text-right">Kredit</th>
-                          <th className="text-center">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {detailData.jurnals.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="text-center p-8 text-[11px] text-text-light italic">Tidak ada entri buku jurnal terkait</td>
-                          </tr>
-                        ) : (
-                          detailData.jurnals.map((j: any) => {
-                            // Sum details
-                            const debetSum = (j.jurnal_detail || []).reduce((acc: number, d: any) => acc + (Number(d.debit) || 0), 0);
-                            const kreditSum = (j.jurnal_detail || []).reduce((acc: number, d: any) => acc + (Number(d.kredit) || 0), 0);
-                            return (
-                              <tr key={j.id} className="text-[11px] hover:bg-slate-50/50">
-                                <td className="font-black text-accent">{j.no_jurnal}</td>
-                                <td className="tabular-nums font-medium">{fmtDate(j.tanggal)}</td>
-                                <td className="font-bold text-text-main max-w-[200px] truncate" title={j.keterangan}>{j.keterangan}</td>
-                                <td className="text-right font-bold text-text-main tabular-nums">Rp {fmt(debetSum)}</td>
-                                <td className="text-right font-bold text-text-main tabular-nums">Rp {fmt(kreditSum)}</td>
-                                <td className="text-center">
-                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase inline-block`}
-                                    style={{
-                                      backgroundColor: j.status === 'Posted' ? 'var(--color-success-bg)' : 'var(--color-border-main)',
-                                      color: j.status === 'Posted' ? 'var(--color-success)' : 'var(--color-text-light)',
-                                      border: `1px solid ${j.status === 'Posted' ? 'var(--color-success-border)' : 'var(--color-border-dark)'}`
-                                    }}
-                                  >
-                                    {j.status || "Draft"}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
     </PageShell>
   );
 };
