@@ -138,12 +138,22 @@ const SOMultiSelect: React.FC<SOMultiSelectProps> = ({
   open,
   setOpen,
 }) => {
+  const [search, setSearch] = useState('');
+  
+  useEffect(() => {
+    if (!open) setSearch('');
+  }, [open]);
+
   const selectedSet = new Set(selected);
   const toggle = (id: string) => {
     const next = new Set(selectedSet);
     if (next.has(id)) next.delete(id); else next.add(id);
     setSelected(Array.from(next));
   };
+
+  const filtered = soOptions.filter((id) =>
+    id.toLowerCase().includes(search.toLowerCase())
+  );
   
   return (
     <div className="relative">
@@ -178,30 +188,41 @@ const SOMultiSelect: React.FC<SOMultiSelectProps> = ({
       </div>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-border-main rounded-xl shadow-xl max-h-44 overflow-y-auto">
-          {soOptions.length === 0 ? (
-            <div className="px-3 py-3 text-[11px] text-text-light text-center">Tidak ada data SO</div>
-          ) : (
-            soOptions.map((soId) => (
-              <button
-                key={soId}
-                type="button"
-                onClick={() => toggle(soId)}
-                className={`w-full text-left px-3 py-2 text-[11px] flex items-center gap-2 hover:bg-purple-50 transition-colors ${
-                  selectedSet.has(soId) ? 'bg-purple-50 font-bold text-purple-700' : 'text-text-main'
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 ${
-                    selectedSet.has(soId) ? 'bg-purple-600 border-purple-600' : 'border-border-main'
+        <div className="absolute top-full left-0 right-0 z-[70] mt-1 bg-white border border-border-main rounded-xl shadow-xl max-h-56 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-border-main/50 bg-slate-50 shrink-0">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cari No SO..."
+              className="input-field h-8 text-[11px] w-full px-2 bg-white"
+              autoFocus
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 max-h-44">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-3 text-[11px] text-text-light text-center">Tidak ada data SO</div>
+            ) : (
+              filtered.map((soId) => (
+                <button
+                  key={soId}
+                  type="button"
+                  onClick={() => toggle(soId)}
+                  className={`w-full text-left px-3 py-2 text-[11px] flex items-center gap-2 hover:bg-purple-50 transition-colors ${
+                    selectedSet.has(soId) ? 'bg-purple-50 font-bold text-purple-700' : 'text-text-main'
                   }`}
                 >
-                  {selectedSet.has(soId) && <Icon name="Check" size={9} className="text-white" />}
-                </div>
-                <span className="font-mono">{soId}</span>
-              </button>
-            ))
-          )}
+                  <div
+                    className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 ${
+                      selectedSet.has(soId) ? 'bg-purple-600 border-purple-600' : 'border-border-main'
+                    }`}
+                  >
+                    {selectedSet.has(soId) && <Icon name="Check" size={9} className="text-white" />}
+                  </div>
+                  <span className="font-mono">{soId}</span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1227,7 +1248,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
               return (
                 <div
-                  className="fixed inset-0 z-[60] flex items-center justify-center p-6 backdrop-blur-md bg-white/5 animate-fade-in"
+                  className="fixed inset-0 z-[1000] flex items-center justify-center p-6 backdrop-blur-md bg-black/10 animate-fade-in"
                   onClick={e => {
                     if (e.target === e.currentTarget) {
                       setShowFormMasuk(false);
@@ -1238,7 +1259,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 >
                   <div
                     className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col border border-slate-200/50"
-                    style={{ maxHeight: 'calc(100vh - 120px)' }}
+                    style={{ maxHeight: 'min(90vh, 800px)' }}
                   >
 
                     {/* ── Header */}
