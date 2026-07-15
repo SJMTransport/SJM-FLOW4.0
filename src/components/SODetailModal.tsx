@@ -24,7 +24,7 @@ export const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUse
 
   // Split invoices into Customer (Keluar) and Vendor (Masuk)
   const customerInvoices = useMemo(() =>
-    relatedInvoices.filter((inv: any) => inv.tipe !== 'masuk'),
+    relatedInvoices.filter((inv: any) => inv.tipe !== 'masuk' && inv.tipe !== 'surat_jalan'),
     [relatedInvoices]
   );
   const vendorInvoices = useMemo(() =>
@@ -317,6 +317,58 @@ export const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUse
                 </div>
               </div>
             </div>
+
+            {/* Pelacakan Surat Jalan (POD) Status Card */}
+            {(() => {
+              const sjRecord = (invoices || []).find((inv: any) =>
+                inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(data.order_id)
+              );
+              const statusSj = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
+              const resiSj = sjRecord ? (sjRecord.no_resi || '') : '';
+              const tglKirimSj = sjRecord ? sjRecord.ekspedisi : '';
+              const tglTerimaSj = sjRecord ? sjRecord.tgl_kirim : '';
+
+              let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+              if (statusSj === 'Verified') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+              else if (statusSj === 'Diterima Kantor' || statusSj === 'Diterima') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+              else if (statusSj === 'Sedang Dikirim') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+
+              return (
+                <div className="bg-white rounded-xl border border-border-main/60 p-5 space-y-3 shadow-sm">
+                  <div className="flex justify-between items-center text-[8px] font-bold text-text-light uppercase tracking-widest opacity-60">
+                    <span>Pelacakan Surat Jalan (POD)</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border ${badgeColor}`}>
+                      {statusSj}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-[11px] pt-1">
+                    <div>
+                      <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">No Resi / Kurir</span>
+                      <span className="font-bold text-text-main">{resiSj || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">Tgl Kirim Dokumen</span>
+                      <span className="font-bold text-text-main">
+                        {tglKirimSj ? new Date(tglKirimSj).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </span>
+                    </div>
+                    <div className="col-span-2 pt-2.5 border-t border-border-main/20 flex justify-between items-center">
+                      <div>
+                        <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">Tgl Terima Kantor</span>
+                        <span className="font-bold text-text-main">
+                          {tglTerimaSj ? new Date(tglTerimaSj).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </span>
+                      </div>
+                      {data.surat_jalan && (
+                        <a href={data.surat_jalan} target="_blank" rel="noopener noreferrer" className="btn-primary h-7 px-3 text-[9px] uppercase tracking-widest flex items-center gap-1.5 shadow-sm rounded-lg">
+                          Lihat Scan SJ <Icon name="ExternalLink" size={8} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Dokumentasi File Drive */}
             {(() => {

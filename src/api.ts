@@ -857,6 +857,55 @@ export const api = {
     if (error) throw new Error(error.message || 'Gagal update invoice masuk');
   },
 
+  addSuratJalanTracking: async (data: {
+    no_invoice: string;
+    customer: string;
+    so_order_ids: string[];
+    status_dokumen: string;
+    no_resi?: string;
+    tgl_kirim?: string;
+    ekspedisi?: string;
+    company_id?: string;
+  }) => {
+    const { data: res, error } = await supabase.from('invoices').insert([{
+      no_invoice:          data.no_invoice,
+      tgl_invoice:         new Date().toISOString().split('T')[0],
+      customer:            data.customer,
+      pic_cust:            '',
+      so_order_ids:        data.so_order_ids,
+      so_ids:              [],
+      total_sebelum_pajak: 0,
+      ppn:                 0,
+      total_setelah_pajak: 0,
+      tipe:                'surat_jalan',
+      status:              'Lunas',
+      keterangan_invoice:  '',
+      tgl_kirim:           data.tgl_kirim || null,
+      ekspedisi:           data.ekspedisi || '',
+      status_dokumen:      data.status_dokumen,
+      no_resi:             data.no_resi || '',
+      status_bayar:        'Lunas',
+      total_terbayar:      0,
+      company_id:          data.company_id,
+    }]).select();
+    if (error) throw new Error(error.message || 'Gagal simpan pelacakan surat jalan');
+    return res?.[0];
+  },
+
+  updateSuratJalanTracking: async (id: string, data: {
+    status_dokumen?: string;
+    no_resi?: string;
+    tgl_kirim?: string;
+    ekspedisi?: string;
+  }) => {
+    const { error } = await supabase
+      .from('invoices')
+      .update(data)
+      .eq('id', id);
+    if (error) throw new Error(error.message || 'Gagal update pelacakan surat jalan');
+  },
+
+
 
 
   getQuotations: async () => {

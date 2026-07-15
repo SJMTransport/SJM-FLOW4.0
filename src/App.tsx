@@ -1257,6 +1257,7 @@ export default function App() {
                           {...props}
                           so={so}
                           jurnal={jurnal}
+                          invoices={invoices}
                           onSOClick={handleSOClick}
                           onJurnalClick={handleJurnalClick}
                         />

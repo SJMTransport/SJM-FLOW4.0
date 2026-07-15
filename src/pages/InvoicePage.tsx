@@ -282,7 +282,21 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const { showToast, ToastUI } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabType>('daftar');
-  const [invoiceTypeTab, setInvoiceTypeTab] = useState<'dashboard' | 'masuk' | 'keluar'>('keluar');
+  const [invoiceTypeTab, setInvoiceTypeTab] = useState<'dashboard' | 'masuk' | 'keluar' | 'surat_jalan'>('keluar');
+
+  // ── Pelacakan Surat Jalan state
+  const [showFormSj, setShowFormSj] = useState(false);
+  const [editingSj, setEditingSj] = useState<any | null>(null);
+  const [savingSj, setSavingSj] = useState(false);
+  const [filterSjSearch, setFilterSjSearch] = useState('');
+  const [filterSjStatus, setFilterSjStatus] = useState('all');
+  const [formSj, setFormSj] = useState({
+    status_dokumen: 'Belum Dikirim',
+    no_resi: '',
+    tgl_kirim: '',
+    ekspedisi: '',
+    surat_jalan: '',
+  });
 
   // ── Buat Invoice state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -343,12 +357,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     status:              'Belum Diterima',
     status_user:         '',
     keterangan_invoice:  '',
-    // Surat Jalan
-    sj_tgl_terima:       '',
-    sj_tgl_serah:        '',
-    sj_status:           'Belum Diterima',
-    sj_status_user:      '',
-    sj_keterangan:       '',
   });
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
   const [vendorSearch, setVendorSearch]             = useState('');
@@ -463,11 +471,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       status:              'Belum Diterima',
       status_user:         '',
       keterangan_invoice:  '',
-      sj_tgl_terima:       '',
-      sj_tgl_serah:        '',
-      sj_status:           'Belum Diterima',
-      sj_status_user:      '',
-      sj_keterangan:       '',
     });
     setShowFormMasuk(true);
   };
@@ -483,17 +486,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     } else if (status.startsWith('Diserahkan ke ')) {
       status_user = status.replace('Diserahkan ke ', '');
       status = 'Diserahkan ke';
-    }
-    let sj_status = inv.status_dokumen || 'Belum Diterima';
-    let sj_status_user = '';
-    if (sj_status.startsWith('Diterima oleh ')) {
-      sj_status_user = sj_status.replace('Diterima oleh ', '');
-      sj_status = 'Diterima oleh';
-    } else if (sj_status.startsWith('Diserahkan ke ')) {
-      sj_status_user = sj_status.replace('Diserahkan ke ', '');
-      sj_status = 'Diserahkan ke';
-    } else if (sj_status.startsWith('Terkirim ke Customer')) {
-      sj_status = 'Terkirim ke Customer';
     }
     const storedJenis = inv.pic_cust || 'Armada Truk';
     const knownJenis = ['Armada Truk', 'Kapal', 'Asuransi'];
@@ -514,11 +506,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       status,
       status_user,
       keterangan_invoice:  inv.keterangan_invoice || '',
-      sj_tgl_terima:       inv.tgl_kirim || '',
-      sj_tgl_serah:        inv.ekspedisi || '',
-      sj_status,
-      sj_status_user,
-      sj_keterangan:       inv.no_resi || '',
     });
     setShowFormMasuk(true);
   };
@@ -553,10 +540,6 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         total_setelah_pajak: Number(formMasuk.total_setelah_pajak) || 0,
         status:              buildStatusStr(formMasuk.status, formMasuk.status_user),
         keterangan_invoice:  formMasuk.keterangan_invoice,
-        tgl_kirim:           formMasuk.sj_tgl_terima || null,
-        ekspedisi:           formMasuk.sj_tgl_serah || '',
-        status_dokumen:      buildStatusStr(formMasuk.sj_status, formMasuk.sj_status_user),
-        no_resi:             formMasuk.sj_keterangan,
         company_id:          currentUser?.company_id,
       };
 
@@ -634,6 +617,74 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     }
   };
 
+  const openEditFormSj = (s: any) => {
+    setEditingSj(s);
+    const sjRecord = invoices.find((inv: any) => 
+      inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
+    );
+    setFormSj({
+      status_dokumen: sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim',
+      no_resi: sjRecord ? (sjRecord.no_resi || '') : '',
+      tgl_kirim: sjRecord ? (sjRecord.tgl_kirim || '') : '',
+      ekspedisi: sjRecord ? (sjRecord.ekspedisi || '') : '',
+      surat_jalan: s.surat_jalan || '',
+    });
+    setShowFormSj(true);
+  };
+
+  const handleSaveSj = async () => {
+    if (!editingSj) return;
+    setSavingSj(true);
+    try {
+      const soId = editingSj.order_id;
+      const sjRecord = invoices.find((inv: any) => 
+        inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(soId)
+      );
+
+      const payload = {
+        no_invoice: `SJ-${soId}`,
+        customer: editingSj.customer || '',
+        so_order_ids: [soId],
+        status_dokumen: formSj.status_dokumen,
+        no_resi: formSj.no_resi,
+        tgl_kirim: formSj.tgl_kirim || null,
+        ekspedisi: formSj.ekspedisi || '',
+        company_id: currentUser?.company_id,
+      };
+
+      let updatedRecord;
+      if (sjRecord) {
+        await api.updateSuratJalanTracking(sjRecord.id, payload);
+        updatedRecord = { ...sjRecord, ...payload };
+        setInvoices((prev: any[]) => prev.map(x => x.id === sjRecord.id ? updatedRecord : x));
+      } else {
+        const created = await api.addSuratJalanTracking(payload);
+        updatedRecord = created;
+        if (created) setInvoices((prev: any[]) => [created, ...prev]);
+      }
+
+      // Sync scan link to Sales Order if modified
+      if (formSj.surat_jalan !== (editingSj.surat_jalan || '')) {
+        await api.updateSO(editingSj.id, {
+          ...editingSj,
+          surat_jalan: formSj.surat_jalan
+        });
+        if (onRefreshSO) {
+          await onRefreshSO();
+        }
+      }
+
+      logAction(`Update Pelacakan Surat Jalan SO: ${soId}`);
+      showToast(`Pelacakan Surat Jalan ${soId} berhasil disimpan`, 'success');
+      setShowFormSj(false);
+      setEditingSj(null);
+    } catch (err: any) {
+      showToast('Gagal menyimpan: ' + err.message, 'error');
+    } finally {
+      setSavingSj(false);
+    }
+  };
+
   // ── Buat Invoice: SO yang belum punya invoice
   const availableSO = useMemo(() => {
     return so.filter(s =>
@@ -657,6 +708,45 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       return sortSODir === 'asc' ? cmp : -cmp;
     });
   }, [availableSO, filterCustomer, sortSOKey, sortSODir]);
+
+  // ── Surat Jalan Computations
+  const sjKpiData = useMemo(() => {
+    const list = so || [];
+    let verified = 0;
+    let kantor = 0;
+    let kirim = 0;
+    let belum = 0;
+    list.forEach((s: any) => {
+      const sjRecord = invoices.find((inv: any) =>
+        inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
+      );
+      const status = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
+      if (status === 'Verified') verified++;
+      else if (status === 'Diterima Kantor' || status === 'Diterima') kantor++;
+      else if (status === 'Sedang Dikirim') kirim++;
+      else belum++;
+    });
+    return { total: list.length, verified, kantor, kirim, belum };
+  }, [so, invoices]);
+
+  const filteredSjList = useMemo(() => {
+    return (so || []).filter((s: any) => {
+      const q = filterSjSearch.toLowerCase();
+      const matchQuery = !q ||
+        (s.order_id || '').toLowerCase().includes(q) ||
+        (s.customer || '').toLowerCase().includes(q) ||
+        (s.nama_sopir || '').toLowerCase().includes(q) ||
+        (s.nama_vendor || '').toLowerCase().includes(q);
+
+      const sjRecord = invoices.find((inv: any) =>
+        inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
+      );
+      const statusSj = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
+      const matchStatus = filterSjStatus === 'all' || statusSj === filterSjStatus;
+
+      return matchQuery && matchStatus;
+    });
+  }, [so, invoices, filterSjSearch, filterSjStatus]);
 
   const selectedSOList = useMemo(() => so.filter(s => selectedIds.has(s.id)), [so, selectedIds]);
 
@@ -957,7 +1047,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         {[
           ["dashboard", "Dashboard Invoice"],
           ["masuk", "Invoice Masuk"],
-          ["keluar", "Invoice Keluar"]
+          ["keluar", "Invoice Keluar"],
+          ["surat_jalan", "Pelacakan Surat Jalan"]
         ].map(([k, l]) => (
           <button
             key={k}
@@ -1037,6 +1128,327 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wider">Sedang Dalam Rancangan</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {invoiceTypeTab === 'surat_jalan' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* KPI Grid */}
+          <KPIGrid cols={5} className="mb-3">
+            {[
+              { key: 'all', label: 'Total Surat Jalan', value: String(sjKpiData.total), icon: 'Database', color: 'var(--color-text-main)' },
+              { key: 'Verified', label: 'Verified', value: String(sjKpiData.verified), icon: 'CheckCircle', color: 'var(--color-success)' },
+              { key: 'Diterima Kantor', label: 'Diterima Kantor', value: String(sjKpiData.kantor), icon: 'Briefcase', color: 'var(--color-info)' },
+              { key: 'Sedang Dikirim', label: 'Sedang Dikirim', value: String(sjKpiData.kirim), icon: 'Truck', color: 'var(--color-warning)' },
+              { key: 'Belum Dikirim', label: 'Belum Dikirim', value: String(sjKpiData.belum), icon: 'Clock', color: 'var(--color-error)' },
+            ].map(card => {
+              const active = filterSjStatus === card.key;
+              return (
+                <button
+                  key={card.key}
+                  onClick={() => setFilterSjStatus(card.key)}
+                  className={`card text-left p-4 relative overflow-hidden transition-all duration-200 cursor-pointer ${
+                    active ? 'ring-2 ring-purple-600 shadow-md' : 'hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] text-text-light font-bold uppercase tracking-wider leading-none">
+                      {card.label}
+                    </span>
+                    <span style={{ color: card.color }}>
+                      <Icon name={card.icon as any} size={15} />
+                    </span>
+                  </div>
+                  <div className="text-xl font-black mt-2 tracking-tight">
+                    {card.value}
+                  </div>
+                </button>
+              );
+            })}
+          </KPIGrid>
+
+          {/* Action Bar */}
+          <ActionBar
+            left={
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light">
+                    <Icon name="Search" size={13} />
+                  </span>
+                  <input
+                    value={filterSjSearch}
+                    onChange={e => setFilterSjSearch(e.target.value)}
+                    placeholder="Cari SO, Customer, Vendor, Sopir..."
+                    className="input-field h-9 text-[12px] pl-8 w-64"
+                  />
+                </div>
+                {filterSjStatus !== 'all' && (
+                  <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-[9px] font-black uppercase tracking-wider">
+                    Status: {filterSjStatus}
+                  </span>
+                )}
+              </div>
+            }
+            right={
+              <div className="flex items-center gap-2">
+                {(filterSjSearch || filterSjStatus !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setFilterSjSearch('');
+                      setFilterSjStatus('all');
+                    }}
+                    className="btn-ghost h-9 px-3 text-[12px] flex items-center gap-1.5 text-red-500 hover:bg-red-50 border-red-200"
+                  >
+                    <Icon name="X" size={13} /> Reset
+                  </button>
+                )}
+                <span className="text-[11px] text-text-light">{filteredSjList.length} Sales Order</span>
+              </div>
+            }
+          />
+
+          {/* Table */}
+          <div className="table-container bg-white shadow-sm">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="w-12 text-center">No</th>
+                  <th>No SO</th>
+                  <th>Customer</th>
+                  <th>Vendor</th>
+                  <th>Sopir</th>
+                  <th>Status Dokumen</th>
+                  <th>No Resi / Info</th>
+                  <th>Tgl Kirim / Terima</th>
+                  <th>Ekspedisi</th>
+                  <th>Dokumen Scan</th>
+                  <th className="w-12 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSjList.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-12 text-center text-text-light">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Icon name="Inbox" size={32} className="opacity-40" />
+                        <span className="text-[13px] font-medium">Tidak ada data pelacakan surat jalan</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSjList.map((s: any, idx: number) => {
+                    const sjRecord = invoices.find((inv: any) =>
+                      inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
+                    );
+                    const status = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
+                    const colorMap: Record<string, string> = {
+                      'Verified': 'bg-green-50 text-green-700 border-green-200',
+                      'Diterima Kantor': 'bg-blue-50 text-blue-700 border-blue-200',
+                      'Diterima': 'bg-blue-50 text-blue-700 border-blue-200',
+                      'Sedang Dikirim': 'bg-amber-50 text-amber-700 border-amber-200',
+                      'Belum Dikirim': 'bg-red-50 text-red-700 border-red-200',
+                    };
+                    const statusClass = colorMap[status] || 'bg-slate-50 text-slate-700 border-slate-200';
+
+                    return (
+                      <tr key={s.id} className="hover:bg-slate-50/50">
+                        <td className="text-center font-bold text-text-light tabular-nums">{idx + 1}</td>
+                        <td>
+                          <button
+                            onClick={() => onSOClick?.(s.order_id)}
+                            className="font-bold text-primary hover:underline font-mono text-[12px]"
+                          >
+                            {s.order_id}
+                          </button>
+                        </td>
+                        <td>
+                          <div className="font-bold text-text-main">{s.customer}</div>
+                          <div className="text-[11px] text-text-light mt-0.5">{s.wilayah}</div>
+                        </td>
+                        <td>{s.nama_vendor || s.armada || '-'}</td>
+                        <td>{s.nama_sopir || '-'}</td>
+                        <td>
+                          <span className={`px-2 py-0.5 border rounded-full text-[10px] font-black uppercase tracking-wider ${statusClass}`}>
+                            {status}
+                          </span>
+                        </td>
+                        <td className="max-w-[150px] truncate" title={sjRecord?.no_resi || '-'}>
+                          {sjRecord?.no_resi || '-'}
+                        </td>
+                        <td className="tabular-nums">
+                          {sjRecord?.tgl_kirim ? fmtDate(sjRecord.tgl_kirim) : '-'}
+                        </td>
+                        <td>{sjRecord?.ekspedisi || '-'}</td>
+                        <td>
+                          {s.surat_jalan ? (
+                            <a
+                              href={s.surat_jalan}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[12px] font-bold text-purple-600 hover:text-purple-800 hover:underline flex items-center gap-1"
+                            >
+                              <Icon name="ExternalLink" size={12} /> Buka Drive
+                            </a>
+                          ) : (
+                            <span className="text-[11px] text-text-light italic">Belum diunggah</span>
+                          )}
+                        </td>
+                        <td className="text-center">
+                          <button
+                            onClick={() => openEditFormSj(s)}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-600 transition-all border border-slate-200/50"
+                          >
+                            <Icon name="Edit3" size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Modal Form Edit Pelacakan Surat Jalan */}
+          {showFormSj && editingSj && createPortal((
+            <div
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-6 backdrop-blur-md bg-black/25 animate-fade-in"
+              onClick={e => {
+                if (e.target === e.currentTarget) {
+                  setShowFormSj(false);
+                  setEditingSj(null);
+                }
+              }}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-slate-200/50"
+                style={{ maxHeight: 'min(90vh, 650px)' }}
+              >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border-main shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                      <Icon name="Truck" size={14} />
+                    </div>
+                    <div>
+                      <h2 className="text-[14px] font-black text-text-main tracking-tight">Pelacakan Surat Jalan</h2>
+                      <div className="text-[10px] text-text-light font-mono mt-0.5">{editingSj.order_id}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowFormSj(false);
+                      setEditingSj(null);
+                    }}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-text-light hover:text-text-main transition-all"
+                  >
+                    <Icon name="X" size={15} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {/* Status Dokumen */}
+                  <div>
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Surat Jalan</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Belum Dikirim', 'Sedang Dikirim', 'Diterima Kantor', 'Verified'].map(opt => {
+                        const active = formSj.status_dokumen === opt;
+                        const colors: Record<string, string> = {
+                          'Verified': active ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'hover:border-green-300 hover:text-green-700',
+                          'Diterima Kantor': active ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'hover:border-blue-300 hover:text-blue-700',
+                          'Sedang Dikirim': active ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'hover:border-amber-300 hover:text-amber-700',
+                          'Belum Dikirim': active ? 'bg-red-500 text-white border-red-500 shadow-sm' : 'hover:border-red-300 hover:text-red-700',
+                        };
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setFormSj(p => ({ ...p, status_dokumen: opt }))}
+                            className={`py-2 rounded-xl text-[10px] font-bold border-2 transition-all text-center ${
+                              active ? colors[opt] : 'bg-white text-text-med border-border-main ' + colors[opt]
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* No Resi / Info */}
+                  <div>
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">No Resi / Keterangan</label>
+                    <input
+                      value={formSj.no_resi}
+                      onChange={e => setFormSj(p => ({ ...p, no_resi: e.target.value }))}
+                      placeholder="Masukkan nomor resi, PIC penerima, dll..."
+                      className="input-field h-9 text-[12px] w-full"
+                    />
+                  </div>
+
+                  {/* Tgl Kirim / Terima */}
+                  <div>
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tanggal Kirim / Terima</label>
+                    <input
+                      type="date"
+                      value={formSj.tgl_kirim}
+                      onChange={e => setFormSj(p => ({ ...p, tgl_kirim: e.target.value }))}
+                      className="input-field h-9 text-[12px] w-full"
+                    />
+                  </div>
+
+                  {/* Ekspedisi */}
+                  <div>
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Ekspedisi / Kurir</label>
+                    <input
+                      value={formSj.ekspedisi}
+                      onChange={e => setFormSj(p => ({ ...p, ekspedisi: e.target.value }))}
+                      placeholder="JNE, J&T, Kurir Internal, dll..."
+                      className="input-field h-9 text-[12px] w-full"
+                    />
+                  </div>
+
+                  {/* Link Google Drive */}
+                  <div>
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Link Scan Dokumen (GDive)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-light">
+                        <Icon name="Link" size={12} />
+                      </span>
+                      <input
+                        value={formSj.surat_jalan}
+                        onChange={e => setFormSj(p => ({ ...p, surat_jalan: e.target.value }))}
+                        placeholder="https://drive.google.com/..."
+                        className="input-field h-9 text-[12px] pl-8 w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between px-6 py-4 border-t border-border-main bg-slate-50 rounded-b-2xl shrink-0">
+                  <button
+                    onClick={() => {
+                      setShowFormSj(false);
+                      setEditingSj(null);
+                    }}
+                    className="btn-ghost px-4 h-9 text-[12px]"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleSaveSj}
+                    disabled={savingSj}
+                    className="btn-primary px-6 h-9 text-[12px] font-bold flex items-center gap-1.5"
+                  >
+                    {savingSj ? (
+                      <><Icon name="RefreshCw" size={13} className="animate-spin" /> Menyimpan...</>
+                    ) : (
+                      <><Icon name="Save" size={13} /> Simpan</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ), document.body)}
         </div>
       )}
 
@@ -1289,7 +1701,25 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   .map((v: string) => v.trim())
               )).sort() as string[];
 
-              const soOptions = so.map((s: any) => s.order_id).filter(Boolean).sort() as string[];
+              const selectedVendorName = (formMasuk.customer || '').trim().toLowerCase();
+              const soOptions = so
+                .filter((s: any) => {
+                  const matchVendor = !selectedVendorName || 
+                    (s.nama_vendor || '').trim().toLowerCase() === selectedVendorName ||
+                    (s.armada || '').trim().toLowerCase() === selectedVendorName;
+                  
+                  const soId = s.order_id;
+                  const sjRecord = invoices.find((inv: any) =>
+                    inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(soId)
+                  );
+                  const statusSj = sjRecord ? sjRecord.status_dokumen : 'Belum Diterima';
+                  const isVerified = statusSj === 'Verified' || statusSj === 'Diterima Kantor' || statusSj === 'Diterima';
+                  
+                  return matchVendor && isVerified;
+                })
+                .map((s: any) => s.order_id)
+                .filter(Boolean)
+                .sort() as string[];
 
               return (
                 <div
@@ -1303,8 +1733,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   }}
                 >
                   <div
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col border border-slate-200/50"
-                    style={{ maxHeight: 'min(90vh, 800px)' }}
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col border border-slate-200/50"
+                    style={{ maxHeight: 'min(90vh, 720px)' }}
                   >
 
                     {/* ── Header */}
@@ -1317,7 +1747,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                           <h2 className="text-[15px] font-black text-text-main tracking-tight">
                             {editingMasuk ? 'Edit Invoice Masuk' : 'Tambah Invoice Masuk'}
                           </h2>
-                          <p className="text-[10px] text-text-light mt-0.5 font-medium">Data tagihan dari vendor beserta informasi Surat Jalan</p>
+                          <p className="text-[10px] text-text-light mt-0.5 font-medium">Pencatatan tagihan dan biaya masuk dari vendor</p>
                         </div>
                       </div>
                       <button
@@ -1332,308 +1762,158 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                       </button>
                     </div>
 
-                    {/* ── Body — 2 kolom: Invoice Masuk | Surat Jalan */}
-                    <div className="flex-1 overflow-y-auto">
-                      <div className="grid grid-cols-2 divide-x divide-border-main/60 min-h-full">
-
-                        {/* ─── Kolom Kiri: Invoice Masuk ─── */}
-                        <div className="p-7 space-y-5">
-                          {/* Section label */}
-                          <div className="flex items-center gap-2.5 pb-2 border-b border-border-main/40">
-                            <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                              <Icon name="Receipt" size={13} />
-                            </div>
-                            <div>
-                              <div className="text-[11px] font-black text-text-main uppercase tracking-widest">Invoice Masuk</div>
-                              <div className="text-[9px] text-text-light">Data tagihan dari vendor</div>
-                            </div>
-                          </div>
-
-                          {/* No Invoice + Tanggal */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">No Invoice *</label>
-                              <input
-                                value={formMasuk.no_invoice}
-                                onChange={e => setFormMasuk(p => ({ ...p, no_invoice: e.target.value }))}
-                                placeholder="INV/VENDOR/001/2026"
-                                className="input-field h-9 text-[12px] w-full font-mono"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tanggal Invoice</label>
-                              <input
-                                type="date"
-                                value={formMasuk.tgl_invoice}
-                                onChange={e => setFormMasuk(p => ({ ...p, tgl_invoice: e.target.value }))}
-                                className="input-field h-9 text-[12px] w-full"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Nama Vendor (Combobox) */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Nama Vendor *</label>
-                            <VendorCombobox
-                              value={formMasuk.customer}
-                              vendorSearch={vendorSearch}
-                              setVendorSearch={setVendorSearch}
-                              vendorCustom={formMasuk.vendor_custom}
-                              setVendorCustom={(custom) => setFormMasuk(p => ({ ...p, vendor_custom: custom }))}
-                              setCustomer={(cust) => setFormMasuk(p => ({ ...p, customer: cust }))}
-                              vendorDropdownOpen={vendorDropdownOpen}
-                              setVendorDropdownOpen={setVendorDropdownOpen}
-                              vendorOptions={vendorOptions}
-                            />
-                          </div>
-
-                          {/* Jenis Invoice */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Jenis Invoice</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {([
-                                { val: 'Armada Truk', icon: 'Truck' },
-                                { val: 'Kapal', icon: 'Anchor' },
-                                { val: 'Asuransi', icon: 'Shield' },
-                                { val: 'Lain-lain', icon: 'MoreHorizontal' },
-                              ] as const).map(({ val, icon }) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setFormMasuk(p => ({ ...p, jenis_invoice: val }))}
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
-                                    formMasuk.jenis_invoice === val
-                                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                                      : 'bg-white text-text-med border-border-main hover:border-purple-300'
-                                  }`}
-                                >
-                                  <Icon name={icon as any} size={12} />
-                                  {val}
-                                </button>
-                              ))}
-                            </div>
-                            {formMasuk.jenis_invoice === 'Lain-lain' && (
-                              <input
-                                value={formMasuk.jenis_custom}
-                                onChange={e => setFormMasuk(p => ({ ...p, jenis_custom: e.target.value }))}
-                                placeholder="Sebutkan jenis invoice..."
-                                className="input-field h-9 text-[12px] w-full mt-2"
-                                autoFocus
-                              />
-                            )}
-                          </div>
-
-                          {/* Nominal */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Nominal Invoice (Rp)</label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-light">Rp</span>
-                              <input
-                                type="number"
-                                value={formMasuk.total_setelah_pajak || ''}
-                                onChange={e => setFormMasuk(p => ({ ...p, total_setelah_pajak: Number(e.target.value) }))}
-                                placeholder="0"
-                                className="input-field h-9 text-[12px] w-full pl-9 tabular-nums"
-                              />
-                            </div>
-                            {formMasuk.total_setelah_pajak > 0 && (
-                              <div className="text-[10px] text-text-light mt-1 font-medium tabular-nums">
-                                = Rp {Number(formMasuk.total_setelah_pajak).toLocaleString('id-ID')},00
-                              </div>
-                            )}
-                          </div>
-
-                          {/* No SO (Multi-select Dropdown) */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">
-                              No SO <span className="normal-case font-normal opacity-60">(opsional)</span>
-                            </label>
-                            <SOMultiSelect
-                              selected={formMasuk.so_selected_ids}
-                              setSelected={(ids) => setFormMasuk(p => ({ ...p, so_selected_ids: ids }))}
-                              soOptions={soOptions}
-                              open={soDropdownOpen}
-                              setOpen={setSODropdownOpen}
-                            />
-                          </div>
-
-                          {/* Status Invoice */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Invoice</label>
-                            <div className="flex gap-2">
-                              {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke'].map(opt => (
-                                <button
-                                  key={opt}
-                                  type="button"
-                                  onClick={() => setFormMasuk(p => ({ ...p, status: opt }))}
-                                  className={`flex-1 py-2 rounded-xl text-[10px] font-bold border-2 transition-all ${
-                                    formMasuk.status === opt
-                                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                                      : 'bg-white text-text-med border-border-main hover:border-purple-300 hover:text-purple-700'
-                                  }`}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                            </div>
-                            {(formMasuk.status === 'Diterima oleh' || formMasuk.status === 'Diserahkan ke') && (
-                              <div className="mt-2.5">
-                                <input
-                                  value={formMasuk.status_user}
-                                  onChange={e => setFormMasuk(p => ({ ...p, status_user: e.target.value }))}
-                                  placeholder={formMasuk.status === 'Diterima oleh' ? 'Nama penerima...' : 'Diserahkan kepada...'}
-                                  className="input-field h-9 text-[12px] w-full"
-                                  autoFocus
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Keterangan */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Keterangan Invoice</label>
-                            <textarea
-                              value={formMasuk.keterangan_invoice}
-                              onChange={e => setFormMasuk(p => ({ ...p, keterangan_invoice: e.target.value }))}
-                              placeholder="Catatan tambahan mengenai invoice ini..."
-                              rows={2}
-                              className="input-field text-[12px] w-full resize-none leading-relaxed"
-                            />
-                          </div>
+                    {/* ── Body (Single Column) */}
+                    <div className="flex-1 overflow-y-auto p-8 space-y-5">
+                      {/* No Invoice + Tanggal */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">No Invoice *</label>
+                          <input
+                            value={formMasuk.no_invoice}
+                            onChange={e => setFormMasuk(p => ({ ...p, no_invoice: e.target.value }))}
+                            placeholder="INV/VENDOR/001/2026"
+                            className="input-field h-9 text-[12px] w-full font-mono"
+                          />
                         </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tanggal Invoice</label>
+                          <input
+                            type="date"
+                            value={formMasuk.tgl_invoice}
+                            onChange={e => setFormMasuk(p => ({ ...p, tgl_invoice: e.target.value }))}
+                            className="input-field h-9 text-[12px] w-full"
+                          />
+                        </div>
+                      </div>
 
-                        {/* ─── Kolom Kanan: Surat Jalan ─── */}
-                        <div className="p-7 space-y-5 bg-slate-50/50">
-                          {/* Section label */}
-                          <div className="flex items-center gap-2.5 pb-2 border-b border-border-main/40">
-                            <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                              <Icon name="Truck" size={13} />
-                            </div>
-                            <div>
-                              <div className="text-[11px] font-black text-text-main uppercase tracking-widest">Surat Jalan</div>
-                              <div className="text-[9px] text-text-light">Dikirim bersamaan dengan invoice</div>
-                            </div>
+                      {/* Nama Vendor (Combobox) */}
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Nama Vendor *</label>
+                        <VendorCombobox
+                          value={formMasuk.customer}
+                          vendorSearch={vendorSearch}
+                          setVendorSearch={setVendorSearch}
+                          vendorCustom={formMasuk.vendor_custom}
+                          setVendorCustom={(custom) => setFormMasuk(p => ({ ...p, vendor_custom: custom }))}
+                          setCustomer={(cust) => setFormMasuk(p => ({ ...p, customer: cust }))}
+                          vendorDropdownOpen={vendorDropdownOpen}
+                          setVendorDropdownOpen={setVendorDropdownOpen}
+                          vendorOptions={vendorOptions}
+                        />
+                      </div>
+
+                      {/* Jenis Invoice */}
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Jenis Invoice</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([
+                            { val: 'Armada Truk', icon: 'Truck' },
+                            { val: 'Kapal', icon: 'Anchor' },
+                            { val: 'Asuransi', icon: 'Shield' },
+                            { val: 'Lain-lain', icon: 'MoreHorizontal' },
+                          ] as const).map(({ val, icon }) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setFormMasuk(p => ({ ...p, jenis_invoice: val }))}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
+                                formMasuk.jenis_invoice === val
+                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                  : 'bg-white text-text-med border-border-main hover:border-purple-300'
+                              }`}
+                            >
+                              <Icon name={icon as any} size={12} />
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        {formMasuk.jenis_invoice === 'Lain-lain' && (
+                          <input
+                            value={formMasuk.jenis_custom}
+                            onChange={e => setFormMasuk(p => ({ ...p, jenis_custom: e.target.value }))}
+                            placeholder="Sebutkan jenis invoice..."
+                            className="input-field h-9 text-[12px] w-full mt-2"
+                            autoFocus
+                          />
+                        )}
+                      </div>
+
+                      {/* Nominal */}
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Nominal Invoice (Rp)</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-light">Rp</span>
+                          <input
+                            type="number"
+                            value={formMasuk.total_setelah_pajak || ''}
+                            onChange={e => setFormMasuk(p => ({ ...p, total_setelah_pajak: Number(e.target.value) }))}
+                            placeholder="0"
+                            className="input-field h-9 text-[12px] w-full pl-9 tabular-nums"
+                          />
+                        </div>
+                        {formMasuk.total_setelah_pajak > 0 && (
+                          <div className="text-[10px] text-text-light mt-1 font-medium tabular-nums">
+                            = Rp {Number(formMasuk.total_setelah_pajak).toLocaleString('id-ID')},00
                           </div>
+                        )}
+                      </div>
 
-                          {/* Tgl Terima + Tgl Penyerahan */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tgl Terima SJ</label>
-                              <input
-                                type="date"
-                                value={formMasuk.sj_tgl_terima}
-                                onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_terima: e.target.value }))}
-                                className="input-field h-9 text-[12px] w-full"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tgl Penyerahan SJ</label>
-                              <input
-                                type="date"
-                                value={formMasuk.sj_tgl_serah}
-                                onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_serah: e.target.value }))}
-                                className="input-field h-9 text-[12px] w-full"
-                              />
-                            </div>
-                          </div>
+                      {/* No SO (Multi-select Dropdown) */}
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">
+                          No SO <span className="normal-case font-normal opacity-60">(Hanya menampilkan SO dengan Surat Jalan yang terverifikasi)</span>
+                        </label>
+                        <SOMultiSelect
+                          selected={formMasuk.so_selected_ids}
+                          setSelected={(ids) => setFormMasuk(p => ({ ...p, so_selected_ids: ids }))}
+                          soOptions={soOptions}
+                          open={soDropdownOpen}
+                          setOpen={setSODropdownOpen}
+                        />
+                      </div>
 
-                          {/* Status Surat Jalan */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Surat Jalan</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke', 'Terkirim ke Customer'].map(opt => {
-                                const isActive = formMasuk.sj_status === opt;
-                                const colorMap: Record<string, string> = {
-                                  'Belum Diterima':      isActive ? 'bg-red-500 text-white border-red-500' : 'hover:border-red-300',
-                                  'Diterima oleh':       isActive ? 'bg-blue-600 text-white border-blue-600' : 'hover:border-blue-300',
-                                  'Diserahkan ke':       isActive ? 'bg-violet-600 text-white border-violet-600' : 'hover:border-violet-300',
-                                  'Terkirim ke Customer': isActive ? 'bg-green-600 text-white border-green-600' : 'hover:border-green-300',
-                                };
-                                return (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => setFormMasuk(p => ({ ...p, sj_status: opt }))}
-                                    className={`py-2 rounded-xl text-[10px] font-bold border-2 transition-all text-center ${
-                                      isActive
-                                        ? colorMap[opt] + ' shadow-sm'
-                                        : 'bg-white text-text-med border-border-main ' + colorMap[opt]
-                                    }`}
-                                  >
-                                    {opt}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {(formMasuk.sj_status === 'Diterima oleh' || formMasuk.sj_status === 'Diserahkan ke') && (
-                              <div className="mt-2.5">
-                                <input
-                                  value={formMasuk.sj_status_user}
-                                  onChange={e => setFormMasuk(p => ({ ...p, sj_status_user: e.target.value }))}
-                                  placeholder={formMasuk.sj_status === 'Diterima oleh' ? 'Nama penerima Surat Jalan...' : 'Diserahkan kepada...'}
-                                  className="input-field h-9 text-[12px] w-full"
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Keterangan SJ */}
-                          <div>
-                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Keterangan Surat Jalan</label>
-                            <textarea
-                              value={formMasuk.sj_keterangan}
-                              onChange={e => setFormMasuk(p => ({ ...p, sj_keterangan: e.target.value }))}
-                              placeholder="Catatan kondisi surat jalan, nomor seri, atau info tambahan..."
-                              rows={2}
-                              className="input-field text-[12px] w-full resize-none leading-relaxed"
+                      {/* Status Invoice */}
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Invoice</label>
+                        <div className="flex gap-2">
+                          {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke'].map(opt => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setFormMasuk(p => ({ ...p, status: opt }))}
+                              className={`flex-1 py-2 rounded-xl text-[10px] font-bold border-2 transition-all ${
+                                formMasuk.status === opt
+                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                  : 'bg-white text-text-med border-border-main hover:border-purple-300 hover:text-purple-700'
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                        {(formMasuk.status === 'Diterima oleh' || formMasuk.status === 'Diserahkan ke') && (
+                          <div className="mt-2.5">
+                            <input
+                              value={formMasuk.status_user}
+                              onChange={e => setFormMasuk(p => ({ ...p, status_user: e.target.value }))}
+                              placeholder={formMasuk.status === 'Diterima oleh' ? 'Nama penerima...' : 'Diserahkan kepada...'}
+                              className="input-field h-9 text-[12px] w-full"
+                              autoFocus
                             />
                           </div>
+                        )}
+                      </div>
 
-                          {/* Preview Card — ringkasan data */}
-                          {(formMasuk.no_invoice || formMasuk.customer) && (
-                            <div className="mt-auto p-4 bg-white rounded-xl border border-border-main/60 space-y-2">
-                              <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-2">Ringkasan</div>
-                              {formMasuk.no_invoice && (
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-text-light">No Invoice</span>
-                                  <span className="font-bold text-text-main font-mono">{formMasuk.no_invoice}</span>
-                                </div>
-                              )}
-                              {formMasuk.customer && (
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-text-light">Vendor</span>
-                                  <span className="font-bold text-text-main truncate max-w-[160px]">{formMasuk.customer}</span>
-                                </div>
-                              )}
-                              {formMasuk.jenis_invoice && (
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-text-light">Jenis</span>
-                                  <span className="font-bold text-purple-700">
-                                    {formMasuk.jenis_invoice === 'Lain-lain' ? (formMasuk.jenis_custom || 'Lain-lain') : formMasuk.jenis_invoice}
-                                  </span>
-                                </div>
-                              )}
-                              {formMasuk.so_selected_ids && formMasuk.so_selected_ids.length > 0 && (
-                                <div className="flex items-start justify-between text-[11px]">
-                                  <span className="text-text-light shrink-0">No SO</span>
-                                  <div className="flex gap-1 flex-wrap justify-end max-w-[160px]">
-                                    {formMasuk.so_selected_ids.map(id => (
-                                      <span key={id} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-[9px] font-mono font-bold">{id}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {formMasuk.total_setelah_pajak > 0 && (
-                                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border-main/40">
-                                  <span className="text-text-light">Total</span>
-                                  <span className="font-black text-accent tabular-nums">
-                                    Rp {Number(formMasuk.total_setelah_pajak).toLocaleString('id-ID')},00
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                      {/* Keterangan */}
+                      <div>
+                        <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Keterangan Invoice</label>
+                        <textarea
+                          value={formMasuk.keterangan_invoice}
+                          onChange={e => setFormMasuk(p => ({ ...p, keterangan_invoice: e.target.value }))}
+                          placeholder="Catatan tambahan mengenai invoice ini..."
+                          rows={2}
+                          className="input-field text-[12px] w-full resize-none leading-relaxed"
+                        />
                       </div>
                     </div>
 
@@ -1641,9 +1921,9 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <div className="flex items-center justify-between px-8 py-4 border-t border-border-main bg-slate-50/80 shrink-0 rounded-b-2xl">
                       <div className="text-[10px] text-text-light">
                         {editingMasuk ? (
-                          <span className="flex items-center gap-1.5"><Icon name="Edit3" size={10} /> Mengubah data yang sudah ada</span>
+                          <span className="flex items-center gap-1.5"><Icon name="Edit3" size={10} /> Mengubah data tagihan</span>
                         ) : (
-                          <span className="flex items-center gap-1.5"><Icon name="Plus" size={10} /> Data baru akan tersimpan ke database</span>
+                          <span className="flex items-center gap-1.5"><Icon name="Plus" size={10} /> Menyimpan tagihan vendor</span>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
@@ -1660,7 +1940,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         <button
                           onClick={handleSaveMasuk}
                           disabled={savingMasuk}
-                          className="btn-primary px-7 h-9 text-[12px] font-bold flex items-center gap-2 min-w-[120px] justify-center"
+                          className="btn-primary px-6 h-9 text-[12px] font-bold flex items-center gap-2"
                         >
                           {savingMasuk ? (
                             <><Icon name="Loader2" size={13} className="animate-spin" /> Menyimpan...</>

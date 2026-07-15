@@ -24,10 +24,16 @@ function terbilang(n: number): string {
   return '';
 }
 
-export const InvoiceDetailModal = ({ data, onClose, so, jurnal, onSOClick, onJurnalClick }: any) => {
+export const InvoiceDetailModal = ({ data, onClose, so, jurnal, invoices, onSOClick, onJurnalClick }: any) => {
   if (!data) return null;
 
   const inv = data;
+  const getSjStatus = (soId: string) => {
+    const sjRecord = (invoices || []).find((i: any) =>
+      i.tipe === 'surat_jalan' && (i.so_order_ids || []).includes(soId)
+    );
+    return sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
+  };
   const soOrderIds: string[] = inv.so_order_ids || [];
   const soDetails = soOrderIds.map((soId: string) => so.find((x: any) => x.order_id === soId) || { order_id: soId, _notFound: true });
 
@@ -312,13 +318,28 @@ export const InvoiceDetailModal = ({ data, onClose, so, jurnal, onSOClick, onJur
                       <tr><td colSpan={3} className="py-3 text-center text-text-light italic text-[10px]">Tidak ada data SO</td></tr>
                     ) : soDetails.map((s: any) => (
                       <tr key={s.order_id} className="hover:bg-slate-50 transition-colors">
-                        <td>
-                          <button
-                            className="text-[11px] font-black text-accent uppercase tracking-tight hover:underline text-left"
-                            onClick={() => onSOClick && onSOClick(s.order_id)}
-                          >
-                            {s.order_id}
-                          </button>
+                        <td className="py-2.5">
+                          <div className="flex flex-col gap-1">
+                            <button
+                              className="text-[11px] font-black text-accent uppercase tracking-tight hover:underline text-left"
+                              onClick={() => onSOClick && onSOClick(s.order_id)}
+                            >
+                              {s.order_id}
+                            </button>
+                            {(() => {
+                              const statusSj = getSjStatus(s.order_id);
+                              let badgeColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                              if (statusSj === 'Verified') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                              else if (statusSj === 'Diterima Kantor' || statusSj === 'Diterima') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                              else if (statusSj === 'Sedang Dikirim') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+
+                              return (
+                                <span className={`inline-block px-1.5 py-0.2 rounded text-[7.5px] font-black uppercase tracking-wider border self-start ${badgeColor}`}>
+                                  SJ: {statusSj}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </td>
                         {s._notFound ? (
                           <td colSpan={2} className="text-text-light italic opacity-50 text-[9px]">Data tidak tersedia</td>
@@ -380,11 +401,11 @@ export const InvoiceDetailModal = ({ data, onClose, so, jurnal, onSOClick, onJur
             </div>
 
             {/* Document Delivery Status */}
-            {(inv.status_dokumen || inv.gdrive_url || inv.no_resi) && (
+            {((inv.tipe !== 'masuk' && (inv.status_dokumen || inv.no_resi)) || inv.gdrive_url) && (
               <div className="border-t border-border-main/40 pt-4 space-y-3">
-                <div className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60">Status Kirim & Dokumen Fisik</div>
+                <div className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60">Dokumen & Pengiriman</div>
                 <div className="p-3 bg-[#F5F4F1]/60 rounded-xl border border-border-main/40 space-y-2 text-[11px] font-bold text-text-med">
-                  {inv.status_dokumen && (
+                  {inv.tipe !== 'masuk' && inv.status_dokumen && (
                     <div className="flex items-center gap-2">
                       <span className="text-text-light w-16 shrink-0 font-medium">Status</span>
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
@@ -401,7 +422,7 @@ export const InvoiceDetailModal = ({ data, onClose, so, jurnal, onSOClick, onJur
                       </a>
                     </div>
                   )}
-                  {inv.no_resi && (
+                  {inv.tipe !== 'masuk' && inv.no_resi && (
                     <div className="flex items-center gap-2">
                       <span className="text-text-light w-16 shrink-0 font-medium">Ekspedisi</span>
                       <div className="flex items-center gap-2 min-w-0 flex-1">
