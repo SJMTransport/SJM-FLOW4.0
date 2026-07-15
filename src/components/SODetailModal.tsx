@@ -323,18 +323,27 @@ export const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUse
               const sjRecord = (invoices || []).find((inv: any) =>
                 inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(data.order_id)
               );
-              const statusSj = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
-              const resiSj = sjRecord ? (sjRecord.no_resi || '') : '';
-              const tglKirimSj = sjRecord ? sjRecord.ekspedisi : '';
-              const tglTerimaSj = sjRecord ? sjRecord.tgl_kirim : '';
+              const rawStatus = sjRecord ? (sjRecord.status_dokumen || 'Belum Diterima') : 'Belum Diterima';
+              let statusSj = 'Surat jalan belum diterima';
+              let badgeColor = 'bg-red-brand-light text-red-brand border-red-brand/20';
 
-              let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-              if (statusSj === 'Verified') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-              else if (statusSj === 'Diterima Kantor' || statusSj === 'Diterima') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-              else if (statusSj === 'Sedang Dikirim') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+              if (rawStatus === 'Verified') {
+                statusSj = 'Verified';
+                badgeColor = 'bg-green-brand-light text-green-brand border-green-brand/20';
+              } else if (rawStatus.startsWith('Diterima oleh') || rawStatus === 'Diterima Kantor') {
+                statusSj = rawStatus;
+                badgeColor = 'bg-blue-brand-light text-blue-brand border-blue-brand/20';
+              } else if (rawStatus === 'Terkirim ke Customer' || rawStatus === 'Sudah dikirim ke Customer') {
+                statusSj = 'Sudah dikirim ke Customer';
+                badgeColor = 'bg-yellow-brand-light text-yellow-brand border-yellow-brand/20';
+              }
+
+              const resiSj = sjRecord ? (sjRecord.no_resi || '') : '';
+              const ekspedisiSj = sjRecord ? (sjRecord.ekspedisi || '') : '';
+              const tglKirimSj = sjRecord ? (sjRecord.tgl_kirim || '') : '';
 
               return (
-                <div className="bg-white rounded-xl border border-border-main/60 p-5 space-y-3 shadow-sm">
+                <div className="bg-white rounded-xl border border-border-main/60 p-5 space-y-3 shadow-sm animate-fade-in">
                   <div className="flex justify-between items-center text-[8px] font-bold text-text-light uppercase tracking-widest opacity-60">
                     <span>Pelacakan Surat Jalan (POD)</span>
                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border ${badgeColor}`}>
@@ -343,20 +352,18 @@ export const SODetailModal = ({ data, onClose, coa, jurnal, invoices, currentUse
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-[11px] pt-1">
                     <div>
-                      <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">No Resi / Kurir</span>
+                      <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">No Resi / Keterangan</span>
                       <span className="font-bold text-text-main">{resiSj || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">Tgl Kirim Dokumen</span>
-                      <span className="font-bold text-text-main">
-                        {tglKirimSj ? new Date(tglKirimSj).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                      </span>
+                      <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">Ekspedisi / Kurir</span>
+                      <span className="font-bold text-text-main">{ekspedisiSj || '—'}</span>
                     </div>
-                    <div className="col-span-2 pt-2.5 border-t border-border-main/20 flex justify-between items-center">
+                    <div className="col-span-2 pt-2 border-t border-border-main/20 flex justify-between items-center">
                       <div>
-                        <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">Tgl Terima Kantor</span>
+                        <span className="text-text-light block text-[9px] uppercase tracking-wider font-bold mb-0.5">Tanggal Kirim / Terima</span>
                         <span className="font-bold text-text-main">
-                          {tglTerimaSj ? new Date(tglTerimaSj).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                          {tglKirimSj ? fmtDate(tglKirimSj) : '—'}
                         </span>
                       </div>
                       {data.surat_jalan && (

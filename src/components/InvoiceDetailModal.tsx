@@ -32,7 +32,7 @@ export const InvoiceDetailModal = ({ data, onClose, so, jurnal, invoices, onSOCl
     const sjRecord = (invoices || []).find((i: any) =>
       i.tipe === 'surat_jalan' && (i.so_order_ids || []).includes(soId)
     );
-    return sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
+    return sjRecord ? (sjRecord.status_dokumen || 'Belum Diterima') : 'Belum Diterima';
   };
   const soOrderIds: string[] = inv.so_order_ids || [];
   const soDetails = soOrderIds.map((soId: string) => so.find((x: any) => x.order_id === soId) || { order_id: soId, _notFound: true });
@@ -327,11 +327,20 @@ export const InvoiceDetailModal = ({ data, onClose, so, jurnal, invoices, onSOCl
                               {s.order_id}
                             </button>
                             {(() => {
-                              const statusSj = getSjStatus(s.order_id);
-                              let badgeColor = 'bg-slate-100 text-slate-600 border-slate-200';
-                              if (statusSj === 'Verified') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                              else if (statusSj === 'Diterima Kantor' || statusSj === 'Diterima') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-                              else if (statusSj === 'Sedang Dikirim') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                              const rawStatus = getSjStatus(s.order_id);
+                              let statusSj = 'Surat jalan belum diterima';
+                              let badgeColor = 'bg-red-brand-light text-red-brand border-red-brand/20';
+
+                              if (rawStatus === 'Verified') {
+                                statusSj = 'Verified';
+                                badgeColor = 'bg-green-brand-light text-green-brand border-green-brand/20';
+                              } else if (rawStatus.startsWith('Diterima oleh') || rawStatus === 'Diterima Kantor') {
+                                statusSj = rawStatus;
+                                badgeColor = 'bg-blue-brand-light text-blue-brand border-blue-brand/20';
+                              } else if (rawStatus === 'Terkirim ke Customer' || rawStatus === 'Sudah dikirim ke Customer') {
+                                statusSj = 'Sudah dikirim ke Customer';
+                                badgeColor = 'bg-yellow-brand-light text-yellow-brand border-yellow-brand/20';
+                              }
 
                               return (
                                 <span className={`inline-block px-1.5 py-0.2 rounded text-[7.5px] font-black uppercase tracking-wider border self-start ${badgeColor}`}>

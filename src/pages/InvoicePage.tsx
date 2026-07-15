@@ -96,8 +96,8 @@ const VendorCombobox: React.FC<VendorComboboxProps> = ({
                   setVendorCustom(false);
                   setVendorDropdownOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-[12px] hover:bg-purple-50 transition-colors ${
-                  value === v ? 'bg-purple-50 text-purple-700 font-bold' : 'text-text-main'
+                className={`w-full text-left px-3 py-2 text-[12px] hover:bg-accent-light transition-colors ${
+                  value === v ? 'bg-accent-light text-accent font-bold' : 'text-text-main'
                 }`}
               >
                 {v}
@@ -113,7 +113,7 @@ const VendorCombobox: React.FC<VendorComboboxProps> = ({
                 setVendorCustom(true);
                 setVendorDropdownOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-[11px] text-purple-600 font-bold hover:bg-purple-50 flex items-center gap-1.5"
+              className="w-full text-left px-3 py-2 text-[11px] text-accent font-bold hover:bg-accent-light flex items-center gap-1.5"
             >
               <Icon name="Plus" size={11} /> Input vendor manual
             </button>
@@ -169,7 +169,7 @@ const SOMultiSelect: React.FC<SOMultiSelectProps> = ({
             selected.map((id) => (
               <span
                 key={id}
-                className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-bold text-[9px] flex items-center gap-1"
+                className="px-1.5 py-0.5 bg-accent-light text-accent rounded font-bold text-[9px] flex items-center gap-1"
               >
                 {id}
                 <button
@@ -208,13 +208,13 @@ const SOMultiSelect: React.FC<SOMultiSelectProps> = ({
                   key={soId}
                   type="button"
                   onClick={() => toggle(soId)}
-                  className={`w-full text-left px-3 py-2 text-[11px] flex items-center gap-2 hover:bg-purple-50 transition-colors ${
-                    selectedSet.has(soId) ? 'bg-purple-50 font-bold text-purple-700' : 'text-text-main'
+                  className={`w-full text-left px-3 py-2 text-[11px] flex items-center gap-2 hover:bg-accent-light transition-colors ${
+                    selectedSet.has(soId) ? 'bg-accent-light font-bold text-accent' : 'text-text-main'
                   }`}
                 >
                   <div
                     className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 ${
-                      selectedSet.has(soId) ? 'bg-purple-600 border-purple-600' : 'border-border-main'
+                      selectedSet.has(soId) ? 'bg-accent border-accent' : 'border-border-main'
                     }`}
                   >
                     {selectedSet.has(soId) && <Icon name="Check" size={9} className="text-white" />}
@@ -291,7 +291,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const [filterSjSearch, setFilterSjSearch] = useState('');
   const [filterSjStatus, setFilterSjStatus] = useState('all');
   const [formSj, setFormSj] = useState({
-    status_dokumen: 'Belum Dikirim',
+    status_dokumen: 'Surat jalan belum diterima',
+    status_user: '',
     no_resi: '',
     tgl_kirim: '',
     ekspedisi: '',
@@ -622,8 +623,24 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     const sjRecord = invoices.find((inv: any) => 
       inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
     );
+    let status_dokumen = 'Surat jalan belum diterima';
+    let status_user = '';
+    if (sjRecord) {
+      const dbStatus = sjRecord.status_dokumen || 'Belum Diterima';
+      if (dbStatus.startsWith('Diterima oleh ')) {
+        status_dokumen = 'Diterima Kantor';
+        status_user = dbStatus.replace('Diterima oleh ', '');
+      } else if (dbStatus === 'Terkirim ke Customer' || dbStatus === 'Sudah dikirim ke Customer') {
+        status_dokumen = 'Sudah dikirim ke Customer';
+      } else if (dbStatus === 'Verified') {
+        status_dokumen = 'Verified';
+      } else {
+        status_dokumen = dbStatus === 'Belum Diterima' ? 'Surat jalan belum diterima' : dbStatus;
+      }
+    }
     setFormSj({
-      status_dokumen: sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim',
+      status_dokumen,
+      status_user,
       no_resi: sjRecord ? (sjRecord.no_resi || '') : '',
       tgl_kirim: sjRecord ? (sjRecord.tgl_kirim || '') : '',
       ekspedisi: sjRecord ? (sjRecord.ekspedisi || '') : '',
@@ -641,11 +658,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(soId)
       );
 
+      let finalStatus = formSj.status_dokumen;
+      if (finalStatus === 'Diterima Kantor') {
+        finalStatus = `Diterima oleh ${formSj.status_user.trim() || currentUser?.name || 'Staff'}`;
+      } else if (finalStatus === 'Sudah dikirim ke Customer') {
+        finalStatus = 'Terkirim ke Customer';
+      } else if (finalStatus === 'Surat jalan belum diterima') {
+        finalStatus = 'Belum Diterima';
+      }
+
       const payload = {
         no_invoice: `SJ-${soId}`,
         customer: editingSj.customer || '',
         so_order_ids: [soId],
-        status_dokumen: formSj.status_dokumen,
+        status_dokumen: finalStatus,
         no_resi: formSj.no_resi,
         tgl_kirim: formSj.tgl_kirim || null,
         ekspedisi: formSj.ekspedisi || '',
@@ -714,19 +740,19 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     const list = so || [];
     let verified = 0;
     let kantor = 0;
-    let kirim = 0;
+    let cust = 0;
     let belum = 0;
     list.forEach((s: any) => {
       const sjRecord = invoices.find((inv: any) =>
         inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
       );
-      const status = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
-      if (status === 'Verified') verified++;
-      else if (status === 'Diterima Kantor' || status === 'Diterima') kantor++;
-      else if (status === 'Sedang Dikirim') kirim++;
+      const rawStatus = sjRecord ? (sjRecord.status_dokumen || 'Belum Diterima') : 'Belum Diterima';
+      if (rawStatus === 'Verified') verified++;
+      else if (rawStatus.startsWith('Diterima oleh') || rawStatus === 'Diterima Kantor') kantor++;
+      else if (rawStatus === 'Terkirim ke Customer' || rawStatus === 'Sudah dikirim ke Customer') cust++;
       else belum++;
     });
-    return { total: list.length, verified, kantor, kirim, belum };
+    return { total: list.length, verified, kantor, cust, belum };
   }, [so, invoices]);
 
   const filteredSjList = useMemo(() => {
@@ -741,8 +767,22 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       const sjRecord = invoices.find((inv: any) =>
         inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
       );
-      const statusSj = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
-      const matchStatus = filterSjStatus === 'all' || statusSj === filterSjStatus;
+      const rawStatus = sjRecord ? (sjRecord.status_dokumen || 'Belum Diterima') : 'Belum Diterima';
+
+      let matchStatus = true;
+      if (filterSjStatus !== 'all') {
+        if (filterSjStatus === 'Verified') {
+          matchStatus = rawStatus === 'Verified';
+        } else if (filterSjStatus === 'Diterima Kantor') {
+          matchStatus = rawStatus.startsWith('Diterima oleh') || rawStatus === 'Diterima Kantor';
+        } else if (filterSjStatus === 'Sudah dikirim ke Customer') {
+          matchStatus = rawStatus === 'Terkirim ke Customer' || rawStatus === 'Sudah dikirim ke Customer';
+        } else if (filterSjStatus === 'Surat jalan belum diterima') {
+          matchStatus = rawStatus === 'Belum Diterima' || rawStatus === 'Surat jalan belum diterima' || !rawStatus;
+        } else {
+          matchStatus = rawStatus === filterSjStatus;
+        }
+      }
 
       return matchQuery && matchStatus;
     });
@@ -1139,8 +1179,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               { key: 'all', label: 'Total Surat Jalan', value: String(sjKpiData.total), icon: 'Database', color: 'var(--color-text-main)' },
               { key: 'Verified', label: 'Verified', value: String(sjKpiData.verified), icon: 'CheckCircle', color: 'var(--color-success)' },
               { key: 'Diterima Kantor', label: 'Diterima Kantor', value: String(sjKpiData.kantor), icon: 'Briefcase', color: 'var(--color-info)' },
-              { key: 'Sedang Dikirim', label: 'Sedang Dikirim', value: String(sjKpiData.kirim), icon: 'Truck', color: 'var(--color-warning)' },
-              { key: 'Belum Dikirim', label: 'Belum Dikirim', value: String(sjKpiData.belum), icon: 'Clock', color: 'var(--color-error)' },
+              { key: 'Sudah dikirim ke Customer', label: 'Terkirim ke Customer', value: String(sjKpiData.cust), icon: 'Send', color: 'var(--color-warning)' },
+              { key: 'Surat jalan belum diterima', label: 'Belum Diterima', value: String(sjKpiData.belum), icon: 'Clock', color: 'var(--color-error)' },
             ].map(card => {
               const active = filterSjStatus === card.key;
               return (
@@ -1148,7 +1188,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   key={card.key}
                   onClick={() => setFilterSjStatus(card.key)}
                   className={`card text-left p-4 relative overflow-hidden transition-all duration-200 cursor-pointer ${
-                    active ? 'ring-2 ring-purple-600 shadow-md' : 'hover:shadow-md'
+                    active ? 'ring-2 ring-accent shadow-md' : 'hover:shadow-md'
                   }`}
                 >
                   <div className="flex justify-between items-start">
@@ -1183,7 +1223,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   />
                 </div>
                 {filterSjStatus !== 'all' && (
-                  <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-[9px] font-black uppercase tracking-wider">
+                  <span className="px-2.5 py-1 bg-accent-light text-accent rounded-full text-[9px] font-black uppercase tracking-wider">
                     Status: {filterSjStatus}
                   </span>
                 )}
@@ -1208,7 +1248,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
           />
 
           {/* Table */}
-          <div className="table-container bg-white shadow-sm">
+          <div className="table-container max-h-[calc(100vh-380px)] bg-white">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr>
@@ -1240,15 +1280,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     const sjRecord = invoices.find((inv: any) =>
                       inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(s.order_id)
                     );
-                    const status = sjRecord ? (sjRecord.status_dokumen || 'Belum Dikirim') : 'Belum Dikirim';
-                    const colorMap: Record<string, string> = {
-                      'Verified': 'bg-green-50 text-green-700 border-green-200',
-                      'Diterima Kantor': 'bg-blue-50 text-blue-700 border-blue-200',
-                      'Diterima': 'bg-blue-50 text-blue-700 border-blue-200',
-                      'Sedang Dikirim': 'bg-amber-50 text-amber-700 border-amber-200',
-                      'Belum Dikirim': 'bg-red-50 text-red-700 border-red-200',
-                    };
-                    const statusClass = colorMap[status] || 'bg-slate-50 text-slate-700 border-slate-200';
+                    const dbStatus = sjRecord ? (sjRecord.status_dokumen || 'Belum Diterima') : 'Belum Diterima';
+                    let displayStatus = 'Surat jalan belum diterima';
+                    let statusColorClass = 'bg-red-brand-light text-red-brand border-red-brand/20';
+
+                    if (dbStatus === 'Verified') {
+                      displayStatus = 'Verified';
+                      statusColorClass = 'bg-green-brand-light text-green-brand border-green-brand/20';
+                    } else if (dbStatus.startsWith('Diterima oleh') || dbStatus === 'Diterima Kantor') {
+                      displayStatus = dbStatus;
+                      statusColorClass = 'bg-blue-brand-light text-blue-brand border-blue-brand/20';
+                    } else if (dbStatus === 'Terkirim ke Customer' || dbStatus === 'Sudah dikirim ke Customer') {
+                      displayStatus = 'Sudah dikirim ke Customer';
+                      statusColorClass = 'bg-yellow-brand-light text-yellow-brand border-yellow-brand/20';
+                    }
 
                     return (
                       <tr key={s.id} className="hover:bg-slate-50/50">
@@ -1256,36 +1301,43 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         <td>
                           <button
                             onClick={() => onSOClick?.(s.order_id)}
-                            className="font-bold text-primary hover:underline font-mono text-[12px]"
+                            className="font-black text-accent hover:underline uppercase tracking-tight text-[11px]"
                           >
                             {s.order_id}
                           </button>
                         </td>
                         <td>
-                          <div className="font-bold text-text-main">{s.customer}</div>
-                          <div className="text-[11px] text-text-light mt-0.5">{s.wilayah}</div>
+                          <div className="font-bold text-text-main text-[12px]">{s.customer}</div>
+                          <div className="text-[10px] text-text-light mt-0.5">{s.wilayah}</div>
                         </td>
                         <td>{s.nama_vendor || s.armada || '-'}</td>
                         <td>{s.nama_sopir || '-'}</td>
                         <td>
-                          <span className={`px-2 py-0.5 border rounded-full text-[10px] font-black uppercase tracking-wider ${statusClass}`}>
-                            {status}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`px-2.5 py-0.5 border rounded-full text-[9px] font-black uppercase tracking-wider ${statusColorClass}`}>
+                              {displayStatus}
+                            </span>
+                            {displayStatus === 'Surat jalan belum diterima' && (s.status_muatan === 'Arrived' || s.status_muatan === 'Completed') && (
+                              <span className="px-2 py-0.5 bg-green-brand-light text-green-brand border border-green-brand/20 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                <Icon name="Check" size={10} /> Sudah Bongkar
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="max-w-[150px] truncate" title={sjRecord?.no_resi || '-'}>
+                        <td className="max-w-[150px] truncate text-[12px]" title={sjRecord?.no_resi || '-'}>
                           {sjRecord?.no_resi || '-'}
                         </td>
-                        <td className="tabular-nums">
+                        <td className="tabular-nums text-[12px]">
                           {sjRecord?.tgl_kirim ? fmtDate(sjRecord.tgl_kirim) : '-'}
                         </td>
-                        <td>{sjRecord?.ekspedisi || '-'}</td>
+                        <td className="text-[12px]">{sjRecord?.ekspedisi || '-'}</td>
                         <td>
                           {s.surat_jalan ? (
                             <a
                               href={s.surat_jalan}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[12px] font-bold text-purple-600 hover:text-purple-800 hover:underline flex items-center gap-1"
+                              className="text-[12px] font-bold text-accent hover:text-accent-dark hover:underline flex items-center gap-1"
                             >
                               <Icon name="ExternalLink" size={12} /> Buka Drive
                             </a>
@@ -1296,7 +1348,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         <td className="text-center">
                           <button
                             onClick={() => openEditFormSj(s)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-600 transition-all border border-slate-200/50"
+                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-accent-light text-slate-600 hover:text-accent transition-all border border-slate-200/50"
                           >
                             <Icon name="Edit3" size={13} />
                           </button>
@@ -1326,7 +1378,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               >
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border-main shrink-0">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-accent-light text-accent flex items-center justify-center">
                       <Icon name="Truck" size={14} />
                     </div>
                     <div>
@@ -1350,20 +1402,20 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   <div>
                     <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Surat Jalan</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {['Belum Dikirim', 'Sedang Dikirim', 'Diterima Kantor', 'Verified'].map(opt => {
+                      {['Surat jalan belum diterima', 'Diterima Kantor', 'Sudah dikirim ke Customer', 'Verified'].map(opt => {
                         const active = formSj.status_dokumen === opt;
                         const colors: Record<string, string> = {
                           'Verified': active ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'hover:border-green-300 hover:text-green-700',
                           'Diterima Kantor': active ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'hover:border-blue-300 hover:text-blue-700',
-                          'Sedang Dikirim': active ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'hover:border-amber-300 hover:text-amber-700',
-                          'Belum Dikirim': active ? 'bg-red-500 text-white border-red-500 shadow-sm' : 'hover:border-red-300 hover:text-red-700',
+                          'Sudah dikirim ke Customer': active ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'hover:border-amber-300 hover:text-amber-700',
+                          'Surat jalan belum diterima': active ? 'bg-red-500 text-white border-red-500 shadow-sm' : 'hover:border-red-300 hover:text-red-700',
                         };
                         return (
                           <button
                             key={opt}
                             type="button"
                             onClick={() => setFormSj(p => ({ ...p, status_dokumen: opt }))}
-                            className={`py-2 rounded-xl text-[10px] font-bold border-2 transition-all text-center ${
+                            className={`py-2 px-1 rounded-xl text-[9px] font-bold border-2 transition-all text-center leading-tight ${
                               active ? colors[opt] : 'bg-white text-text-med border-border-main ' + colors[opt]
                             }`}
                           >
@@ -1373,6 +1425,19 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                       })}
                     </div>
                   </div>
+
+                  {/* Nama Penerima (hanya jika Diterima Kantor) */}
+                  {formSj.status_dokumen === 'Diterima Kantor' && (
+                    <div className="animate-fade-in">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Diterima Oleh (Nama Staff)</label>
+                      <input
+                        value={formSj.status_user}
+                        onChange={e => setFormSj(p => ({ ...p, status_user: e.target.value }))}
+                        placeholder="Masukkan nama staff penerima..."
+                        className="input-field h-9 text-[12px] w-full hover:border-border-dark"
+                      />
+                    </div>
+                  )}
 
                   {/* No Resi / Info */}
                   <div>
@@ -1712,8 +1777,12 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   const sjRecord = invoices.find((inv: any) =>
                     inv.tipe === 'surat_jalan' && (inv.so_order_ids || []).includes(soId)
                   );
-                  const statusSj = sjRecord ? sjRecord.status_dokumen : 'Belum Diterima';
-                  const isVerified = statusSj === 'Verified' || statusSj === 'Diterima Kantor' || statusSj === 'Diterima';
+                  const statusSj = sjRecord ? (sjRecord.status_dokumen || 'Belum Diterima') : 'Belum Diterima';
+                  const isVerified = statusSj === 'Verified' || 
+                                     statusSj.startsWith('Diterima oleh') || 
+                                     statusSj === 'Diterima Kantor' ||
+                                     statusSj === 'Terkirim ke Customer' ||
+                                     statusSj === 'Sudah dikirim ke Customer';
                   
                   return matchVendor && isVerified;
                 })
