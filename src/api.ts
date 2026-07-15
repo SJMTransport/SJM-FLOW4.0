@@ -794,6 +794,68 @@ export const api = {
     if (error) throw new Error(error.message || 'Gagal update dokumen invoice');
   },
 
+  // Invoice Masuk (incoming vendor invoices)
+  addInvoiceMasuk: async (invoice: {
+    no_invoice: string;
+    tgl_invoice: string;
+    customer: string;         // Nama Vendor (reusing customer field)
+    so_order_ids: string[];   // Linked SO IDs
+    total_setelah_pajak: number;
+    status: string;           // Belum Diterima / Diterima / Diserahkan ke
+    keterangan_invoice?: string;
+    // Surat Jalan fields (reusing tracking columns)
+    tgl_kirim?: string;         // Tanggal Terima SJ
+    ekspedisi?: string;         // Tanggal Penyerahan SJ
+    status_dokumen?: string;    // Status Surat Jalan
+    no_resi?: string;           // Keterangan Surat Jalan
+    company_id?: string;
+  }) => {
+    const { data: res, error } = await supabase.from('invoices').insert([{
+      no_invoice:          invoice.no_invoice,
+      tgl_invoice:         invoice.tgl_invoice,
+      customer:            invoice.customer,
+      so_order_ids:        invoice.so_order_ids || [],
+      so_ids:              [],
+      total_sebelum_pajak: 0,
+      ppn:                 0,
+      total_setelah_pajak: invoice.total_setelah_pajak,
+      tipe:                'masuk',
+      status:              invoice.status || 'Belum Diterima',
+      keterangan_invoice:  invoice.keterangan_invoice || '',
+      tgl_kirim:           invoice.tgl_kirim || null,
+      ekspedisi:           invoice.ekspedisi || '',
+      status_dokumen:      invoice.status_dokumen || 'Belum Diterima',
+      no_resi:             invoice.no_resi || '',
+      status_bayar:        'Belum Bayar',
+      total_terbayar:      0,
+      company_id:          invoice.company_id,
+    }]).select();
+    if (error) throw new Error(error.message || 'Gagal simpan invoice masuk');
+    return res?.[0];
+  },
+
+  updateInvoiceMasuk: async (id: string, data: {
+    no_invoice?: string;
+    tgl_invoice?: string;
+    customer?: string;
+    so_order_ids?: string[];
+    total_setelah_pajak?: number;
+    status?: string;
+    keterangan_invoice?: string;
+    tgl_kirim?: string;
+    ekspedisi?: string;
+    status_dokumen?: string;
+    no_resi?: string;
+  }) => {
+    const { error } = await supabase
+      .from('invoices')
+      .update(data)
+      .eq('id', id);
+    if (error) throw new Error(error.message || 'Gagal update invoice masuk');
+  },
+
+
+
   getQuotations: async () => {
     const { data, error } = await supabase
       .from('quotations')

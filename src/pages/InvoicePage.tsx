@@ -106,6 +106,30 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   });
   const [savingDokumen, setSavingDokumen] = useState(false);
 
+  // ── Invoice Masuk state
+  const [invoiceMasukList, setInvoiceMasukList] = useState<any[]>([]);
+  const [loadingMasuk, setLoadingMasuk] = useState(false);
+  const [showFormMasuk, setShowFormMasuk] = useState(false);
+  const [editingMasuk, setEditingMasuk] = useState<any | null>(null);
+  const [savingMasuk, setSavingMasuk] = useState(false);
+  const [filterMasukSearch, setFilterMasukSearch] = useState('');
+  const [formMasuk, setFormMasuk] = useState({
+    no_invoice:         '',
+    tgl_invoice:        new Date().toISOString().split('T')[0],
+    customer:           '', // Nama Vendor
+    so_order_ids_raw:   '', // comma-separated SO IDs
+    total_setelah_pajak: 0,
+    status:             'Belum Diterima',
+    status_user:        '', // nama user untuk status diterima/diserahkan
+    keterangan_invoice: '',
+    // Surat Jalan
+    sj_tgl_terima:      '',
+    sj_tgl_serah:       '',
+    sj_status:          'Belum Diterima',
+    sj_status_user:     '',
+    sj_keterangan:      '',
+  });
+
   // ── Load all invoices
   const loadInvoices = async () => {
     setLoadingInvoices(true);
@@ -172,6 +196,154 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     };
     suggest();
   }, [activeTab, tglInvoice]);
+
+  // ── Load Invoice Masuk on tab change
+  const loadInvoiceMasuk = async () => {
+    setLoadingMasuk(true);
+    try {
+      const all = await api.getInvoices();
+      setInvoiceMasukList(all.filter((inv: any) => inv.tipe === 'masuk'));
+    } catch (err: any) {
+      showToast('Gagal memuat Invoice Masuk: ' + err.message, 'error');
+    } finally {
+      setLoadingMasuk(false);
+    }
+  };
+
+  useEffect(() => {
+    if (invoiceTypeTab === 'masuk') loadInvoiceMasuk();
+  }, [invoiceTypeTab]);
+
+  const openNewFormMasuk = () => {
+    setEditingMasuk(null);
+    setFormMasuk({
+      no_invoice: '',
+      tgl_invoice: new Date().toISOString().split('T')[0],
+      customer: '',
+      so_order_ids_raw: '',
+      total_setelah_pajak: 0,
+      status: 'Belum Diterima',
+      status_user: '',
+      keterangan_invoice: '',
+      sj_tgl_terima: '',
+      sj_tgl_serah: '',
+      sj_status: 'Belum Diterima',
+      sj_status_user: '',
+      sj_keterangan: '',
+    });
+    setShowFormMasuk(true);
+  };
+
+  const openEditFormMasuk = (inv: any) => {
+    setEditingMasuk(inv);
+    // Parse stored status: "Diterima oleh Budi" or "Diserahkan ke Ani"
+    let status = inv.status || 'Belum Diterima';
+    let status_user = '';
+    if (status.startsWith('Diterima oleh ')) {
+      status_user = status.replace('Diterima oleh ', '');
+      status = 'Diterima oleh';
+    } else if (status.startsWith('Diserahkan ke ')) {
+      status_user = status.replace('Diserahkan ke ', '');
+      status = 'Diserahkan ke';
+    }
+    let sj_status = inv.status_dokumen || 'Belum Diterima';
+    let sj_status_user = '';
+    if (sj_status.startsWith('Diterima oleh ')) {
+      sj_status_user = sj_status.replace('Diterima oleh ', '');
+      sj_status = 'Diterima oleh';
+    } else if (sj_status.startsWith('Diserahkan ke ')) {
+      sj_status_user = sj_status.replace('Diserahkan ke ', '');
+      sj_status = 'Diserahkan ke';
+    } else if (sj_status.startsWith('Terkirim ke Customer')) {
+      sj_status = 'Terkirim ke Customer';
+    }
+    setFormMasuk({
+      no_invoice: inv.no_invoice || '',
+      tgl_invoice: inv.tgl_invoice || new Date().toISOString().split('T')[0],
+      customer: inv.customer || '',
+      so_order_ids_raw: (inv.so_order_ids || []).join(', '),
+      total_setelah_pajak: inv.total_setelah_pajak || 0,
+      status,
+      status_user,
+      keterangan_invoice: inv.keterangan_invoice || '',
+      sj_tgl_terima: inv.tgl_kirim || '',
+      sj_tgl_serah: inv.ekspedisi || '',
+      sj_status,
+      sj_status_user,
+      sj_keterangan: inv.no_resi || '',
+    });
+    setShowFormMasuk(true);
+  };
+
+  const buildStatusStr = (status: string, user: string) => {
+    if (status === 'Diterima oleh' || status === 'Diserahkan ke') {
+      return `${status} ${user}`.trim();
+    }
+    return status;
+  };
+
+  const handleSaveMasuk = async () => {
+    if (!formMasuk.no_invoice.trim()) {
+      showToast('No Invoice Masuk wajib diisi', 'error'); return;
+    }
+    if (!formMasuk.customer.trim()) {
+      showToast('Nama Vendor wajib diisi', 'error'); return;
+    }
+    setSavingMasuk(true);
+    try {
+      const soIds = formMasuk.so_order_ids_raw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const payload = {
+        no_invoice:          formMasuk.no_invoice.trim(),
+        tgl_invoice:         formMasuk.tgl_invoice,
+        customer:            formMasuk.customer.trim(),
+        so_order_ids:        soIds,
+        total_setelah_pajak: Number(formMasuk.total_setelah_pajak) || 0,
+        status:              buildStatusStr(formMasuk.status, formMasuk.status_user),
+        keterangan_invoice:  formMasuk.keterangan_invoice,
+        tgl_kirim:           formMasuk.sj_tgl_terima || null,
+        ekspedisi:           formMasuk.sj_tgl_serah || '',
+        status_dokumen:      buildStatusStr(formMasuk.sj_status, formMasuk.sj_status_user),
+        no_resi:             formMasuk.sj_keterangan,
+        company_id:          currentUser?.company_id,
+      };
+
+      if (editingMasuk) {
+        await api.updateInvoiceMasuk(editingMasuk.id, payload);
+        setInvoiceMasukList(prev => prev.map(inv =>
+          inv.id === editingMasuk.id ? { ...inv, ...payload } : inv
+        ));
+        logAction(`Update Invoice Masuk: ${payload.no_invoice}`);
+        showToast('Invoice Masuk berhasil diperbarui', 'success');
+      } else {
+        const created = await api.addInvoiceMasuk(payload);
+        if (created) setInvoiceMasukList(prev => [created, ...prev]);
+        logAction(`Tambah Invoice Masuk: ${payload.no_invoice}`);
+        showToast('Invoice Masuk berhasil disimpan', 'success');
+      }
+      setShowFormMasuk(false);
+      setEditingMasuk(null);
+    } catch (err: any) {
+      showToast('Gagal simpan: ' + err.message, 'error');
+    } finally {
+      setSavingMasuk(false);
+    }
+  };
+
+  const handleDeleteMasuk = async (inv: any) => {
+    if (!window.confirm(`Hapus Invoice Masuk ${inv.no_invoice}?`)) return;
+    try {
+      await api.deleteInvoice(inv.id);
+      setInvoiceMasukList(prev => prev.filter(i => i.id !== inv.id));
+      showToast('Invoice Masuk dihapus', 'success');
+      logAction(`Hapus Invoice Masuk: ${inv.no_invoice}`);
+    } catch (err: any) {
+      showToast('Gagal hapus: ' + err.message, 'error');
+    }
+  };
 
   const handleOpenDetail = (inv: any) => {
     setSelectedPaymentInv(inv);
@@ -619,57 +791,419 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         </div>
       )}
 
-      {invoiceTypeTab === 'masuk' && (
-        <div className="space-y-6 animate-fade-in">
-          {/* KPI Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/30">
-                <Icon name="TrendingDown" size={20} />
+      {invoiceTypeTab === 'masuk' && (() => {
+        const filteredMasuk = invoiceMasukList.filter(inv => {
+          const q = filterMasukSearch.toLowerCase();
+          if (!q) return true;
+          return (
+            (inv.no_invoice || '').toLowerCase().includes(q) ||
+            (inv.customer || '').toLowerCase().includes(q) ||
+            (inv.so_order_ids || []).join(' ').toLowerCase().includes(q)
+          );
+        });
+
+        const totalNominal = invoiceMasukList.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0);
+        const belumDiterima = invoiceMasukList.filter(inv => (inv.status || '') === 'Belum Diterima').length;
+        const sudahDiterima = invoiceMasukList.filter(inv => (inv.status || '').startsWith('Diterima')).length;
+        const sudahDiserahkan = invoiceMasukList.filter(inv => (inv.status || '').startsWith('Diserahkan')).length;
+
+        const MASUK_STATUS_COLOR: Record<string, string> = {
+          'Belum Diterima': '#ef4444',
+          'Diterima': '#3b82f6',
+          'Diserahkan': '#22c55e',
+        };
+        const getMasukStatusColor = (s: string) => {
+          if (!s) return '#94a3b8';
+          if (s.startsWith('Diterima')) return '#3b82f6';
+          if (s.startsWith('Diserahkan')) return '#22c55e';
+          return '#ef4444';
+        };
+        const getSJStatusColor = (s: string) => {
+          if (!s) return '#94a3b8';
+          if (s.startsWith('Terkirim')) return '#22c55e';
+          if (s.startsWith('Diserahkan')) return '#8b5cf6';
+          if (s.startsWith('Diterima')) return '#3b82f6';
+          return '#ef4444';
+        };
+
+        return (
+          <div className="space-y-4 animate-fade-in">
+            {/* KPI Cards */}
+            <KPIGrid cols={4} className="mb-2">
+              <StatCard
+                label="Total Invoice Masuk"
+                value={String(invoiceMasukList.length)}
+                icon="TrendingDown"
+                color="var(--color-text-main)"
+              />
+              <StatCard
+                label="Belum Diterima"
+                value={String(belumDiterima)}
+                icon="Clock"
+                color="#ef4444"
+              />
+              <StatCard
+                label="Sudah Diterima"
+                value={String(sudahDiterima)}
+                icon="CheckSquare"
+                color="#3b82f6"
+              />
+              <StatCard
+                label="Total Nominal"
+                value={fRp(totalNominal)}
+                icon="DollarSign"
+                color="var(--color-accent)"
+              />
+            </KPIGrid>
+
+            {/* Action Bar */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-xs">
+                <Icon name="Search" size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-light" />
+                <input
+                  value={filterMasukSearch}
+                  onChange={e => setFilterMasukSearch(e.target.value)}
+                  placeholder="Cari No Invoice, Vendor, SO..."
+                  className="input-field pl-8 h-8 text-[12px] w-full"
+                />
               </div>
-              <div>
-                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Tagihan Vendor</div>
-                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">Rp 0,00</div>
-              </div>
-            </div>
-            
-            <div className="card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100/30">
-                <Icon name="Clock" size={20} />
-              </div>
-              <div>
-                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Sisa Hutang Belum Dibayar</div>
-                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">Rp 0,00</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={loadInvoiceMasuk}
+                  className="btn-ghost h-8 px-3 text-[11px] flex items-center gap-1.5"
+                  title="Refresh"
+                >
+                  <Icon name="RefreshCw" size={13} className={loadingMasuk ? 'animate-spin' : ''} />
+                  Refresh
+                </button>
+                <button
+                  onClick={openNewFormMasuk}
+                  className="btn-primary h-8 px-4 text-[11px] flex items-center gap-1.5"
+                >
+                  <Icon name="Plus" size={13} />
+                  Tambah Invoice Masuk
+                </button>
               </div>
             </div>
 
-            <div className="card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0 border border-green-100/30">
-                <Icon name="CheckCircle" size={20} />
+            {/* Table */}
+            {loadingMasuk ? (
+              <div className="text-center py-12 text-text-light text-[13px]">Memuat Invoice Masuk...</div>
+            ) : (
+              <div className="table-container max-h-[calc(100vh-390px)]">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="w-[160px]">No Invoice</th>
+                      <th className="w-[105px]">Tgl Invoice</th>
+                      <th className="w-[180px]">Nama Vendor</th>
+                      <th className="w-[150px]">No SO</th>
+                      <th className="w-[130px] text-right">Nominal</th>
+                      <th className="w-[170px]">Status Invoice</th>
+                      <th className="w-[170px]">Status Surat Jalan</th>
+                      <th className="w-[80px] text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-main/30">
+                    {filteredMasuk.length === 0 ? (
+                      <tr><td colSpan={8}><EmptyState colSpan={8} /></td></tr>
+                    ) : filteredMasuk.map(inv => {
+                      const invStatus = inv.status || 'Belum Diterima';
+                      const sjStatus = inv.status_dokumen || 'Belum Diterima';
+                      const invColor = getMasukStatusColor(invStatus);
+                      const sjColor = getSJStatusColor(sjStatus);
+                      return (
+                        <tr key={inv.id} className="hover:bg-purple-50/20 transition-colors group">
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="font-black text-purple-700 italic text-[11px] uppercase tracking-tight">{inv.no_invoice}</div>
+                            {inv.keterangan_invoice && (
+                              <div className="text-[9px] text-text-light opacity-60 italic truncate max-w-[150px]" title={inv.keterangan_invoice}>{inv.keterangan_invoice}</div>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-[11px] text-text-med whitespace-nowrap">{fmtDate(inv.tgl_invoice)}</td>
+                          <td className="py-3 px-4">
+                            <div className="text-[12px] font-bold text-text-main truncate max-w-[170px]" title={inv.customer}>{inv.customer}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-1 flex-wrap">
+                              {(inv.so_order_ids || []).slice(0, 2).map((soId: string) => (
+                                <button
+                                  key={soId}
+                                  onClick={() => onSOClick && onSOClick(soId)}
+                                  className="px-1.5 py-0.5 bg-purple-50 border border-purple-200 rounded-full text-[9px] font-bold text-purple-700 whitespace-nowrap hover:bg-purple-100 transition-colors"
+                                >
+                                  {soId}
+                                </button>
+                              ))}
+                              {(inv.so_order_ids || []).length === 0 && (
+                                <span className="text-[10px] text-text-light opacity-50">—</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">
+                            {fRp(inv.total_setelah_pajak || 0)},00
+                          </td>
+                          <td className="py-3 px-4">
+                            <div>
+                              <span className="badge text-[8px]" style={{ backgroundColor: invColor + '20', color: invColor }}>
+                                {invStatus}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="space-y-0.5">
+                              <span className="badge text-[8px]" style={{ backgroundColor: sjColor + '20', color: sjColor }}>
+                                {sjStatus}
+                              </span>
+                              {inv.tgl_kirim && (
+                                <div className="text-[8px] text-text-light opacity-60">Terima: {fmtDate(inv.tgl_kirim)}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-500 hover:text-purple-700 transition-colors"
+                                onClick={() => openEditFormMasuk(inv)}
+                                title="Edit"
+                              >
+                                <Icon name="Edit3" size={13} />
+                              </button>
+                              <button
+                                className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                                onClick={() => handleDeleteMasuk(inv)}
+                                title="Hapus"
+                              >
+                                <Icon name="Trash2" size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-50 border-t-2 border-border-main">
+                      <td colSpan={4} className="py-3 px-4 text-right text-[9px] italic opacity-50 uppercase tracking-widest">Total Terfilter</td>
+                      <td className="py-3 px-4 text-right text-[12px] font-black text-purple-700 tabular-nums">
+                        {fRp(filteredMasuk.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0))},00
+                      </td>
+                      <td colSpan={3} className="py-3 px-4 text-center text-[11px] font-bold text-text-med">{filteredMasuk.length} records</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
-              <div>
-                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Tagihan Lunas</div>
-                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">0 Invoice</div>
-              </div>
-            </div>
-          </div>
+            )}
 
-          <div className="card p-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200/50 flex items-center justify-center mx-auto text-text-light">
-              <Icon name="TrendingDown" size={28} />
-            </div>
-            <div>
-              <h3 className="text-base font-black text-text-main tracking-tight uppercase leading-none">Direktori Invoice Masuk (Vendor & Ekspedisi)</h3>
-              <p className="text-[11px] text-text-med mt-2 max-w-md mx-auto leading-relaxed">
-                Halaman ini digunakan untuk mengelola seluruh pencatatan invoice/tagihan yang masuk dari para mitra vendor, sopir, dan penyedia jasa ekspedisi.
-              </p>
-            </div>
-            <div className="pt-2">
-              <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wider">Sedang Dalam Rancangan</span>
-            </div>
+            {/* Form Modal — Invoice Masuk */}
+            {showFormMasuk && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={e => { if (e.target === e.currentTarget) setShowFormMasuk(false); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                  {/* Modal Header */}
+                  <div className="sticky top-0 z-10 bg-white border-b border-border-main px-6 py-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-[14px] font-black text-text-main uppercase tracking-wide">
+                        {editingMasuk ? 'Edit Invoice Masuk' : 'Tambah Invoice Masuk'}
+                      </h2>
+                      <p className="text-[10px] text-text-light mt-0.5">Data invoice vendor beserta Surat Jalan</p>
+                    </div>
+                    <button onClick={() => setShowFormMasuk(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                      <Icon name="X" size={16} />
+                    </button>
+                  </div>
+
+                  <div className="px-6 py-5 space-y-6">
+                    {/* Bagian Invoice */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                          <Icon name="FileText" size={12} />
+                        </div>
+                        <h3 className="text-[11px] font-black text-text-main uppercase tracking-wider">Data Invoice Masuk</h3>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">No Invoice Masuk *</label>
+                          <input
+                            value={formMasuk.no_invoice}
+                            onChange={e => setFormMasuk(p => ({ ...p, no_invoice: e.target.value }))}
+                            placeholder="Contoh: INV/VENDOR/001/2026"
+                            className="input-field h-8 text-[12px] w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Tanggal Invoice</label>
+                          <input
+                            type="date"
+                            value={formMasuk.tgl_invoice}
+                            onChange={e => setFormMasuk(p => ({ ...p, tgl_invoice: e.target.value }))}
+                            className="input-field h-8 text-[12px] w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Nama Vendor *</label>
+                          <input
+                            value={formMasuk.customer}
+                            onChange={e => setFormMasuk(p => ({ ...p, customer: e.target.value }))}
+                            placeholder="PT. Nama Vendor..."
+                            className="input-field h-8 text-[12px] w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Nominal Invoice (Rp)</label>
+                          <input
+                            type="number"
+                            value={formMasuk.total_setelah_pajak || ''}
+                            onChange={e => setFormMasuk(p => ({ ...p, total_setelah_pajak: Number(e.target.value) }))}
+                            placeholder="0"
+                            className="input-field h-8 text-[12px] w-full"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">No SO (opsional, pisahkan koma)</label>
+                          <input
+                            value={formMasuk.so_order_ids_raw}
+                            onChange={e => setFormMasuk(p => ({ ...p, so_order_ids_raw: e.target.value }))}
+                            placeholder="SJM.ID-0001.26, SJM.ID-0002.26"
+                            className="input-field h-8 text-[12px] w-full font-mono"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Status Invoice</label>
+                          <div className="flex gap-2 flex-wrap">
+                            {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke'].map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => setFormMasuk(p => ({ ...p, status: opt }))}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                                  formMasuk.status === opt
+                                    ? 'bg-purple-600 text-white border-purple-600'
+                                    : 'bg-white text-text-med border-border-main hover:border-purple-300'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                          {(formMasuk.status === 'Diterima oleh' || formMasuk.status === 'Diserahkan ke') && (
+                            <input
+                              value={formMasuk.status_user}
+                              onChange={e => setFormMasuk(p => ({ ...p, status_user: e.target.value }))}
+                              placeholder={`Nama ${formMasuk.status === 'Diterima oleh' ? 'penerima' : 'penerima serah'}...`}
+                              className="input-field h-8 text-[12px] w-full mt-2"
+                            />
+                          )}
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Keterangan Invoice</label>
+                          <textarea
+                            value={formMasuk.keterangan_invoice}
+                            onChange={e => setFormMasuk(p => ({ ...p, keterangan_invoice: e.target.value }))}
+                            placeholder="Catatan tambahan..."
+                            rows={2}
+                            className="input-field text-[12px] w-full resize-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-border-main/50 relative">
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white px-3 text-[9px] text-text-light font-bold uppercase tracking-widest">Surat Jalan</span>
+                    </div>
+
+                    {/* Bagian Surat Jalan */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                          <Icon name="Truck" size={12} />
+                        </div>
+                        <h3 className="text-[11px] font-black text-text-main uppercase tracking-wider">Data Surat Jalan</h3>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Tanggal Terima SJ</label>
+                          <input
+                            type="date"
+                            value={formMasuk.sj_tgl_terima}
+                            onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_terima: e.target.value }))}
+                            className="input-field h-8 text-[12px] w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Tanggal Penyerahan SJ</label>
+                          <input
+                            type="date"
+                            value={formMasuk.sj_tgl_serah}
+                            onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_serah: e.target.value }))}
+                            className="input-field h-8 text-[12px] w-full"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Status Surat Jalan</label>
+                          <div className="flex gap-2 flex-wrap">
+                            {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke', 'Terkirim ke Customer'].map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => setFormMasuk(p => ({ ...p, sj_status: opt }))}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                                  formMasuk.sj_status === opt
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-text-med border-border-main hover:border-blue-300'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                          {(formMasuk.sj_status === 'Diterima oleh' || formMasuk.sj_status === 'Diserahkan ke') && (
+                            <input
+                              value={formMasuk.sj_status_user}
+                              onChange={e => setFormMasuk(p => ({ ...p, sj_status_user: e.target.value }))}
+                              placeholder={`Nama ${formMasuk.sj_status === 'Diterima oleh' ? 'penerima' : 'penerima serah'}...`}
+                              className="input-field h-8 text-[12px] w-full mt-2"
+                            />
+                          )}
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Keterangan Surat Jalan</label>
+                          <textarea
+                            value={formMasuk.sj_keterangan}
+                            onChange={e => setFormMasuk(p => ({ ...p, sj_keterangan: e.target.value }))}
+                            placeholder="Catatan atau kondisi surat jalan..."
+                            rows={2}
+                            className="input-field text-[12px] w-full resize-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="sticky bottom-0 bg-white border-t border-border-main px-6 py-4 flex items-center justify-end gap-3">
+                    <button onClick={() => setShowFormMasuk(false)} className="btn-ghost px-5 h-9 text-[12px]">
+                      Batal
+                    </button>
+                    <button
+                      onClick={handleSaveMasuk}
+                      disabled={savingMasuk}
+                      className="btn-primary px-6 h-9 text-[12px] flex items-center gap-2"
+                    >
+                      {savingMasuk ? (
+                        <><Icon name="Loader2" size={13} className="animate-spin" /> Menyimpan...</>
+                      ) : (
+                        <><Icon name="Save" size={13} /> {editingMasuk ? 'Perbarui' : 'Simpan'}</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {invoiceTypeTab === 'keluar' && activeTab === 'daftar' && (
         <div className="space-y-4">
