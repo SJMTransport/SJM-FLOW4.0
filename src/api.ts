@@ -799,6 +799,7 @@ export const api = {
     no_invoice: string;
     tgl_invoice: string;
     customer: string;         // Nama Vendor (reusing customer field)
+    pic_cust?: string;        // Jenis Invoice (reusing pic_cust field)
     so_order_ids: string[];   // Linked SO IDs
     total_setelah_pajak: number;
     status: string;           // Belum Diterima / Diterima / Diserahkan ke
@@ -814,6 +815,7 @@ export const api = {
       no_invoice:          invoice.no_invoice,
       tgl_invoice:         invoice.tgl_invoice,
       customer:            invoice.customer,
+      pic_cust:            invoice.pic_cust || '',
       so_order_ids:        invoice.so_order_ids || [],
       so_ids:              [],
       total_sebelum_pajak: 0,
@@ -838,6 +840,7 @@ export const api = {
     no_invoice?: string;
     tgl_invoice?: string;
     customer?: string;
+    pic_cust?: string;
     so_order_ids?: string[];
     total_setelah_pajak?: number;
     status?: string;
