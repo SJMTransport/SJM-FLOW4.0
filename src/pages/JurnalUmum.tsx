@@ -601,7 +601,13 @@ export const JurnalUmum = ({ jurnal, setJurnal, coa, so, connected, currentUser,
               </td>
               <td rowSpan={details.length} className="py-1.5 px-4 align-top space-y-1 border-r border-border-main/5 min-w-[130px]">
                   {j.no_so ? (j.no_so as string).split(",").map(s => (
-                      <span key={s} className="text-[9px] font-black text-blue-brand bg-blue-brand/5 px-1.5 py-0.5 rounded-sm hover:bg-blue-brand/10 cursor-pointer block w-fit italic" onClick={() => onSOClick && onSOClick(s.trim())}>{s.trim()}</span>
+                      <button
+                        key={s}
+                        onClick={() => onSOClick && onSOClick(s.trim())}
+                        className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight block w-fit text-left"
+                      >
+                        {s.trim()}
+                      </button>
                   )) : <span className="text-[9px] font-bold text-text-light opacity-20 italic">—</span>}
               </td>
             </>}

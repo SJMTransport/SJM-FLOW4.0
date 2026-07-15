@@ -1167,14 +1167,16 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex gap-1 flex-wrap">
-                              {(inv.so_order_ids || []).slice(0, 2).map((soId: string) => (
-                                <button
-                                  key={soId}
-                                  onClick={() => onSOClick && onSOClick(soId)}
-                                  className="px-1.5 py-0.5 bg-purple-50 border border-purple-200 rounded-full text-[9px] font-bold text-purple-700 whitespace-nowrap hover:bg-purple-100 transition-colors"
-                                >
-                                  {soId}
-                                </button>
+                              {(inv.so_order_ids || []).map((soId: string, idx: number) => (
+                                <React.Fragment key={soId}>
+                                  <button
+                                    onClick={() => onSOClick && onSOClick(soId)}
+                                    className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight"
+                                  >
+                                    {soId}
+                                  </button>
+                                  {idx < (inv.so_order_ids || []).length - 1 && <span className="text-[10px] text-text-light opacity-50 mr-1">,</span>}
+                                </React.Fragment>
                               ))}
                               {(inv.so_order_ids || []).length === 0 && (
                                 <span className="text-[10px] text-text-light opacity-50">—</span>
@@ -1911,18 +1913,17 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                         </td>
                         <td className="py-3 px-4 max-w-[200px]">
                           <div className="flex gap-1 flex-wrap">
-                            {(inv.so_order_ids || []).slice(0, 2).map((soId: string) => (
-                              <button
-                                key={soId}
-                                onClick={e => { e.stopPropagation(); onSOClick && onSOClick(soId); }}
-                                className="px-1.5 py-0.5 bg-accent/5 border border-accent/20 rounded-full text-[9px] font-bold text-accent whitespace-nowrap hover:bg-accent/20 transition-colors"
-                              >
-                                {soId}
-                              </button>
+                            {(inv.so_order_ids || []).map((soId: string, idx: number) => (
+                              <React.Fragment key={soId}>
+                                <button
+                                  onClick={e => { e.stopPropagation(); onSOClick && onSOClick(soId); }}
+                                  className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight"
+                                >
+                                  {soId}
+                                </button>
+                                {idx < (inv.so_order_ids || []).length - 1 && <span className="text-[10px] text-text-light opacity-50 mr-1">,</span>}
+                              </React.Fragment>
                             ))}
-                            {(inv.so_order_ids || []).length > 2 && (
-                              <span className="px-1.5 py-0.5 bg-slate-100 text-text-light rounded-full text-[9px] font-bold" title={(inv.so_order_ids || []).join(', ')}>+{(inv.so_order_ids || []).length - 2}</span>
-                            )}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">
@@ -2391,7 +2392,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                             <tr key={s.order_id} className="hover:bg-slate-50 transition-colors">
                               <td>
                                 <button
-                                  className="font-black text-accent uppercase tracking-tight hover:underline"
+                                  className="text-[11px] font-black text-accent uppercase tracking-tight hover:underline"
                                   onClick={() => { setSelectedPaymentInv(null); onSOClick && onSOClick(s.order_id); }}
                                 >
                                   {s.order_id}

@@ -1196,7 +1196,7 @@ export const LaporanPage = ({ activeSub, jurnal, coa, so, armada, auditLogs, sal
                 {tbProfit.length === 0 ? <EmptyState colSpan={6} /> :
                  tbProfit.map((p: any, i:number) => (
                    <tr key={i} className="transition-colors cursor-pointer group" onClick={() => onSOClick && onSOClick(p.order_id)}>
-                      <td className="text-[11px] font-black text-accent group-hover:underline underline-offset-4 decoration-accent/30">{p.order_id}</td>
+                      <td className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight">{p.order_id}</td>
                       <td className="text-[11px] font-bold text-text-main uppercase tracking-tight">{p.customer}</td>
                       <td className="text-right tabular-nums text-[11px] font-medium whitespace-nowrap">{fmt(p.revenue)}</td>
                       <td className="text-right tabular-nums text-[11px] font-medium text-red-brand/70 whitespace-nowrap">{fmt(p.expense)}</td>

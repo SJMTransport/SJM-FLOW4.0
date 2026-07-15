@@ -373,7 +373,7 @@ export const Dashboard = ({ jurnal, so, coa, piutang, armada = [], sopir = [], a
                     
                     <div className="flex justify-between items-start mb-1.5">
                        <button 
-                        className="text-[10px] font-bold text-accent hover:underline italic" 
+                        className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight" 
                         onClick={(e) => { e.preventDefault(); onSOClick?.(l.order_id); }}
                        >
                          {l.order_id || "Draft"}

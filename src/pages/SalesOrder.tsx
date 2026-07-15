@@ -1125,9 +1125,8 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
                         <td>
                           <button
                              onClick={(e) => {
-                               if (!canEdit) return;
                                e.stopPropagation();
-                               openEdit(s);
+                               onSOClick && onSOClick(s.order_id);
                              }}
                              className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight"
                            >

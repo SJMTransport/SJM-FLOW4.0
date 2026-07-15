@@ -1788,7 +1788,7 @@ export default function App() {
               
               {activeModule === "master" && (
                 <>
-                  {activeSub === "kontak" && <KontakPage so={so} connected={connected} currentUser={currentUser} invoices={invoices} jurnal={jurnal} />}
+                  {activeSub === "kontak" && <KontakPage so={so} connected={connected} currentUser={currentUser} invoices={invoices} jurnal={jurnal} onSOClick={handleSOClick} />}
                   {["coa", "saldoawal"].includes(activeSub) && (
                     <MasterPage activeSub={activeSub} coa={coa} setCoa={setCoa} users={users} setUsers={setUsers} saldoAwal={saldoAwal} setSaldoAwal={setSaldoAwal} logAction={logAction} currentUser={currentUser} />
                   )}

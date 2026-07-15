@@ -3,7 +3,7 @@ import { Card, SectionHeader, EmptyState, useConfirm, Icon, PageShell, ActionBar
 import { api } from "@/src/api";
 import { fmt, fmtShort } from "../utils";
 
-export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any) => {
+export const KontakPage = ({ so, connected, currentUser, invoices, jurnal, onSOClick }: any) => {
   const { confirm: askConfirmKontak, Modal: ConfirmKontakModal } = useConfirm();
   const { showToast } = useToast();
   const [tab, setTab] = useState("customer");
@@ -389,7 +389,14 @@ export const KontakPage = ({ so, connected, currentUser, invoices, jurnal }: any
                       ) : (
                         detailData.sos.map((s: any) => (
                           <tr key={s.id} className="hover:bg-slate-50/50">
-                            <td className="font-black text-accent">{s.order_id}</td>
+                            <td>
+                              <button
+                                onClick={() => onSOClick && onSOClick(s.order_id)}
+                                className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight"
+                              >
+                                {s.order_id}
+                              </button>
+                            </td>
                             <td className="tabular-nums font-medium">{fmtDate(s.tgl_muat || s.tgl_order)}</td>
                             <td className="font-bold text-text-main">{s.lokasi_muat || "—"} → {s.lokasi_bongkar || "—"}</td>
                             <td className="font-medium text-text-med">

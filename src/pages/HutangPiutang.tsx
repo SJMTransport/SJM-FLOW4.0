@@ -655,9 +655,12 @@ export const HutangPiutangPage = ({ jurnal, coa, so, armada, connected, onSOClic
                         <td className="text-[11px] font-bold text-text-med italic tabular-nums">{r.tanggal}</td>
                         <td className="space-y-1">
                           {r.no_so ? (
-                            <span className="block text-[11px] font-bold text-accent hover:underline cursor-pointer italic tracking-tight" onClick={() => onSOClick && onSOClick(r.no_so)}>
+                            <button
+                              onClick={() => onSOClick && onSOClick(r.no_so)}
+                              className="text-[11px] font-black text-accent hover:underline uppercase tracking-tight block text-left"
+                            >
                               {r.no_so}
-                            </span>
+                            </button>
                           ) : <span className="block opacity-20 text-[10px]">None</span>}
                           <div className="flex flex-wrap gap-1">
                             {(r.no_jurnal_list || []).map((nj: string) => (
