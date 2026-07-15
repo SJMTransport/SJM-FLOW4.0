@@ -995,91 +995,131 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               </div>
             )}
 
-            {/* Form Modal — Invoice Masuk */}
+            {/* Form Modal — Invoice Masuk ── redesigned */}
             {showFormMasuk && (
-              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={e => { if (e.target === e.currentTarget) setShowFormMasuk(false); }}>
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-                  {/* Modal Header */}
-                  <div className="sticky top-0 z-10 bg-white border-b border-border-main px-6 py-4 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-[14px] font-black text-text-main uppercase tracking-wide">
-                        {editingMasuk ? 'Edit Invoice Masuk' : 'Tambah Invoice Masuk'}
-                      </h2>
-                      <p className="text-[10px] text-text-light mt-0.5">Data invoice vendor beserta Surat Jalan</p>
+              <div
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+                onClick={e => { if (e.target === e.currentTarget) setShowFormMasuk(false); }}
+              >
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col" style={{ maxHeight: 'calc(100vh - 48px)' }}>
+
+                  {/* ── Header */}
+                  <div className="flex items-center justify-between px-8 py-5 border-b border-border-main shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-sm">
+                        <Icon name="FileText" size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-[15px] font-black text-text-main tracking-tight">
+                          {editingMasuk ? 'Edit Invoice Masuk' : 'Tambah Invoice Masuk'}
+                        </h2>
+                        <p className="text-[10px] text-text-light mt-0.5 font-medium">Data tagihan dari vendor beserta informasi Surat Jalan</p>
+                      </div>
                     </div>
-                    <button onClick={() => setShowFormMasuk(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <button
+                      onClick={() => setShowFormMasuk(false)}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-text-light hover:text-text-main transition-all"
+                    >
                       <Icon name="X" size={16} />
                     </button>
                   </div>
 
-                  <div className="px-6 py-5 space-y-6">
-                    {/* Bagian Invoice */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
-                          <Icon name="FileText" size={12} />
-                        </div>
-                        <h3 className="text-[11px] font-black text-text-main uppercase tracking-wider">Data Invoice Masuk</h3>
-                      </div>
+                  {/* ── Body — 2 kolom: Invoice Masuk | Surat Jalan */}
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="grid grid-cols-2 divide-x divide-border-main/60 min-h-full">
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">No Invoice Masuk *</label>
-                          <input
-                            value={formMasuk.no_invoice}
-                            onChange={e => setFormMasuk(p => ({ ...p, no_invoice: e.target.value }))}
-                            placeholder="Contoh: INV/VENDOR/001/2026"
-                            className="input-field h-8 text-[12px] w-full"
-                          />
+                      {/* ─── Kolom Kiri: Invoice Masuk ─── */}
+                      <div className="p-7 space-y-5">
+                        {/* Section label */}
+                        <div className="flex items-center gap-2.5 pb-2 border-b border-border-main/40">
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                            <Icon name="Receipt" size={13} />
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-black text-text-main uppercase tracking-widest">Invoice Masuk</div>
+                            <div className="text-[9px] text-text-light">Data tagihan dari vendor</div>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Tanggal Invoice</label>
-                          <input
-                            type="date"
-                            value={formMasuk.tgl_invoice}
-                            onChange={e => setFormMasuk(p => ({ ...p, tgl_invoice: e.target.value }))}
-                            className="input-field h-8 text-[12px] w-full"
-                          />
+
+                        {/* No Invoice + Tanggal */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">No Invoice *</label>
+                            <input
+                              value={formMasuk.no_invoice}
+                              onChange={e => setFormMasuk(p => ({ ...p, no_invoice: e.target.value }))}
+                              placeholder="INV/VENDOR/001/2026"
+                              className="input-field h-9 text-[12px] w-full font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tanggal Invoice</label>
+                            <input
+                              type="date"
+                              value={formMasuk.tgl_invoice}
+                              onChange={e => setFormMasuk(p => ({ ...p, tgl_invoice: e.target.value }))}
+                              className="input-field h-9 text-[12px] w-full"
+                            />
+                          </div>
                         </div>
+
+                        {/* Nama Vendor */}
                         <div>
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Nama Vendor *</label>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Nama Vendor *</label>
                           <input
                             value={formMasuk.customer}
                             onChange={e => setFormMasuk(p => ({ ...p, customer: e.target.value }))}
-                            placeholder="PT. Nama Vendor..."
-                            className="input-field h-8 text-[12px] w-full"
+                            placeholder="PT. Nama Vendor / Ekspedisi..."
+                            className="input-field h-9 text-[12px] w-full"
                           />
                         </div>
+
+                        {/* Nominal */}
                         <div>
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Nominal Invoice (Rp)</label>
-                          <input
-                            type="number"
-                            value={formMasuk.total_setelah_pajak || ''}
-                            onChange={e => setFormMasuk(p => ({ ...p, total_setelah_pajak: Number(e.target.value) }))}
-                            placeholder="0"
-                            className="input-field h-8 text-[12px] w-full"
-                          />
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Nominal Invoice (Rp)</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-light">Rp</span>
+                            <input
+                              type="number"
+                              value={formMasuk.total_setelah_pajak || ''}
+                              onChange={e => setFormMasuk(p => ({ ...p, total_setelah_pajak: Number(e.target.value) }))}
+                              placeholder="0"
+                              className="input-field h-9 text-[12px] w-full pl-9 tabular-nums"
+                            />
+                          </div>
+                          {formMasuk.total_setelah_pajak > 0 && (
+                            <div className="text-[10px] text-text-light mt-1 font-medium tabular-nums">
+                              = Rp {Number(formMasuk.total_setelah_pajak).toLocaleString('id-ID')},00
+                            </div>
+                          )}
                         </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">No SO (opsional, pisahkan koma)</label>
+
+                        {/* No SO */}
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">
+                            No SO <span className="normal-case font-normal opacity-60">(opsional, pisahkan dengan koma)</span>
+                          </label>
                           <input
                             value={formMasuk.so_order_ids_raw}
                             onChange={e => setFormMasuk(p => ({ ...p, so_order_ids_raw: e.target.value }))}
                             placeholder="SJM.ID-0001.26, SJM.ID-0002.26"
-                            className="input-field h-8 text-[12px] w-full font-mono"
+                            className="input-field h-9 text-[11px] w-full font-mono"
                           />
                         </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Status Invoice</label>
-                          <div className="flex gap-2 flex-wrap">
+
+                        {/* Status Invoice */}
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Invoice</label>
+                          <div className="flex gap-2">
                             {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke'].map(opt => (
                               <button
                                 key={opt}
+                                type="button"
                                 onClick={() => setFormMasuk(p => ({ ...p, status: opt }))}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                                className={`flex-1 py-2 rounded-xl text-[10px] font-bold border-2 transition-all ${
                                   formMasuk.status === opt
-                                    ? 'bg-purple-600 text-white border-purple-600'
-                                    : 'bg-white text-text-med border-border-main hover:border-purple-300'
+                                    ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                    : 'bg-white text-text-med border-border-main hover:border-purple-300 hover:text-purple-700'
                                 }`}
                               >
                                 {opt}
@@ -1087,117 +1127,178 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                             ))}
                           </div>
                           {(formMasuk.status === 'Diterima oleh' || formMasuk.status === 'Diserahkan ke') && (
-                            <input
-                              value={formMasuk.status_user}
-                              onChange={e => setFormMasuk(p => ({ ...p, status_user: e.target.value }))}
-                              placeholder={`Nama ${formMasuk.status === 'Diterima oleh' ? 'penerima' : 'penerima serah'}...`}
-                              className="input-field h-8 text-[12px] w-full mt-2"
-                            />
+                            <div className="mt-2.5">
+                              <input
+                                value={formMasuk.status_user}
+                                onChange={e => setFormMasuk(p => ({ ...p, status_user: e.target.value }))}
+                                placeholder={formMasuk.status === 'Diterima oleh' ? 'Nama penerima...' : 'Diserahkan kepada...'}
+                                className="input-field h-9 text-[12px] w-full"
+                                autoFocus
+                              />
+                            </div>
                           )}
                         </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Keterangan Invoice</label>
+
+                        {/* Keterangan */}
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Keterangan Invoice</label>
                           <textarea
                             value={formMasuk.keterangan_invoice}
                             onChange={e => setFormMasuk(p => ({ ...p, keterangan_invoice: e.target.value }))}
-                            placeholder="Catatan tambahan..."
-                            rows={2}
-                            className="input-field text-[12px] w-full resize-none"
+                            placeholder="Catatan tambahan mengenai invoice ini..."
+                            rows={3}
+                            className="input-field text-[12px] w-full resize-none leading-relaxed"
                           />
                         </div>
                       </div>
-                    </div>
 
-                    {/* Divider */}
-                    <div className="border-t border-border-main/50 relative">
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white px-3 text-[9px] text-text-light font-bold uppercase tracking-widest">Surat Jalan</span>
-                    </div>
-
-                    {/* Bagian Surat Jalan */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                          <Icon name="Truck" size={12} />
+                      {/* ─── Kolom Kanan: Surat Jalan ─── */}
+                      <div className="p-7 space-y-5 bg-slate-50/50">
+                        {/* Section label */}
+                        <div className="flex items-center gap-2.5 pb-2 border-b border-border-main/40">
+                          <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                            <Icon name="Truck" size={13} />
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-black text-text-main uppercase tracking-widest">Surat Jalan</div>
+                            <div className="text-[9px] text-text-light">Dikirim bersamaan dengan invoice</div>
+                          </div>
                         </div>
-                        <h3 className="text-[11px] font-black text-text-main uppercase tracking-wider">Data Surat Jalan</h3>
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                        {/* Tgl Terima + Tgl Penyerahan */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tgl Terima SJ</label>
+                            <input
+                              type="date"
+                              value={formMasuk.sj_tgl_terima}
+                              onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_terima: e.target.value }))}
+                              className="input-field h-9 text-[12px] w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Tgl Penyerahan SJ</label>
+                            <input
+                              type="date"
+                              value={formMasuk.sj_tgl_serah}
+                              onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_serah: e.target.value }))}
+                              className="input-field h-9 text-[12px] w-full"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Status Surat Jalan */}
                         <div>
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Tanggal Terima SJ</label>
-                          <input
-                            type="date"
-                            value={formMasuk.sj_tgl_terima}
-                            onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_terima: e.target.value }))}
-                            className="input-field h-8 text-[12px] w-full"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Tanggal Penyerahan SJ</label>
-                          <input
-                            type="date"
-                            value={formMasuk.sj_tgl_serah}
-                            onChange={e => setFormMasuk(p => ({ ...p, sj_tgl_serah: e.target.value }))}
-                            className="input-field h-8 text-[12px] w-full"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Status Surat Jalan</label>
-                          <div className="flex gap-2 flex-wrap">
-                            {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke', 'Terkirim ke Customer'].map(opt => (
-                              <button
-                                key={opt}
-                                onClick={() => setFormMasuk(p => ({ ...p, sj_status: opt }))}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
-                                  formMasuk.sj_status === opt
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white text-text-med border-border-main hover:border-blue-300'
-                                }`}
-                              >
-                                {opt}
-                              </button>
-                            ))}
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-2">Status Surat Jalan</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {['Belum Diterima', 'Diterima oleh', 'Diserahkan ke', 'Terkirim ke Customer'].map(opt => {
+                              const isActive = formMasuk.sj_status === opt;
+                              const colorMap: Record<string, string> = {
+                                'Belum Diterima':      isActive ? 'bg-red-500 text-white border-red-500' : 'hover:border-red-300',
+                                'Diterima oleh':       isActive ? 'bg-blue-600 text-white border-blue-600' : 'hover:border-blue-300',
+                                'Diserahkan ke':       isActive ? 'bg-violet-600 text-white border-violet-600' : 'hover:border-violet-300',
+                                'Terkirim ke Customer': isActive ? 'bg-green-600 text-white border-green-600' : 'hover:border-green-300',
+                              };
+                              return (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onClick={() => setFormMasuk(p => ({ ...p, sj_status: opt }))}
+                                  className={`py-2 rounded-xl text-[10px] font-bold border-2 transition-all text-center ${
+                                    isActive
+                                      ? colorMap[opt] + ' shadow-sm'
+                                      : 'bg-white text-text-med border-border-main ' + colorMap[opt]
+                                  }`}
+                                >
+                                  {opt}
+                                </button>
+                              );
+                            })}
                           </div>
                           {(formMasuk.sj_status === 'Diterima oleh' || formMasuk.sj_status === 'Diserahkan ke') && (
-                            <input
-                              value={formMasuk.sj_status_user}
-                              onChange={e => setFormMasuk(p => ({ ...p, sj_status_user: e.target.value }))}
-                              placeholder={`Nama ${formMasuk.sj_status === 'Diterima oleh' ? 'penerima' : 'penerima serah'}...`}
-                              className="input-field h-8 text-[12px] w-full mt-2"
-                            />
+                            <div className="mt-2.5">
+                              <input
+                                value={formMasuk.sj_status_user}
+                                onChange={e => setFormMasuk(p => ({ ...p, sj_status_user: e.target.value }))}
+                                placeholder={formMasuk.sj_status === 'Diterima oleh' ? 'Nama penerima Surat Jalan...' : 'Diserahkan kepada...'}
+                                className="input-field h-9 text-[12px] w-full"
+                              />
+                            </div>
                           )}
                         </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1">Keterangan Surat Jalan</label>
+
+                        {/* Keterangan SJ */}
+                        <div>
+                          <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block mb-1.5">Keterangan Surat Jalan</label>
                           <textarea
                             value={formMasuk.sj_keterangan}
                             onChange={e => setFormMasuk(p => ({ ...p, sj_keterangan: e.target.value }))}
-                            placeholder="Catatan atau kondisi surat jalan..."
-                            rows={2}
-                            className="input-field text-[12px] w-full resize-none"
+                            placeholder="Catatan kondisi surat jalan, nomor seri, atau info tambahan..."
+                            rows={3}
+                            className="input-field text-[12px] w-full resize-none leading-relaxed"
                           />
                         </div>
+
+                        {/* Preview Card — ringkasan data */}
+                        {(formMasuk.no_invoice || formMasuk.customer) && (
+                          <div className="mt-auto p-4 bg-white rounded-xl border border-border-main/60 space-y-2">
+                            <div className="text-[9px] font-black text-text-light uppercase tracking-widest mb-2">Ringkasan</div>
+                            {formMasuk.no_invoice && (
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-text-light">No Invoice</span>
+                                <span className="font-bold text-text-main font-mono">{formMasuk.no_invoice}</span>
+                              </div>
+                            )}
+                            {formMasuk.customer && (
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-text-light">Vendor</span>
+                                <span className="font-bold text-text-main truncate max-w-[160px]">{formMasuk.customer}</span>
+                              </div>
+                            )}
+                            {formMasuk.total_setelah_pajak > 0 && (
+                              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border-main/40">
+                                <span className="text-text-light">Total</span>
+                                <span className="font-black text-accent tabular-nums">
+                                  Rp {Number(formMasuk.total_setelah_pajak).toLocaleString('id-ID')},00
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Modal Footer */}
-                  <div className="sticky bottom-0 bg-white border-t border-border-main px-6 py-4 flex items-center justify-end gap-3">
-                    <button onClick={() => setShowFormMasuk(false)} className="btn-ghost px-5 h-9 text-[12px]">
-                      Batal
-                    </button>
-                    <button
-                      onClick={handleSaveMasuk}
-                      disabled={savingMasuk}
-                      className="btn-primary px-6 h-9 text-[12px] flex items-center gap-2"
-                    >
-                      {savingMasuk ? (
-                        <><Icon name="Loader2" size={13} className="animate-spin" /> Menyimpan...</>
+                  {/* ── Footer */}
+                  <div className="flex items-center justify-between px-8 py-4 border-t border-border-main bg-slate-50/80 shrink-0 rounded-b-2xl">
+                    <div className="text-[10px] text-text-light">
+                      {editingMasuk ? (
+                        <span className="flex items-center gap-1.5"><Icon name="Edit3" size={10} /> Mengubah data yang sudah ada</span>
                       ) : (
-                        <><Icon name="Save" size={13} /> {editingMasuk ? 'Perbarui' : 'Simpan'}</>
+                        <span className="flex items-center gap-1.5"><Icon name="Plus" size={10} /> Data baru akan tersimpan ke database</span>
                       )}
-                    </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setShowFormMasuk(false)}
+                        className="btn-ghost px-5 h-9 text-[12px]"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        onClick={handleSaveMasuk}
+                        disabled={savingMasuk}
+                        className="btn-primary px-7 h-9 text-[12px] font-bold flex items-center gap-2 min-w-[120px] justify-center"
+                      >
+                        {savingMasuk ? (
+                          <><Icon name="Loader2" size={13} className="animate-spin" /> Menyimpan...</>
+                        ) : (
+                          <><Icon name="Save" size={13} /> {editingMasuk ? 'Perbarui Data' : 'Simpan'}</>
+                        )}
+                      </button>
+                    </div>
                   </div>
+
                 </div>
               </div>
             )}
