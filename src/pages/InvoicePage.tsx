@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '@/src/api';
 import * as XLSX from 'xlsx';
 import { filterByPeriod, today } from '@/src/utils';
@@ -1235,8 +1236,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
               </div>
             )}
 
-            {/* Form Modal — Invoice Masuk ── redesigned */}
-            {showFormMasuk && (() => {
+            {/* Form Modal — Invoice Masuk ── redesigned (React Portal) */}
+            {showFormMasuk && createPortal((() => {
               const vendorOptions = Array.from(new Set(
                 so
                   .flatMap((s: any) => [s.armada, s.nama_vendor])
@@ -1248,7 +1249,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
 
               return (
                 <div
-                  className="fixed inset-0 z-[1000] flex items-center justify-center p-6 backdrop-blur-md bg-black/10 animate-fade-in"
+                  className="fixed inset-0 z-[9999] flex items-center justify-center p-6 backdrop-blur-md bg-black/25 animate-fade-in"
                   onClick={e => {
                     if (e.target === e.currentTarget) {
                       setShowFormMasuk(false);
@@ -1629,7 +1630,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   </div>
                 </div>
               );
-            })()}
+            })(), document.body)}
           </div>
         );
       })()}
