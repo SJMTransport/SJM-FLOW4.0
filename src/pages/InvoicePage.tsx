@@ -64,6 +64,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
   const { showToast, ToastUI } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabType>('daftar');
+  const [invoiceTypeTab, setInvoiceTypeTab] = useState<'dashboard' | 'masuk' | 'keluar'>('keluar');
 
   // ── Buat Invoice state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -518,20 +519,159 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
         title="Invoice"
         sub="Manajemen invoice PT Sugiarto Jaya Mandiri"
         action={
-          <button
-            onClick={() => { setActiveTab(activeTab === 'buat' ? 'daftar' : 'buat'); setSelectedIds(new Set()); }}
-            className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2"
-          >
-            <Icon name={activeTab === 'buat' ? 'List' : 'Plus'} size={14} />
-            {activeTab === 'buat' ? 'Daftar Invoice' : 'Buat Invoice'}
-          </button>
+          invoiceTypeTab === 'keluar' ? (
+            <button
+              onClick={() => { setActiveTab(activeTab === 'buat' ? 'daftar' : 'buat'); setSelectedIds(new Set()); }}
+              className="btn-primary h-9 px-4 text-[12px] flex items-center gap-2"
+            >
+              <Icon name={activeTab === 'buat' ? 'List' : 'Plus'} size={14} />
+              {activeTab === 'buat' ? 'Daftar Invoice' : 'Buat Invoice'}
+            </button>
+          ) : undefined
         }
       />
 
-      {/* ══════════════════════════════════ */}
-      {/* VIEW: DAFTAR INVOICE               */}
-      {/* ══════════════════════════════════ */}
-      {activeTab === 'daftar' && (
+      {/* Tab Switching Bar */}
+      <div className="tab-bar mb-6">
+        {[
+          ["dashboard", "Dashboard Invoice"],
+          ["masuk", "Invoice Masuk"],
+          ["keluar", "Invoice Keluar"]
+        ].map(([k, l]) => (
+          <button
+            key={k}
+            className={`tab-btn uppercase tracking-widest ${invoiceTypeTab === k ? "active" : ""}`}
+            onClick={() => setInvoiceTypeTab(k as any)}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {invoiceTypeTab === 'dashboard' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* KPI Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/30">
+                <Icon name="Database" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Tagihan Keluar</div>
+                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">
+                  {fRp(invoices.reduce((s, i) => s + (i.total_setelah_pajak || 0), 0)) + ',00'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-100/30">
+                <Icon name="Clock" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Outstanding Piutang (Keluar)</div>
+                <div className="text-lg font-black text-red-600 mt-1.5 tracking-tight">
+                  {fRp(invoices.reduce((s, i) => {
+                    const ps = paymentStatusMap[i.no_invoice];
+                    const paid = Number(ps?.total_paid || 0);
+                    const total = Number(i.total_setelah_pajak || 0);
+                    return s + Math.max(0, total - paid);
+                  }, 0)) + ',00'}
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/30">
+                <Icon name="TrendingDown" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Tagihan Masuk</div>
+                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">Rp 0,00</div>
+              </div>
+            </div>
+
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100/30">
+                <Icon name="AlertTriangle" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Outstanding Hutang (Masuk)</div>
+                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">Rp 0,00</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200/50 flex items-center justify-center mx-auto text-text-light">
+              <Icon name="LayoutDashboard" size={28} />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-text-main tracking-tight uppercase leading-none">Dashboard Konsolidasi Invoice</h3>
+              <p className="text-[11px] text-text-med mt-2 max-w-md mx-auto leading-relaxed">
+                Halaman dashboard ini nantinya akan menyajikan grafik komparasi real-time antara **Invoice Masuk** (Vendor/Supplier) dan **Invoice Keluar** (Customer) beserta analisis perputaran arus kas.
+              </p>
+            </div>
+            <div className="pt-2">
+              <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wider">Sedang Dalam Rancangan</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {invoiceTypeTab === 'masuk' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* KPI Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/30">
+                <Icon name="TrendingDown" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Total Tagihan Vendor</div>
+                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">Rp 0,00</div>
+              </div>
+            </div>
+            
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100/30">
+                <Icon name="Clock" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Sisa Hutang Belum Dibayar</div>
+                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">Rp 0,00</div>
+              </div>
+            </div>
+
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0 border border-green-100/30">
+                <Icon name="CheckCircle" size={20} />
+              </div>
+              <div>
+                <div className="text-[9px] text-text-light font-bold uppercase tracking-wider leading-none">Tagihan Lunas</div>
+                <div className="text-lg font-black text-text-main mt-1.5 tracking-tight">0 Invoice</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200/50 flex items-center justify-center mx-auto text-text-light">
+              <Icon name="TrendingDown" size={28} />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-text-main tracking-tight uppercase leading-none">Direktori Invoice Masuk (Vendor & Ekspedisi)</h3>
+              <p className="text-[11px] text-text-med mt-2 max-w-md mx-auto leading-relaxed">
+                Halaman ini digunakan untuk mengelola seluruh pencatatan invoice/tagihan yang masuk dari para mitra vendor, sopir, dan penyedia jasa ekspedisi.
+              </p>
+            </div>
+            <div className="pt-2">
+              <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wider">Sedang Dalam Rancangan</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {invoiceTypeTab === 'keluar' && activeTab === 'daftar' && (
         <div className="space-y-4">
 
           {/* KPI Cards — Baris 1: Status pembayaran */}
@@ -778,8 +918,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                     <th className="w-[115px]">Tgl Invoice</th>
                     <th className="w-[190px]">Customer</th>
                     <th className="w-[180px]">Sales Order</th>
-                    <th className="w-[90px] text-center">Tipe</th>
                     <th className="w-[130px] text-right">Total</th>
+                    <th className="w-[150px] text-right">Sisa Belum Terbayar</th>
                     <th className="w-[125px] text-center">Status Bayar</th>
                     <th className="w-[80px] text-center">Aksi</th>
                   </tr>
@@ -821,19 +961,22 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                            inv.tipe === 'dp' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : inv.tipe === 'pelunasan' 
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-slate-100 text-slate-700'
-                          }`} title={inv.tipe || 'normal'}>
-                            {inv.tipe || 'normal'}
-                          </span>
-                        </td>
                         <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">
-                          {fRp(inv.total_setelah_pajak || 0)}
+                          {fRp(inv.total_setelah_pajak || 0) + ',00'}
+                        </td>
+                        <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold">
+                          {(() => {
+                            const total_invoice = inv.total_setelah_pajak || 0;
+                            const total_paid = paymentStatusMap[inv.no_invoice]?.total_paid || 0;
+                            const diff = total_invoice - total_paid;
+                            if (diff > 0) {
+                              return <span className="text-red-500 font-bold">-Rp {Math.round(diff).toLocaleString('id-ID')},00</span>;
+                            } else if (diff < 0) {
+                              return <span className="text-green-600 font-bold">+Rp {Math.round(Math.abs(diff)).toLocaleString('id-ID')},00</span>;
+                            } else {
+                              return <span className="text-text-light font-medium">Rp 0,00</span>;
+                            }
+                          })()}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span className="badge text-[8px]" style={{ backgroundColor: sc + '20', color: sc }}>
@@ -866,7 +1009,23 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                   <tr className="bg-slate-50 border-t-2 border-border-main">
                     <td colSpan={4} className="py-3 px-4 text-right text-[9px] italic opacity-50 uppercase tracking-widest">Total Terfilter</td>
                     <td className="py-3 px-4 text-right text-[12px] font-black text-accent tabular-nums">
-                      {fRp(filteredInvoices.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0))}
+                      {fRp(filteredInvoices.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0)) + ',00'}
+                    </td>
+                    <td className="py-3 px-4 text-right text-[12px] font-black tabular-nums">
+                      {(() => {
+                        const sumDiff = filteredInvoices.reduce((s, inv) => {
+                          const total_invoice = inv.total_setelah_pajak || 0;
+                          const total_paid = paymentStatusMap[inv.no_invoice]?.total_paid || 0;
+                          return s + (total_invoice - total_paid);
+                        }, 0);
+                        if (sumDiff > 0) {
+                          return <span className="text-red-500 font-bold">-Rp {Math.round(sumDiff).toLocaleString('id-ID')},00</span>;
+                        } else if (sumDiff < 0) {
+                          return <span className="text-green-600 font-bold">+Rp {Math.round(Math.abs(sumDiff)).toLocaleString('id-ID')},00</span>;
+                        } else {
+                          return <span className="text-text-light font-medium">Rp 0,00</span>;
+                        }
+                      })()}
                     </td>
                     <td colSpan={2} className="py-3 px-4 text-center text-[11px] font-bold text-text-med">{filteredInvoices.length} records</td>
                   </tr>
@@ -880,8 +1039,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
       {/* ══════════════════════════════════ */}
       {/* VIEW: BUAT INVOICE                 */}
       {/* ══════════════════════════════════ */}
-      {activeTab === 'buat' && (
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)' }}>
+      {invoiceTypeTab === 'keluar' && activeTab === 'buat' && (
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)' }} className="animate-fade-in">
 
           {/* Sticky top panel */}
           <div className="sticky top-0 z-10 bg-white border-b border-border-main pb-3">
