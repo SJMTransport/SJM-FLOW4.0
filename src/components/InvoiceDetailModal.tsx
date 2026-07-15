@@ -112,7 +112,7 @@ export const InvoiceDetailModal = ({ data, onClose, so, jurnal, onSOClick, onJur
   };
 
   return (
-    <Card className="w-full max-w-5xl h-full flex flex-col p-0 border-none rounded-none bg-[#F5F4F1] overflow-hidden shadow-2xl animate-fade-left relative z-10" onClick={e => e.stopPropagation()}>
+    <Card className="w-screen h-full flex flex-col p-0 border-none rounded-none bg-[#F5F4F1] overflow-hidden shadow-2xl animate-fade-left relative z-10" onClick={e => e.stopPropagation()}>
       
       {/* Header Sticky */}
       <div className="sticky top-0 z-20 bg-white border-b border-border-main px-6 py-3 flex items-center justify-between gap-4 shrink-0 shadow-sm">
