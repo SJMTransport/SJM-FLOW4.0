@@ -31,6 +31,17 @@ const SO_IMPORT_FIELDS = [
   { key: "keterangan", label: "Keterangan" },
 ];
 
+const isPajakApply = (tgl_muat: string, tgl_order?: string) => {
+  const tgl = tgl_muat || tgl_order || "";
+  if (!tgl) return false;
+  const d = new Date(tgl);
+  if (isNaN(d.getTime())) return false;
+  // Januari 2026 ke bawah = tidak kena pajak
+  if (d.getFullYear() < 2026) return false;
+  if (d.getFullYear() === 2026 && d.getMonth() === 0) return false; // bulan 0 = Januari
+  return true;
+};
+
 const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
   const [step, setStep] = useState(1);
   const [importMode, setImportMode] = useState<'insert' | 'upsert'>('upsert');
@@ -119,6 +130,29 @@ const BulkImportSO = ({ onComplete, onCancel, showToast, logAction }: any) => {
 
         if (csvKey) obj[sf.key] = val;
       });
+
+      // Recalculate and fill PPN (nilai_pajak) and total_harga_pajak if not explicitly provided in the import
+      const ins = Number(obj.harga_asuransi) || 0;
+      const pengiriman = Number(obj.harga_pengiriman) || 0;
+      const total = ins + pengiriman;
+      const apply = isPajakApply(obj.tgl_muat, obj.tgl_order);
+
+      if (!obj.total_harga) {
+        obj.total_harga = total;
+      }
+
+      if (apply) {
+        if (!obj.nilai_pajak) {
+          obj.nilai_pajak = Math.round((pengiriman + ins) * 0.011);
+        }
+        if (!obj.total_harga_pajak) {
+          obj.total_harga_pajak = total + obj.nilai_pajak;
+        }
+      } else {
+        obj.nilai_pajak = 0;
+        obj.total_harga_pajak = total;
+      }
+
       return obj;
     });
     setPreviewData(data);
@@ -439,17 +473,6 @@ export const SalesOrderPage = ({ so, setSo, jurnal, customer, connected, current
     });
     return result.sort();
   }, [so]);
-
-  const isPajakApply = (tgl_muat: string, tgl_order?: string) => {
-    const tgl = tgl_muat || tgl_order || "";
-    if (!tgl) return false;
-    const d = new Date(tgl);
-    if (isNaN(d.getTime())) return false;
-    // Januari 2026 ke bawah = tidak kena pajak
-    if (d.getFullYear() < 2026) return false;
-    if (d.getFullYear() === 2026 && d.getMonth() === 0) return false; // bulan 0 = Januari
-    return true;
-  };
 
   const calcTotal = (f: any) => {
     const ins = parseFloat(f.harga_asuransi) || 0;
