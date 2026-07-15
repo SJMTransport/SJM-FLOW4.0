@@ -426,7 +426,15 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
     setLoadingMasuk(true);
     try {
       const all = await api.getInvoices();
-      setInvoiceMasukList(all.filter((inv: any) => inv.tipe === 'masuk'));
+      const list = all.filter((inv: any) => inv.tipe === 'masuk');
+      setInvoiceMasukList(list);
+      const noInvoices = list.map((inv: any) => inv.no_invoice).filter(Boolean);
+      if (noInvoices.length > 0) {
+        try {
+          const map = await api.getPaymentStatusBatch(noInvoices);
+          setPaymentStatusMap(prev => ({ ...prev, ...map }));
+        } catch { }
+      }
     } catch (err: any) {
       showToast('Gagal memuat Invoice Masuk: ' + err.message, 'error');
     } finally {
@@ -1135,19 +1143,21 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="w-[160px]">No Invoice</th>
-                      <th className="w-[105px]">Tgl Invoice</th>
-                      <th className="w-[180px]">Nama Vendor</th>
-                      <th className="w-[150px]">No SO</th>
-                      <th className="w-[130px] text-right">Nominal</th>
-                      <th className="w-[170px]">Status Invoice</th>
-                      <th className="w-[170px]">Status Surat Jalan</th>
+                      <th className="w-[170px]">No Invoice</th>
+                      <th className="w-[110px]">Tgl Invoice</th>
+                      <th className="w-[170px]">Nama Vendor</th>
+                      <th className="w-[140px]">No SO</th>
+                      <th className="w-[120px] text-right">Total</th>
+                      <th className="w-[145px] text-right">Sisa Belum Terbayar</th>
+                      <th className="w-[125px] text-center">Status Bayar</th>
+                      <th className="w-[120px] text-center">Status Invoice</th>
+                      <th className="w-[130px] text-center">Status Surat Jalan</th>
                       <th className="w-[80px] text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-main/30">
                     {filteredMasuk.length === 0 ? (
-                      <tr><td colSpan={8}><EmptyState colSpan={8} /></td></tr>
+                      <tr><td colSpan={10}><EmptyState colSpan={10} /></td></tr>
                     ) : filteredMasuk.map(inv => {
                       const invStatus = inv.status || 'Belum Diterima';
                       const sjStatus = inv.status_dokumen || 'Belum Diterima';
@@ -1186,7 +1196,39 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                           <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold text-text-main">
                             {fRp(inv.total_setelah_pajak || 0)},00
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 text-right tabular-nums text-[12px] font-bold">
+                            {(() => {
+                              const total_invoice = inv.total_setelah_pajak || 0;
+                              const total_paid = paymentStatusMap[inv.no_invoice]?.total_paid || 0;
+                              const diff = total_invoice - total_paid;
+                              if (diff > 0) {
+                                return <span className="text-red-500 font-bold">-Rp {Math.round(diff).toLocaleString('id-ID')},00</span>;
+                              } else if (diff < 0) {
+                                return <span className="text-green-600 font-bold">+Rp {Math.round(Math.abs(diff)).toLocaleString('id-ID')},00</span>;
+                              } else {
+                                return <span className="text-text-light font-medium">Rp 0,00</span>;
+                              }
+                            })()}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {(() => {
+                              const statusBayar = getInvStatus(inv);
+                              const sc = STATUS_COLOR[statusBayar] || '#666';
+                              return (
+                                <span 
+                                  className="badge text-[9px] font-black uppercase tracking-widest"
+                                  style={{ 
+                                    backgroundColor: sc + '15', 
+                                    color: sc,
+                                    border: `1px solid ${sc}30`
+                                  }}
+                                >
+                                  {statusBayar}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-4 text-center">
                             <div>
                               <span className="badge text-[8px]" style={{ backgroundColor: invColor + '20', color: invColor }}>
                                 {invStatus}
@@ -1194,8 +1236,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="space-y-0.5">
-                              <span className="badge text-[8px]" style={{ backgroundColor: sjColor + '20', color: sjColor }}>
+                            <div className="space-y-0.5 text-center">
+                              <span className="badge text-[8px] mx-auto block w-fit" style={{ backgroundColor: sjColor + '20', color: sjColor }}>
                                 {sjStatus}
                               </span>
                               {inv.tgl_kirim && (
@@ -1231,7 +1273,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ so, currentUser, logAc
                       <td className="py-3 px-4 text-right text-[12px] font-black text-purple-700 tabular-nums">
                         {fRp(filteredMasuk.reduce((s, inv) => s + (inv.total_setelah_pajak || 0), 0))},00
                       </td>
-                      <td colSpan={3} className="py-3 px-4 text-center text-[11px] font-bold text-text-med">{filteredMasuk.length} records</td>
+                      <td colSpan={5} className="py-3 px-4 text-center text-[11px] font-bold text-text-med">{filteredMasuk.length} records</td>
                     </tr>
                   </tfoot>
                 </table>
